@@ -11,6 +11,54 @@ liest die **Antwort als JSON** wieder ein — welchen Chat du benutzt, entscheid
 
 ---
 
+## Was ist das hier eigentlich?
+
+Diese sechs Programme sind **Browser-Erweiterungen** — kleine Zusatzprogramme,
+die man einmalig im Browser installiert (nicht auf dem Computer) und die dann
+automatisch auf bestimmten Seiten mitlaufen. Du kennst das Prinzip vielleicht
+von einem Werbeblocker oder einem Passwort-Manager: einmal eingerichtet,
+taucht er von selbst auf, wenn er gebraucht wird.
+
+**Was passiert konkret, wenn du eine davon installierst?** Rufst du danach
+eine bestimmte Moodle-Seite auf — z. B. die Bewerten-Uebersicht eines Tests
+oder einer Aufgabe — erscheint dort automatisch ein zusaetzlicher Knopf oder
+ein kleines Panel, das vorher nicht da war. Auf jeder anderen Seite (auch in
+anderen Moodle-Kursen, auf anderen Webseiten) passiert **nichts** — die
+Erweiterung erkennt selbst, ob sie auf der richtigen Seite ist.
+
+Klickst du den Knopf an, liest die Erweiterung aus, was auf der Seite steht
+(z. B. die Schuelerantworten eines Tests), und baut daraus einen fertigen
+Text — einen sogenannten **Prompt**. Diesen Text kopierst du in einen Chat
+mit einer KI (mit **Claude**, siehe die Skills weiter unten — es geht aber
+grundsaetzlich mit jedem KI-Chat). Die KI beantwortet ihn, du kopierst die
+Antwort zurueck in die Erweiterung. Sie traegt Punkte und Feedback dann in
+Moodles **eigene** Eingabefelder ein und markiert, was sie veraendert hat.
+
+**Wichtig: Nichts wird automatisch abgeschickt.** Am Ende steht immer
+Moodles **eigener** Speichern-Knopf, den druecke ausschliesslich du selbst —
+nachdem du kontrolliert hast, was drinsteht. Keine dieser Erweiterungen
+schickt irgendwelche Daten an einen fremden Server, keine hat einen eigenen
+KI-Zugang, keine braucht ein Passwort oder einen API-Schluessel. Sie laufen
+vollstaendig lokal in deinem Browser und beruehren nur die Moodle-Seite, die
+gerade offen ist.
+
+**Wie installiert man das?** Nicht ueber einen Chrome Web Store — die
+Installation laeuft als sogenannte "entpackte Erweiterung": man laedt eine
+ZIP-Datei herunter, entpackt sie, und zeigt dem Browser den entpackten
+Ordner. Klingt technischer, als es ist — die genaue Schritt-fuer-Schritt-
+Anleitung fuer Chrome, Edge und Firefox steht im Abschnitt "Installation"
+weiter unten.
+
+Die Erweiterungen ersetzen dabei nur das laestige Kopieren zwischen Moodle
+und einem KI-Chat von Hand. Damit die KI-Antworten inhaltlich auch gut sind
+(welcher Bewertungsmassstab gilt, welche Fehler wie viel kosten, …), gehoert
+zu jeder Erweiterung eine passende **Claude-Skill** — eine Art
+mitgelieferte Anleitung fuer die KI. Wo die liegen und wie man sie
+installiert, steht ganz unten unter "Womit diese Erweiterungen gebaut
+werden".
+
+---
+
 ## Die sechs Erweiterungen
 
 | Erweiterung | Version | Download | Wofür |
@@ -21,6 +69,37 @@ liest die **Antwort als JSON** wieder ein — welchen Chat du benutzt, entscheid
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.7.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.7.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
+
+### Was du nach der Installation konkret siehst
+
+- **Moodle AI Grader** — auf der Bewerten-Seite einer Klausurfrage erscheint
+  ein Panel. Es legt zuerst Erwartungshorizont und Antwortvorlage in der
+  Frage an (einmalig, mit Vorschau), danach erzeugt es pro Person einen
+  Bewertungs-Prompt, rechnet aus der KI-Antwort die Punkte und schreibt
+  Note plus begruendetes Feedback in die manuelle Bewertung.
+- **Moodle AI Reviewer** — auf derselben Art Seite, aber bei automatisch
+  ausgewerteten Fragen (Cloze, Kurzantwort, Numerisch): findet frei
+  eingetippte Antworten, die Moodle nicht erkannt hat, und traegt fehlende
+  Punkte und Kommentare nach.
+- **Moodle AI Coach** — auf der Bewerten-Uebersicht eines Kurztests: liest
+  den in der Frage hinterlegten Erwartungshorizont aus, bewertet kurze
+  Freitextantworten (2–3 Saetze) und gibt zusaetzlich Sprachfeedback.
+- **Moodle AI Aufgaben-Grader** — auf der Bewerten-Uebersicht einer Aufgabe
+  (Datei-Abgaben, z. B. PDF-Arbeitshefte) erscheint ein roter Knopf. Er laedt
+  alle Abgaben anonymisiert (nur mit Kuerzel statt Klarnamen) als ein ZIP
+  herunter, erkennt beim naechsten Mal, was neu oder geaendert ist, und
+  traegt spaeter Note und Feedback ueber Moodles Schnellbewertung zurueck.
+- **Moodle Cloze Autofill** — auf der Seite, auf der man eine
+  Cloze-Frage bearbeitet: traegt neu gefundene, richtige Schreibvarianten
+  einer Luecke automatisch ein, statt sie von Hand einzutippen.
+- **Moodle Notenstufen Autofill** — auf der Notenstufen-Seite eines Kurses:
+  fuellt die ganze Tabelle auf einen Klick, fuer einen Kurs oder fuer alle
+  gemeinsam.
+
+Bei allen gilt dasselbe Muster: Erweiterung liest und schlaegt vor, du
+pruefst und speicherst selbst. Genaueres — auch was die Erweiterung NICHT
+kann — steht jeweils in ihrer eigenen README (siehe Spalte "Quelltext" in
+der Tabelle oben).
 
 Jeder Ordner hat eine eigene, ausführliche `README.md` — dort stehen Bedienung,
 Bewertungsmaßstab, Grenzen und die Änderungsgeschichte.
