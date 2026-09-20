@@ -159,4 +159,23 @@ Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 
 ---
 
+## Fuer die KI-Bewertung: Cowork-Zusatzpaket "Abgaben-Basics"
+
+Diese Erweiterung lädt und schreibt nur Moodle-Daten zurück — sie bewertet
+selbst nichts. Zum Auslesen der PDF-Abgaben und für den Bewertungsmaßstab
+gibt es ein eigenes, von dieser Erweiterung unabhängiges Cowork-Zusatzpaket:
+im Unterordner `Analyse-Cowork/` liegt `Abgaben-Basics.zip` mitsamt eigener
+Anleitung (`LIESMICH.md` im ZIP) — Vordruck-Abzug, Duplikaterkennung,
+Kontaktbogen für Handschrift, plus ein fachunabhängiger Bewertungsmaßstab
+für über Wochen laufende Aufgabenserien. Wer mit der Claude-Desktop-App oder
+Claude Code arbeitet, installiert es bequemer direkt als Plugin:
+
+    /plugin marketplace add arfhh/lehrkraft-werkzeuge
+    /plugin install abgaben-basics@lehrkraft-werkzeuge
+
+Lizenz: CC BY 4.0. Quelle und weitere Zusatzpakete:
+<https://github.com/arfhh/lehrkraft-werkzeuge>.
+
+---
+
 Entwickler: Arne Spielhoff · Lizenz: CC BY-SA 4.0
