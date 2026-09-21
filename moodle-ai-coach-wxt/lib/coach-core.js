@@ -1566,8 +1566,16 @@ ${DATEN_PLATZHALTER}`;
     panel.querySelectorAll('[data-panel]').forEach((p) =>
       p.classList.toggle('co-hidden', p.dataset.panel !== name));
   }
+  // Nach „Prompt + Daten kopieren" springt die Ansicht automatisch in den Reiter
+  // „Eintragen" — der Knopf bestätigt sich, und man landet ohne Suchen dort, wo
+  // der naechste Schritt stattfindet. Klickt Arne in der Zwischenzeit selbst auf
+  // einen Reiter, wird der Sprung abgebrochen, statt ihm die Ansicht wegzuziehen.
+  let reiterAutoTimer = null;
+  function reiterAutoAbbrechen() {
+    if (reiterAutoTimer) { clearTimeout(reiterAutoTimer); reiterAutoTimer = null; }
+  }
   panel.querySelectorAll('.co-tab').forEach((t) => {
-    t.addEventListener('click', () => reiterZeigen(t.dataset.tab));
+    t.addEventListener('click', () => { reiterAutoAbbrechen(); reiterZeigen(t.dataset.tab); });
   });
 
   function abzugWert() {
@@ -1903,6 +1911,15 @@ ${DATEN_PLATZHALTER}`;
     if (!ausgabe) return;
     await inZwischenablage(bauePrompt(nurMitHorizont(ausgabe)));
     quittung('.co-copy', '📋 Prompt + Daten kopieren');
+    // Erst nach erfolgreichem Kopieren wechselt der Reiter — schlaegt writeText fehl,
+    // bleibt die Ansicht stehen und die Fehlermeldung sichtbar.
+    reiterAutoAbbrechen();
+    reiterAutoTimer = setTimeout(() => {
+      reiterAutoTimer = null;
+      reiterZeigen('eintrag');
+      const feld = $('.co-json');
+      if (feld) feld.focus();
+    }, 1300);
   });
   $('.co-copy2').addEventListener('click', async () => {
     if (!ausgabe) return;
