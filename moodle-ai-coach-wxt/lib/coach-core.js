@@ -808,9 +808,11 @@ export function starteCoach() {
     const neu = await fetchDoc(fragenUrl(neueId));
     const feld = neu.querySelector('[name="graderinfo[text]"]');
     if (!feld) return null;
-    const hilf = document.createElement('div');
-    hilf.innerHTML = String(feld.value || '');
-    const text = hilf.innerText.trim();
+    // DOMParser statt innerHTML-Zuweisung: dekodiert HTML genauso, fuehrt aber
+    // keine Skripte aus und loest AMOs "Unsafe assignment to innerHTML"-Warnung
+    // nicht aus, da hier keine .innerHTML gesetzt wird.
+    const geparst = new DOMParser().parseFromString(String(feld.value || ''), 'text/html');
+    const text = (geparst.body ? geparst.body.textContent : '').trim();
     return text ? { qid: neueId, horizont: text } : null;
   }
 
