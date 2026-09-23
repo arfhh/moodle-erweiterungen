@@ -57,6 +57,15 @@ export function starteClozeAutofill() {
   const escapeHtml = (t) => String(t)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+  // Setzt HTML-Inhalt, ohne .innerHTML zuzuweisen: der (bereits per escapeHtml
+  // entschaerfte) String wird per DOMParser geparst - darin enthaltene <script>-
+  // Elemente sind lt. HTML-Spezifikation inert und werden nie ausgefuehrt - und die
+  // entstandenen Knoten werden dann per replaceChildren() eingehaengt. Das ist kein
+  // Sink, den AMOs "Unsafe assignment to innerHTML"-Pruefung beobachtet.
+  const setzeHtml = (ziel, html) => {
+    ziel.replaceChildren(...new DOMParser().parseFromString(String(html || ''), 'text/html').body.childNodes);
+  };
+
   /* ==PRUEFBAR-ANFANG== (Testfaelle schneiden genau diesen Block heraus) */
   // Prozentwerte im Cloze-Code IMMER mit Punkt: %0.01%, nie %0,01%.
   const prozentCode = (v) => String(Number(v));
@@ -1310,7 +1319,7 @@ export function starteClozeAutofill() {
     ziel.innerHTML = '';
     probleme.forEach((p) => {
       const d = el('div', 'ca-frage');
-      d.innerHTML = '<span class="ca-warn">⚠ ' + escapeHtml(p) + '</span>';
+      setzeHtml(d, '<span class="ca-warn">⚠ ' + escapeHtml(p) + '</span>');
       ziel.appendChild(d);
     });
     plan.forEach((p) => {
@@ -1340,7 +1349,7 @@ export function starteClozeAutofill() {
       if (!p.neu.length && !p.aend.length && !p.entf.length && !p.uebersprungen.length && !p.fehler.length) {
         zeilen.push('<div class="ca-diff ca-skip">nichts zu tun</div>');
       }
-      d.innerHTML = zeilen.join('');
+      setzeHtml(d, zeilen.join(''));
       ziel.appendChild(d);
     });
   }

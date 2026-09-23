@@ -1,7 +1,7 @@
 {
   "name": "moodle-cloze-autofill",
   "private": true,
-  "version": "2.0.4",
+  "version": "2.0.5",
   "type": "module",
   "scripts": {
     "dev": "wxt -b chrom",
@@ -14,7 +14,8 @@
     "zip:firefox": "wxt zip -b firefox",
     "lint": "web-ext lint --source-dir=Erweiterung/moodle-cloze-autofill-chrom && web-ext lint --source-dir=Erweiterung/moodle-cloze-autofill-firefox",
     "postinstall": "wxt prepare",
-    "paket": "bash scripts/paketieren.sh"
+    "paket": "bash scripts/paketieren.sh",
+    "sign:firefox": "web-ext sign --source-dir=Erweiterung/moodle-cloze-autofill-firefox --artifacts-dir=web-ext-artifacts --channel=unlisted"
   },
   "devDependencies": {
     "wxt": "^0.21.4",
