@@ -1,6 +1,6 @@
 # Moodle AI Grader
 
-**Version 3.1.0** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
+**Version 3.1.1** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
 Entwickelt von **T. Henken & A. Spielhoff** · Lizenz **CC BY-SA 4.0**
 
 Bewertet Klausuren mit mehreren Aufgaben in **einer** Moodle-Freitextfrage: legt den
@@ -84,11 +84,11 @@ Genauso wie bei Chrome, nur mit der Adresse `edge://extensions` und dem Ordner
 `moodle-ai-grader-edge`.
 
 **Firefox**
-1. Adresse `about:debugging#/runtime/this-firefox` eingeben.
-2. Auf **„Temporäres Add-on laden…"** klicken und im Ordner `moodle-ai-grader-firefox`
-   eine beliebige Datei auswählen, z. B. `manifest.json`.
-3. Achtung: Diese Installation gilt nur bis zum nächsten Neustart von Firefox. Für eine
-   dauerhafte Installation braucht es eine Signierung durch Mozilla.
+1. Die `.xpi`-Datei im Ordner `moodle-ai-grader-firefox` per Doppelklick öffnen (oder in
+   ein offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
 
 Danach die Moodle-Seite einmal **neu laden** (Taste F5), falls sie schon offen war —
 erst dann wird die neu installierte Erweiterung dort aktiv.

@@ -45,12 +45,11 @@ verwenden.
    Ordner heißt neue ID und damit leere, neu einzustellende Notenskala).
 
 **Firefox:**
-1. `about:debugging#/runtime/this-firefox` öffnen.
-2. **„Temporäres Add-on laden…"** klicken und eine beliebige Datei im
-   Ordner `notenstufen-autofill-firefox` auswählen (z. B. `manifest.json`).
-3. Diese temporäre Installation gilt bis zum nächsten Firefox-Neustart.
-   Für eine dauerhafte Installation braucht Firefox eine Signierung durch
-   Mozilla oder den Entwicklermodus.
+1. Die `.xpi`-Datei im Ordner `notenstufen-autofill-firefox` per Doppelklick öffnen
+   (oder in ein offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
 
 Die Erweiterung braucht keine besonderen Rechte.
 

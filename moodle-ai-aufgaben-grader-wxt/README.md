@@ -2,7 +2,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.8.0 · Lizenz: CC BY-SA 4.0
+Version 1.8.2 · Lizenz: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Grader, Reviewer, Coach — alle für
 > Testfragen) bewertet der Abgabengrader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -145,17 +145,16 @@ Genauso wie bei Chrome, mit `edge://extensions` und dem Ordner
 `moodle-ai-aufgaben-grader-edge`.
 
 **Firefox**
-1. Adresse `about:debugging#/runtime/this-firefox` eingeben.
-2. Auf **„Temporäres Add-on laden…"** klicken und im Ordner
-   `moodle-ai-aufgaben-grader-firefox` eine beliebige Datei auswählen, z. B.
-   `manifest.json`.
-3. Achtung: gilt nur bis zum nächsten Firefox-Neustart — für Dauerbetrieb braucht
-   Firefox eine Signierung durch Mozilla.
+1. Die `.xpi`-Datei im Ordner `moodle-ai-aufgaben-grader-firefox` per Doppelklick öffnen (oder in ein
+   offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
 
 Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 
-**Update:** denselben Ordner mit dem Inhalt der neuen ZIP überschreiben (Name nicht
-ändern) und in den Erweiterungseinstellungen auf „↺ neu laden" klicken.
+**Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
+Version automatisch.
 
 ---
 

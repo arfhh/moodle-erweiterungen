@@ -3,7 +3,7 @@
 Bewertet **kurze Freitextantworten** (ein bis drei Sätze) in Moodles Manueller
 Bewertung — Punkte **und** Sprachfeedback.
 
-Version 1.8.7 · vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
+Version 1.8.13 · vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
 *Notenstufen Autofill* · Lizenz: CC BY-SA 4.0 · A. Spielhoff
 
 ---
@@ -56,16 +56,16 @@ Erweiterung** geladen — das klingt komplizierter, als es ist.
 Genauso wie bei Chrome, mit `edge://extensions` und dem Ordner `moodle-ai-coach-edge`.
 
 **Firefox**
-1. Adresse `about:debugging#/runtime/this-firefox` eingeben.
-2. Auf **„Temporäres Add-on laden…"** klicken und im Ordner `moodle-ai-coach-firefox`
-   eine beliebige Datei auswählen, z. B. `manifest.json`.
-3. Achtung: gilt nur bis zum nächsten Firefox-Neustart — für Dauerbetrieb braucht
-   Firefox eine Signierung durch Mozilla.
+1. Die `.xpi`-Datei im Ordner `moodle-ai-coach-firefox` per Doppelklick öffnen (oder in ein
+   offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
 
 Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 
-**Update:** denselben Ordner mit dem Inhalt der neuen ZIP überschreiben (Name nicht
-ändern) und in den Erweiterungseinstellungen auf „↺ neu laden" klicken.
+**Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
+Version automatisch.
 
 ---
 

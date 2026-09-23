@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 1.5.9 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 1.5.10 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -120,16 +120,16 @@ Erweiterung** geladen — das klingt komplizierter, als es ist.
 Genauso wie bei Chrome, mit `edge://extensions` und dem Ordner `moodle-ai-reviewer-edge`.
 
 **Firefox**
-1. Adresse `about:debugging#/runtime/this-firefox` eingeben.
-2. Auf **„Temporäres Add-on laden…"** klicken und im Ordner `moodle-ai-reviewer-firefox`
-   eine beliebige Datei auswählen, z. B. `manifest.json`.
-3. Achtung: gilt nur bis zum nächsten Firefox-Neustart — für Dauerbetrieb braucht
-   Firefox eine Signierung durch Mozilla.
+1. Die `.xpi`-Datei im Ordner `moodle-ai-reviewer-firefox` per Doppelklick öffnen (oder in ein
+   offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
 
 Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 
-**Update:** denselben Ordner mit dem Inhalt der neuen ZIP überschreiben (Name nicht
-ändern) und in den Erweiterungseinstellungen auf „↺ neu laden" klicken.
+**Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
+Version automatisch.
 
 Der *Moodle AI Grader* bleibt davon unberührt und läuft parallel weiter.
 
