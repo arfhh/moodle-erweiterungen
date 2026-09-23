@@ -1128,7 +1128,7 @@ ${DATEN_PLATZHALTER}`;
   const panel = el('div', 'ce-panel ce-hidden');
   panel.innerHTML = `
     <div class="ce-head">
-      <span class="ce-title">🔎 AI Reviewer ${VERSION}</span>
+      <span class="ce-title">🔎 AI Reviewer <span class="ce-version"></span></span>
       <button class="ce-close" title="Schließen">✕</button>
     </div>
     <div class="ce-tabs">
@@ -1218,6 +1218,7 @@ ${DATEN_PLATZHALTER}`;
   document.body.appendChild(panel);
 
   const $ = (s) => panel.querySelector(s);
+  $('.ce-version').textContent = VERSION;
   const ctx = kontext();
   $('.ce-meta').textContent = [ctx.kurs, ctx.test].filter(Boolean).join(' · ') || 'Manuelle Bewertung';
   // Prozentwert aus dem Feld, auf 1..100 begrenzt. Deutsches Komma erlaubt.

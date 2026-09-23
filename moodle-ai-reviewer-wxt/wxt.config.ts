@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Reviewer',
-    version: '1.5.9',
+    version: '1.5.10',
     description:
       'Findet in Moodles Manueller Bewertung alle frei eingetippten Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die nicht erkannt wurden, trägt von einer KI berechnete Punkte ein und schreibt Feedback zu schwachen Antworten.',
     permissions: ['storage'],
