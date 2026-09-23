@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Aufgaben-Grader',
-    version: '1.8.1',
+    version: '1.8.2',
     description:
       'Laedt anonymisierte Datei-Abgaben aus dem Aufgaben-Modul als ZIP herunter, erzeugt den passenden KI-Auftrags-Prompt und traegt Note und Feedback aus einer CSV-Datei automatisch in Moodle ein.',
     permissions: ['storage'],

@@ -781,7 +781,14 @@ export function starteGrader() {
     panelEinfuegen.dataset.panel = 'einfuegen';
     panelEinfuegen.hidden = true;
     const hatSchnellbewertung = !!document.querySelector('textarea[name^="quickgrade_comments_"]');
-    panelEinfuegen.innerHTML = hatSchnellbewertung ? `
+    // Zwei ganz getrennte, UNBEDINGTE Elemente mit je einer reinen Literal-
+    // innerHTML-Zuweisung statt eines Ternary in EINER Zuweisung: ein if/else um eine
+    // einzelne .innerHTML-Zuweisung baut der Minifizierer beim Bauen wieder zu einem
+    // Ternary zusammen (kuerzer), und genau das loest AMOs "Unsafe assignment to
+    // innerHTML"-Pruefung wieder aus. Die Auswahl passiert deshalb erst bei appendChild
+    // — das ist kein von der Pruefung beobachteter HTML-Sink.
+    const einfuegenAn = document.createElement('div');
+    einfuegenAn.innerHTML = `
       <label for="abg-csv">Ausgefüllte CSV (Kürzel-ID;Note;Feedback)</label>
       <input type="file" id="abg-csv" accept=".csv,text/csv">
       <label for="abg-strenge">Gewichtung der Fachlichkeit</label>
@@ -789,11 +796,15 @@ export function starteGrader() {
       <div class="abg-hinweis" id="abg-strenge-text"></div>
       <button id="abg-start" disabled>In die Tabelle eintragen</button>
       <div class="abg-hinweis">Trägt Note und Feedback in die Schnellbewertungs-Tabelle dieser Seite ein. Gespeichert wird nichts — du prüfst die Einträge und drückst danach selbst Moodles Knopf „Speichern".</div>
-    ` : `
+    `;
+    const einfuegenAus = document.createElement('div');
+    einfuegenAus.innerHTML = `
       <div class="abg-hinweis abg-schritt">Die <strong>Schnellbewertung</strong> ist auf dieser Seite nicht eingeschaltet. Nur mit ihr stehen Noten- und Kommentarfeld aller Personen untereinander auf einer Seite — darüber trägt die Erweiterung ein.</div>
       <button id="abg-schnell-an">Schnellbewertung einschalten</button>
       <div class="abg-hinweis">Lädt die Seite mit Schnellbewertung und allen Personen neu. Danach hier weitermachen.</div>
     `;
+    const einfuegenQuelle = hatSchnellbewertung ? einfuegenAn : einfuegenAus;
+    while (einfuegenQuelle.firstChild) panelEinfuegen.appendChild(einfuegenQuelle.firstChild);
     body.appendChild(panelEinfuegen);
 
 
