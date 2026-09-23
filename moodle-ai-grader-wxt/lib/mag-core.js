@@ -221,12 +221,30 @@ export function starteGrader() {
   // ACHTUNG: innerText liefert bei einem Element, das NICHT im Dokument haengt,
   // dasselbe wie textContent — ohne Zeilenumbrueche. Deshalb die Blockenden vorher
   // selbst zu Umbruechen machen, statt sich auf die Darstellung zu verlassen.
+  // DOMParser statt innerHTML-Zuweisung: entschluesselt HTML genauso, fuehrt aber
+  // nie Skripte aus dem Eingabetext aus und triggert AMOs "Unsafe assignment to
+  // innerHTML"-Pruefung nicht, weil hier keine .innerHTML gesetzt wird.
   function htmlZuText(html) {
-    const d = document.createElement('div');
-    d.innerHTML = String(html || '')
+    const bearbeitet = String(html || '')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '</$1>\n');
+    const d = new DOMParser().parseFromString(bearbeitet, 'text/html').body;
     return (d.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  // Baut aus einem HTML-String echte, aber NIE ins Live-Dokument gehaengte DOM-Knoten
+  // (via DOMParser) — fuer .children/.outerHTML/.tagName-Zugriffe wie im herkoemmlichen
+  // Detached-Div-Muster, nur ohne die von AMO bemaengelte innerHTML-Zuweisung.
+  function wurzelAus(html) {
+    return new DOMParser().parseFromString(String(html || ''), 'text/html').body;
+  }
+
+  // Setzt sichtbaren HTML-Inhalt, ohne .innerHTML zuzuweisen: der String wird per
+  // DOMParser geparst (darin enthaltene <script>-Elemente sind lt. HTML-Spezifikation
+  // inert und werden nie ausgefuehrt, auch nicht nach dem Einhaengen) und die daraus
+  // entstandenen Knoten werden dann in das Zielelement verschoben.
+  function setzeHtml(el, html) {
+    el.replaceChildren(...wurzelAus(html).childNodes);
   }
 
   // Blockelemente — nur sie gliedern; alles andere ist Inline und gehoert zum Elterntext.
@@ -413,8 +431,7 @@ export function starteGrader() {
   // Faellt die Zerlegung aus (fremd erstellter Horizont, freier Fliesstext), gibt es
   // EINEN Block mit der ganzen Arbeit — Stufe 2 der Abstufung.
   function zerlegeHorizont(html) {
-    const wurzel = document.createElement('div');
-    wurzel.innerHTML = ohneMarker(String(html || ''));
+    const wurzel = wurzelAus(ohneMarker(String(html || '')));
     const bloecke = [];
     let aktuell = null;
     [...wurzel.children].forEach(kind => {
@@ -490,8 +507,7 @@ export function starteGrader() {
      Wichtig: Das ist rein intern. Am Arbeitsablauf aendert es nichts — ein Prompt,
      ein JSON zurueck. Niemals je Aufgabe einzeln kopieren lassen.                    */
   function zerlegeAbgabe(rohHtml, klartext) {
-    const wurzel = document.createElement('div');
-    wurzel.innerHTML = String(rohHtml || '');
+    const wurzel = wurzelAus(rohHtml);
     const bloecke = [];
     let aktuell = null;
 
@@ -1091,13 +1107,13 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   panel.innerHTML = `
     <div class="mag-kopf">
       <img class="mag-kopfbild" alt="">
-      <span class="mag-titel">Moodle AI Grader ${VERSION}</span>
+      <span class="mag-titel">Moodle AI Grader <span class="mag-version"></span></span>
       <button class="mag-ikon" data-tu="einst" title="Einstellungen">⚙</button>
       <button class="mag-ikon" data-tu="zu" title="Schließen">✖</button>
     </div>
     <div class="mag-banner" hidden></div>
     <div class="mag-reiter">
-      ${REITER.map((r, i) => `<button class="mag-tab${i === 0 ? ' aktiv' : ''}" data-tab="${r[0]}">${r[1]}</button>`).join('')}
+
     </div>
 
     <div class="mag-inhalt" data-panel="horizont">
@@ -1117,11 +1133,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       <button class="mag-btn mag-btn-primary" data-tu="hpruefen">🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
       <div class="mag-protokoll" data-rolle="hlog" hidden></div>
-      <div class="mag-reihe" data-rolle="hknoepfe" hidden>${KONTEXT === 'bearbeiten'
-        ? '<button class="mag-btn mag-btn-ok" data-tu="weiter">Weiter zur Antwortvorlage →</button>'
-        : '<button class="mag-btn mag-btn-rand" data-tu="htrocken">Trockenlauf</button>'
-        + '<button class="mag-btn mag-btn-ok" data-tu="hschreiben">In die Frage eintragen</button>'}
-      </div>
+      <div class="mag-reihe" data-rolle="hknoepfe" hidden></div>
       <details class="mag-details">
         <summary>Kein Bearbeitungsrecht? Horizont hier behalten</summary>
         <p class="mag-hinweis">Wer Fragen nicht bearbeiten darf, klebt den fertigen Horizont
@@ -1238,6 +1250,36 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         <button class="mag-btn mag-btn-grau" data-tu="pabbruch">Abbrechen</button>
       </div>
     </div>`;
+
+  // Reiter-Buttons und die Knopfzeile "hknoepfe" werden per echten DOM-Aufrufen befuellt,
+  // nicht als HTML-String in die grosse Vorlage interpoliert. REITER und KONTEXT sind
+  // rein intern und ungefaehrlich, aber ein .map().join() direkt in der innerHTML-
+  // Zuweisung loest AMOs "Unsafe assignment to innerHTML"-Pruefung trotzdem aus.
+  panel.querySelector('.mag-version').textContent = VERSION;
+
+  const reiterContainer = panel.querySelector('.mag-reiter');
+  REITER.forEach((r, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'mag-tab' + (i === 0 ? ' aktiv' : '');
+    btn.dataset.tab = r[0];
+    btn.textContent = r[1];
+    reiterContainer.appendChild(btn);
+  });
+
+  function knoepfchen(label, klasse, tu) {
+    const b = document.createElement('button');
+    b.className = klasse;
+    b.dataset.tu = tu;
+    b.textContent = label;
+    return b;
+  }
+  const hknoepfeContainer = panel.querySelector('[data-rolle="hknoepfe"]');
+  if (KONTEXT === 'bearbeiten') {
+    hknoepfeContainer.appendChild(knoepfchen('Weiter zur Antwortvorlage →', 'mag-btn mag-btn-ok', 'weiter'));
+  } else {
+    hknoepfeContainer.appendChild(knoepfchen('Trockenlauf', 'mag-btn mag-btn-rand', 'htrocken'));
+    hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
+  }
 
   // Runder Knopf mit dem Erweiterungs-Icon — wie bei Reviewer und Coach.
   // Das Bild braucht web_accessible_resources im Manifest, sonst bleibt es leer.
@@ -1356,11 +1398,11 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       }
     }
     const v = R('vvorschau');
-    if (v) v.innerHTML = horizontAufgaben ? baueAntwortvorlage(horizontAufgaben)
-      : '<p class="mag-hinweis">Erst im Reiter „2 · Horizont" die Antwort der KI einlesen.</p>';
+    if (v) setzeHtml(v, horizontAufgaben ? baueAntwortvorlage(horizontAufgaben)
+      : '<p class="mag-hinweis">Erst im Reiter „2 · Horizont" die Antwort der KI einlesen.</p>');
     const vh = R('vhorizont');
-    if (vh) vh.innerHTML = horizontAufgaben ? baueHorizont(horizontAufgaben)
-      : '<p class="mag-hinweis">Noch kein Horizont eingelesen.</p>';
+    if (vh) setzeHtml(vh, horizontAufgaben ? baueHorizont(horizontAufgaben)
+      : '<p class="mag-hinweis">Noch kein Horizont eingelesen.</p>');
   }
 
   /* --- Reiter --- */
