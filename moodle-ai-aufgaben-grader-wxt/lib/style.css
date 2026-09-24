@@ -326,3 +326,6 @@
 
 /* Regler fuer die Gewichtung der Fachlichkeit */
 .abg-regler { width: 100%; margin: 2px 0 4px; accent-color: #d3070f; }
+
+/* hidden-Attribut muss gegen display:block der Knopfregeln gewinnen */
+#abg-panel [hidden] { display: none !important; }

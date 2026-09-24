@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Coach',
-    version: '1.9.0',
+    version: '1.9.1',
     description:
       'Bewertet kurze Freitextantworten (2-3 Sätze) in Moodles Manueller Bewertung: liest den Erwartungshorizont aus der Frage, baut daraus einen Bewertungs-Prompt, trägt Punkte und Sprachfeedback zurück. Fehlt der Horizont, erzeugt der Coach den Prompt zum Erstellen und schreibt ihn in die Frage.',
     permissions: ['storage'],

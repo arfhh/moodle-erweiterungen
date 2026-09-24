@@ -1132,7 +1132,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       </div>
       <label>2 · Antwort der KI einfügen</label>
       <textarea data-rolle="hjson" rows="5" placeholder='{ "aufgaben": [ … ] }'></textarea>
-      <button class="mag-btn mag-btn-primary" data-tu="hpruefen">🔍 Prüfen</button>
+      <button class="mag-btn mag-btn-primary" data-tu="hpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
       <div class="mag-protokoll" data-rolle="hlog" hidden></div>
       <div class="mag-reihe" data-rolle="hknoepfe" hidden></div>
@@ -1191,7 +1191,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       </div>
       <label>2 · Antworten der KI einfügen</label>
       <textarea data-rolle="kjson" rows="5" placeholder='{ "bewertungen": [ … ] }'></textarea>
-      <button class="mag-btn mag-btn-primary" data-tu="kpruefen">🔍 Prüfen</button>
+      <button class="mag-btn mag-btn-primary" data-tu="kpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-hinweis" data-rolle="rsabgleich" hidden></div>
       <div class="mag-liste" data-rolle="kliste"></div>
       <div class="mag-protokoll" data-rolle="klog" hidden></div>
@@ -1883,6 +1883,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     const rolle = ev.target && ev.target.dataset && ev.target.dataset.rolle;
     if (rolle === 'hjson') setTimeout(horizontPruefen, 0);
     if (rolle === 'kjson') setTimeout(korrekturPruefen, 0);
+  });
+  // Ohne sichtbaren Prüfen-Knopf (wie Reviewer 1.7.2): geprüft wird beim Einfügen
+  // sofort und nach Handänderungen nach einer kurzen Tipp-Pause.
+  let pruefUhr = null;
+  panel.addEventListener('input', ev => {
+    const rolle = ev.target && ev.target.dataset && ev.target.dataset.rolle;
+    if ((rolle !== 'hjson' && rolle !== 'kjson') || ev.inputType === 'insertFromPaste') return;
+    clearTimeout(pruefUhr);
+    pruefUhr = setTimeout(() => {
+      if (!ev.target.value.trim()) return;
+      (rolle === 'hjson' ? horizontPruefen : korrekturPruefen)();
+    }, 800);
   });
 
   panel.addEventListener('change', ev => {

@@ -173,3 +173,6 @@
 }
 .mag-banner.warnung .mag-btn { width: auto; display: inline-block; margin: 8px 6px 0 0; }
 .mag-banner.warnung .mag-hinweis { color: #8a1f1f; opacity: .85; margin-top: 4px; }
+
+/* hidden-Attribut muss gegen display:block der Knopfregeln gewinnen */
+.mag-panel [hidden] { display: none !important; }

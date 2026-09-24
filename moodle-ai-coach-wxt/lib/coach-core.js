@@ -1112,8 +1112,8 @@ Erst nach „ok":
   NIEMALS in einem JSON-Textfeld verwenden – das ist dasselbe Zeichen wie die
   JSON-Begrenzung und macht das ganze JSON kaputt. Das ist schon mehrfach passiert.
 
-Schreibe darunter: „Kopiere diesen Block in die Erweiterung, Reiter „2 · Eintragen",
-und klicke dort auf „🔍 Prüfen"."
+Schreibe darunter: „Kopiere diesen Block in die Erweiterung, Reiter „2 · Eintragen" —
+die Prüfung startet beim Einfügen von selbst."
 
 ═══════════════════════════════════════════════════════
 SCHRITT 3 – HORIZONT NACHZIEHEN (nur wenn korrigiert wurde)
@@ -1314,7 +1314,7 @@ selbst schreiben — das hängt die Erweiterung an. WICHTIG: Hebst du in einem
 Rückmeldungstext ein Wort hervor, benutze dafür einfache Anführungszeichen ('so'),
 nie gerade doppelte ("so") — die brechen das JSON, weil sie die JSON-Begrenzung
 sind. Satz danach: „Kopiere diesen Block
-in die Erweiterung, Reiter „2 · Eintragen“, und klicke dort auf „🔍 Prüfen“.“
+in die Erweiterung, Reiter „2 · Eintragen“ — die Prüfung startet beim Einfügen von selbst.“
 
 ═══════════════════════════════════════════════════════
 SCHRITT 3 – HORIZONT NACHZIEHEN (nur wenn korrigiert wurde)
@@ -1448,7 +1448,7 @@ ${DATEN_PLATZHALTER}`;
       <label class="co-check"><input type="checkbox" class="co-ki" checked>
         KI-Hinweis ans Feedback anhängen</label>
       <p class="co-kivorschau"></p>
-      <button class="co-pruef">🔍 Prüfen</button>
+      <button class="co-pruef co-hidden">🔍 Prüfen</button>
       <p class="co-pinfo co-hidden"></p>
       <div class="co-schreibknoepfe co-hidden">
         <button class="co-alle">Alle eintragen</button>
@@ -1492,7 +1492,7 @@ ${DATEN_PLATZHALTER}`;
       </details>
       <p class="co-schritt">Schritt 2 — Antwort der KI einfügen</p>
       <textarea class="co-hjson" rows="5" placeholder='{ "horizonte": [ … ] }'></textarea>
-      <button class="co-hpruef">🔍 Prüfen</button>
+      <button class="co-hpruef co-hidden">🔍 Prüfen</button>
       <p class="co-hinfo co-hidden"></p>
       <div class="co-hliste"></div>
       <div class="co-progress3 co-hidden"><div class="co-bar3"></div><span class="co-ptext3"></span></div>
@@ -2104,6 +2104,16 @@ ${DATEN_PLATZHALTER}`;
   // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen.
   $('.co-json').addEventListener('paste', () => setTimeout(() => $('.co-pruef').click(), 0));
   $('.co-hjson').addEventListener('paste', () => setTimeout(() => $('.co-hpruef').click(), 0));
+  // Ohne sichtbaren Prüfen-Knopf (wie Reviewer 1.7.2): geprüft wird beim Einfügen
+  // sofort und nach Handänderungen nach einer kurzen Tipp-Pause.
+  [['.co-json', '.co-pruef'], ['.co-hjson', '.co-hpruef']].forEach(([feld, knopf]) => {
+    let uhr = null;
+    $(feld).addEventListener('input', (ev) => {
+      if (ev.inputType === 'insertFromPaste') return;
+      clearTimeout(uhr);
+      uhr = setTimeout(() => { if ($(feld).value.trim()) $(knopf).click(); }, 800);
+    });
+  });
 
   /* ---- Reiter 3: Erwartungshorizont ---- */
 

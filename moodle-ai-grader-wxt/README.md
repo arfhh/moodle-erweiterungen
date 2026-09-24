@@ -1,6 +1,6 @@
 # Moodle AI Grader
 
-**Version 3.2.0** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
+**Version 3.2.1** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
 Entwickelt von **T. Henken & A. Spielhoff** · Lizenz **CC BY-SA 4.0**
 
 Bewertet Klausuren mit mehreren Aufgaben in **einer** Moodle-Freitextfrage: legt den
@@ -112,7 +112,7 @@ Frage in der Fragensammlung zum **Bearbeiten** öffnen. Rechts erscheint der Kno
 1. Reiter **Erwartungshorizont** → „📋 Prompt kopieren".
 2. In den KI-Chat einfügen. Die KI zerlegt die Aufgabenstellung in Teilaufgaben, schlägt
    Operator, AFB-Stufe, Punkte und den Erwartungshorizont vor und fragt nach, bis es passt.
-3. Den JSON-Block der KI in das Feld einfügen → **🔍 Prüfen**. Je Aufgabe erscheint ein
+3. Den JSON-Block der KI in das Feld einfügen — geprüft wird sofort. Je Aufgabe erscheint ein
    Textfeld; du kannst jeden Horizont noch ändern.
 4. Reiter **Antwortvorlage** → Vorschau ansehen, dann **Horizont + Antwortvorlage eintragen**.
 
@@ -129,7 +129,7 @@ Abgabe verlässlich Aufgabe für Aufgabe zu zerlegen.
 
 1. Reiter **Korrektur**. Die Erweiterung schlägt vor, wie viele Abgaben in einen Durchgang
    passen — hergeleitet aus der tatsächlichen Textlänge, nicht aus einer festen Zahl.
-2. „📋 Prompt kopieren" → in den KI-Chat → Antwort zurück in das Feld → **🔍 Prüfen**.
+2. „📋 Prompt kopieren" → in den KI-Chat → Antwort zurück in das Feld — geprüft wird sofort.
 3. Je Abgabe erscheint eine Zeile mit alter und neuer Punktzahl, den Prozentwerten je
    Aufgabe und der Fehlerdichte. Das Feedback lässt sich vorher noch bearbeiten.
 4. **Alle eintragen.** Danach lädt die Erweiterung die Seite erneut und vergleicht jeden
@@ -188,7 +188,7 @@ Erwartungshorizont selbst** (Meta-Zeilen direkt nach dem Zuständigkeits-Marker,
 Verwaltung — sie gehen nicht in den Prompt). Grund: Bei mehreren Kursen (z. B. Klasse 8,
 9, 10) wird sonst leicht vergessen, die Einstellung vor jeder Korrektur an die richtige
 Klasse anzupassen. Weicht der Rechtschreibungs-Prozentwert im Horizont von der aktuellen
-Einstellung ab, zeigt Reiter „Korrektur" nach „🔍 Prüfen" einen Hinweis mit Umschalter —
+Einstellung ab, zeigt Reiter „Korrektur" nach dem Prüfen einen Hinweis mit Umschalter —
 ohne Umschalten gilt der Horizont-Wert, weil er beim Anlegen des Erwartungshorizonts
 bewusst so gewählt wurde. Die Punkteschritte kommen ohne eigenen Abgleich-Dialog direkt
 aus dem Horizont, weil sie die Note ohnehin kaum verändern.

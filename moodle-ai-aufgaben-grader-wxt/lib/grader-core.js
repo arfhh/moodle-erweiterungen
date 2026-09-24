@@ -851,7 +851,7 @@ export function starteGrader() {
       <div class="abg-hinweis">Der Prompt fragt die KI nach allen Aufgaben dieser Serie und lässt sie gewichten. Die Antwort unten einfügen.</div>
       <label for="abg-m-text">Antwort der KI einfügen (oder fertigen Maßstab)</label>
       <textarea id="abg-m-text" rows="4" placeholder='{"aufgaben":[{"name":"...","gewicht":10,"notiz":"..."}]}'></textarea>
-      <button id="abg-m-lesen">Einlesen</button>
+      <button id="abg-m-lesen" hidden>Einlesen</button>
       <input type="file" id="abg-m-datei" accept=".json,application/json">
       <div class="abg-hinweis">Eine gespeicherte Maßstab-Datei lässt sich hier direkt laden — dann muss die KI nichts neu erstellen.</div>
       <div id="abg-m-tabelle"></div>
@@ -1097,6 +1097,16 @@ export function starteGrader() {
     // Eingefuegt wird fast immer die fertige KI-Antwort: gleich einlesen.
     panelMassstab.querySelector('#abg-m-text').addEventListener('paste', () =>
       setTimeout(() => panelMassstab.querySelector('#abg-m-lesen').click(), 0));
+    // Ohne sichtbaren Einlesen-Knopf (wie Reviewer 1.7.2): eingelesen wird beim
+    // Einfügen sofort und nach Handänderungen nach einer kurzen Tipp-Pause.
+    let lesenUhr = null;
+    panelMassstab.querySelector('#abg-m-text').addEventListener('input', (ev) => {
+      if (ev.inputType === 'insertFromPaste') return;
+      clearTimeout(lesenUhr);
+      lesenUhr = setTimeout(() => {
+        if (ev.target.value.trim()) panelMassstab.querySelector('#abg-m-lesen').click();
+      }, 800);
+    });
 
     panelDownload.querySelector('#abg-download').addEventListener('click', () => {
       if (!kontextGueltig()) { logZeile(body, KONTEXT_TEXT, 'fehler'); return; }
