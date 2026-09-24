@@ -80,6 +80,69 @@ export function starteReviewer() {
     return new DOMParser().parseFromString(await r.text(), 'text/html');
   }
 
+  const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Seit 1.7.0 (wie im Coach seit 1.8.5–1.8.8): Hat eine Zufallsfrage viele Versuche,
+  // liefert DIESELBE Bewertungsseiten-URL bei jedem Laden eine ANDERE Teilmenge der
+  // Versuche (live gesehen am 24.09.2026, Beschriftung-3/-4/-5 im Kurztest 1.1.5:
+  // einmal fehlte 2498221, beim naechsten Mal war genau der da und andere fehlten).
+  // Ein einzelner fetchDoc() ist deshalb nie verlaesslich vollstaendig. Alles, was
+  // Versuche dieser Seite liest oder schreibt, laedt mehrfach und SAMMELT.
+  const NACHLADEN = 8;          // Ladeversuche je Seite, 500 ms Abstand
+  const SCHREIB_RUNDEN = 3;     // komplette Durchlaeufe fuer noch fehlende Eintraege
+
+  const versuchsId = (q) => ((q.id || '').match(/^question-(\d+)-\d+$/) || [])[1] || q.id;
+
+  // Liest die .que-Bloecke einer Bewertungsseite ueber mehrere Ladevorgaenge.
+  // `erwartet` = Versuchszahl aus der Uebersicht; ist sie unbekannt, wird geladen,
+  // bis zwei Ladevorgaenge hintereinander nichts Neues mehr bringen.
+  async function versucheSammeln(url, erwartet) {
+    const gesehen = new Set(), bloecke = [];
+    let ohneNeues = 0;
+    for (let i = 0; i < NACHLADEN; i++) {
+      if (i > 0) await warte(500);
+      const doc = await fetchDoc(url);
+      let neu = 0;
+      doc.querySelectorAll('div.que').forEach((q) => {
+        const k = versuchsId(q);
+        if (k && !gesehen.has(k)) { gesehen.add(k); bloecke.push(q); neu++; }
+      });
+      if (erwartet != null && bloecke.length >= erwartet) break;
+      ohneNeues = neu ? 0 : ohneNeues + 1;
+      if (erwartet == null && ohneNeues >= 2) break;
+    }
+    return bloecke;
+  }
+
+  // Formularfelder einer Bewertungsseite ueber mehrere Ladevorgaenge sammeln, bis
+  // alle benoetigten Felder beisammen sind. Das versteckte Feld `qubaids` listet die
+  // Versuche, die Moodle beim Speichern ueberhaupt verarbeitet — es wird deshalb
+  // VEREINIGT statt vom ersten Ladevorgang uebernommen, sonst blieben Versuche aus
+  // spaeteren Ladevorgaengen trotz gesetzter Felder unverarbeitet.
+  async function formularSammeln(url, benoetigt) {
+    let form = null;
+    const felder = new URLSearchParams();
+    const qubaids = new Set();
+    for (let i = 0; i < NACHLADEN; i++) {
+      if (i > 0) await warte(500);
+      const doc = await fetchDoc(url);
+      const f = doc.querySelector('form#manualgradingform');
+      if (!f) throw new Error('Bewertungsformular nicht gefunden');
+      form = f;
+      const neu = formularFelder(f);
+      [...new Set(neu.keys())].forEach((name) => {
+        if (name === 'qubaids') {
+          neu.get(name).split(',').map((x) => x.trim()).filter(Boolean).forEach((x) => qubaids.add(x));
+        } else if (!felder.has(name)) {
+          neu.getAll(name).forEach((v) => felder.append(name, v));
+        }
+      });
+      if (benoetigt.every((n) => felder.has(n))) break;
+    }
+    if (qubaids.size) felder.set('qubaids', [...qubaids].join(','));
+    return { form, felder };
+  }
+
   // filter: 'autograded' = nur noch nicht manuell bewertete Versuche (fuers Auslesen),
   //         'all'        = alle Versuche der Frage (fuers Eintragen und Gegenpruefen —
   //                        ein manuell bewerteter Versuch verlaesst 'autograded' sofort).
@@ -503,7 +566,7 @@ Erst nach „ok" gibst du das JSON aus – nichts davor.
 - Keine Punktzahlen, kein „neu", kein „markfeld". Das ergänzt die Erweiterung.
 
 Schreibe unter das JSON einen Satz: „Kopiere diesen Block in die Erweiterung, Reiter
-„2 · Eintragen", und klicke dort auf „🔍 Prüfen"." 
+„2 · Eintragen" — die Prüfung startet beim Einfügen von selbst." 
 
 [FEEDBACK_BLOCK]
 ═══════════════════════════════════════════════════════
@@ -620,7 +683,7 @@ Erst nach „ok“ ausgeben:
 Ein Eintrag je Versuch (nicht je Lücke), „qubaid“/„slot“ unverändert übernehmen,
 „prozent“ eine der sechs Stufen. Versuche mit 0 % bei allen Lücken weglassen. Keine
 Punktzahlen, kein „neu“, kein „markfeld“. Satz danach: „Kopiere diesen Block in die
-Erweiterung, Reiter „2 · Eintragen“, und klicke dort auf „🔍 Prüfen“.“
+Erweiterung, Reiter „2 · Eintragen“ — die Prüfung startet beim Einfügen von selbst.“
 
 [FEEDBACK_BLOCK]
 ═══════════════════════════════════════════════════════
@@ -694,6 +757,9 @@ ${DATEN_PLATZHALTER}`;
     const heads = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());
     const iName = heads.findIndex((h) => /Fragename/i.test(h));
     const iAuto = heads.findIndex((h) => /Automatisch/i.test(h));
+    // Gesamtzahl der Versuche je Frage (Spalte „Summe"/„Gesamt", sonst die letzte).
+    let iSumme = heads.findIndex((h) => /Summe|Gesamt|Total/i.test(h));
+    if (iSumme < 0) iSumme = heads.length - 1;
 
     return [...table.querySelectorAll('tbody tr')]
       .map((tr) => {
@@ -710,7 +776,8 @@ ${DATEN_PLATZHALTER}`;
         return {
           name: iName >= 0 && cells[iName] ? cells[iName].textContent.trim() : '(ohne Namen)',
           slot, qid,
-          auto: iAuto >= 0 && cells[iAuto] ? parseInt(cells[iAuto].textContent, 10) || 0 : 0
+          auto: iAuto >= 0 && cells[iAuto] ? parseInt(cells[iAuto].textContent, 10) || 0 : 0,
+          summe: iSumme >= 0 && cells[iSumme] ? (parseInt(cells[iSumme].textContent, 10) || null) : null
         };
       })
       .filter((r) => r.slot && r.qid && r.auto > 0);
@@ -727,12 +794,12 @@ ${DATEN_PLATZHALTER}`;
     return ist > (lueckenwert * nichtFalsch) + 0.005;   // Toleranz gegen Rundung
   }
 
-  function werteSeiteAus(doc, zeile, mitFeedback, schwelleProzent, mitBereits) {
+  function werteSeiteAus(bloecke, zeile, mitFeedback, schwelleProzent, mitBereits) {
     const funde = [], feedback = [];
     let uebersprungen = 0;
     let text = null, anzahlLuecken = 0, maxPunkte = null, artFrage = null;
 
-    doc.querySelectorAll('div.que').forEach((q) => {
+    bloecke.forEach((q) => {
       const qubaid = (q.id.match(/question-(\d+)-/) || [])[1] || null;
       const antwortfelder = [...q.querySelectorAll('input[name$="_answer"]')].filter(istTextfeld);
       const gaps = antwortfelder.map((i) => ({
@@ -807,8 +874,14 @@ ${DATEN_PLATZHALTER}`;
 
     const holen = async (z) => {
       try {
-        const doc = await fetchDoc(seiteUrl(z.slot, z.qid, mitFeedback ? 'all' : 'autograded'));
-        const res = werteSeiteAus(doc, z, mitFeedback, schwelleProzent, mitBereits);
+        const erwartet = mitFeedback ? z.summe : z.auto;
+        const bloecke = await versucheSammeln(
+          seiteUrl(z.slot, z.qid, mitFeedback ? 'all' : 'autograded'), erwartet);
+        if (erwartet != null && bloecke.length < erwartet) {
+          fehler.push(`${z.name}: nur ${bloecke.length} von ${erwartet} Versuchen geladen `
+            + '— bitte noch einmal auslesen');
+        }
+        const res = werteSeiteAus(bloecke, z, mitFeedback, schwelleProzent, mitBereits);
         uebersprungen += res.uebersprungen || 0;
         if (res.text && !fragen[z.name]) {
           fragen[z.name] = {
@@ -831,9 +904,9 @@ ${DATEN_PLATZHALTER}`;
     };
 
     const q = [...zeilen];
-    await Promise.all(Array.from({ length: 5 }, async () => {
-      while (q.length) await holen(q.shift());
-    }));
+    // Nacheinander statt 5 parallel: gleichzeitige Anfragen an report.php fuer
+    // verschiedene Fragen stoeren sich offenbar (im Coach 1.8.7 so gefunden).
+    while (q.length) await holen(q.shift());
 
     const erste = (e) => (e.luecken && e.luecken[0]) || { nr: 0, antwort: '' };
     const nachFrage = (a, b) => {
@@ -937,103 +1010,108 @@ ${DATEN_PLATZHALTER}`;
          + (e.qubaid ? '#question-' + e.qubaid + '-' + e.slot : '');
   }
 
-  async function seiteSchreiben(gruppe, onLog, kiHinweis, zweiterVersuch) {
-    const url = seiteUrl(gruppe.slot, gruppe.qid, 'all');
-    const doc = await fetchDoc(url);
-    const form = doc.querySelector('form#manualgradingform');
-    if (!form) throw new Error('Bewertungsformular nicht gefunden');
-
-    let felder = formularFelder(form);
-
-    // Direkt nach einem Speichern liefert Moodle die Seite gelegentlich ohne das
-    // Eingabefeld des zuletzt geschriebenen Versuchs. Einmal kurz warten und neu
-    // laden loest das; erst wenn das Feld dann immer noch fehlt, ist es ein Fehler.
-    const fehlt = () => [...gruppe.marks.map((e) => e.markfeld),
-                         ...gruppe.comments.map((e) => e.kommentarfeld)]
-                        .some((f) => !felder.has(f));
-    if (fehlt() && !zweiterVersuch) {
-      await new Promise((r) => setTimeout(r, 900));
-      const doc2 = await fetchDoc(url);
-      const form2 = doc2.querySelector('form#manualgradingform');
-      if (form2) felder = formularFelder(form2);
+  function kommentarHtml(e, kiHinweis) {
+    let html = e.text.trim();
+    if (!/<[a-z]/i.test(html)) html = '<p>' + html.replace(/\n+/g, '</p><p>') + '</p>';
+    if (kiHinweis) {
+      const satz = (optionen.kiHinweisText || KI_HINWEIS_STANDARD).trim();
+      if (satz) html += '<p><em><small>' + escapeHtml(satz) + '</small></em></p>';
     }
+    return html;
+  }
 
+  const kommentarDrin = (f, e) => {
+    const drin = f ? f.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+    const soll = e.text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 20);
+    return !!(drin && soll && drin.includes(soll));
+  };
+
+  // Schreibt eine Fragenseite. `still` = Fehlschlaege nicht protokollieren, weil noch
+  // eine weitere Runde folgt — gemeldet wird nur, was am Ende wirklich fehlt.
+  // Rueckgabe: bestaetigte Anzahl und die Eintraege, die noch nicht angekommen sind.
+  async function seiteSchreiben(gruppe, onLog, kiHinweis, still) {
+    const url = seiteUrl(gruppe.slot, gruppe.qid, 'all');
+    const benoetigt = [...gruppe.marks.map((e) => e.markfeld),
+                       ...gruppe.comments.map((e) => e.kommentarfeld)];
+    const { form, felder } = await formularSammeln(url, benoetigt);
+
+    const offenMarks = [], offenKomm = [];
     const gesetzteMarks = [], gesetzteKommentare = [];
-    let uebersprungen = 0;
+    const melde = (t, link) => { if (!still) onLog(t, link); };
 
     gruppe.marks.forEach((e) => {
       if (!felder.has(e.markfeld)) {
-        uebersprungen++;
-        onLog(`✗ Punktefeld nicht auf der Seite — ${e.frage}: ${e.antwort || ''} `
+        offenMarks.push(e);
+        melde(`✗ Punktefeld nicht auf der Seite — ${e.frage}: ${e.antwort || ''} `
             + `(${e.markfeld})`, versuchLink(e));
         return;
       }
       felder.set(e.markfeld, komma(e.neu));
       gesetzteMarks.push(e);
     });
-
     gruppe.comments.forEach((e) => {
       if (!felder.has(e.kommentarfeld)) {
-        uebersprungen++;
-        onLog(`✗ Kommentarfeld nicht auf der Seite — ${e.frage} (${e.kommentarfeld})`,
+        offenKomm.push(e);
+        melde(`✗ Kommentarfeld nicht auf der Seite — ${e.frage} (${e.kommentarfeld})`,
               versuchLink(e));
         return;
       }
-      let html = e.text.trim();
-      if (!/<[a-z]/i.test(html)) html = '<p>' + html.replace(/\n+/g, '</p><p>') + '</p>';
-      if (kiHinweis) {
-        const satz = (optionen.kiHinweisText || KI_HINWEIS_STANDARD).trim();
-        if (satz) html += '<p><em><small>' + escapeHtml(satz) + '</small></em></p>';
-      }
-      felder.set(e.kommentarfeld, html);
+      felder.set(e.kommentarfeld, kommentarHtml(e, kiHinweis));
       gesetzteKommentare.push(e);
     });
 
-    if (!gesetzteMarks.length && !gesetzteKommentare.length) {
-      return { ok: 0, fehler: gruppe.marks.length + gruppe.comments.length };
+    let ok = 0;
+    if (gesetzteMarks.length || gesetzteKommentare.length) {
+      const submit = [...form.elements].find((f) => f.type === 'submit' && f.name);
+      if (submit) felder.set(submit.name, submit.value);
+      const action = new URL(form.getAttribute('action') || url, url).href;
+      const antwort = await fetch(action, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: felder.toString()
+      });
+      if (!antwort.ok) throw new Error('HTTP ' + antwort.status + ' beim Speichern');
+
+      // Gegenprobe ueber mehrere Ladevorgaenge: Ein Versuch, der beim ersten
+      // Nachladen nicht angezeigt wird, ist deshalb noch nicht fehlgeschlagen.
+      let restM = gesetzteMarks.slice(), restK = gesetzteKommentare.slice();
+      const zuletzt = new Map();
+      for (let i = 0; i < NACHLADEN && (restM.length || restK.length); i++) {
+        if (i > 0) await warte(500);
+        const kontrolle = await fetchDoc(url);
+        restM = restM.filter((e) => {
+          const f = kontrolle.querySelector(`input[name="${CSS.escape(e.markfeld)}"]`);
+          if (!f) return true;
+          const ist = num(f.value);
+          zuletzt.set(e, ist);
+          if (ist !== null && Math.abs(ist - e.neu) < 0.005) {
+            ok++; onLog(`✓ ${e.frage} — ${e.antwort || ''} → ${komma(e.neu)}`, versuchLink(e));
+            return false;
+          }
+          return true;
+        });
+        restK = restK.filter((e) => {
+          const f = kontrolle.querySelector(`textarea[name="${CSS.escape(e.kommentarfeld)}"]`);
+          if (!f) return true;
+          if (kommentarDrin(f, e)) {
+            ok++; markiereKommentiert(e.kommentarfeld);
+            onLog(`💬 ${e.frage} — Feedback eingetragen`); return false;
+          }
+          return true;
+        });
+      }
+      restM.forEach((e) => {
+        offenMarks.push(e);
+        const ist = zuletzt.has(e) ? zuletzt.get(e) : undefined;
+        melde(`✗ ${e.frage} — ${e.antwort || ''} — steht auf `
+          + `${ist == null ? 'keinem Wert' : komma(ist)} statt ${komma(e.neu)}`, versuchLink(e));
+      });
+      restK.forEach((e) => {
+        offenKomm.push(e);
+        melde(`✗ ${e.frage} — Feedback nicht angekommen`, versuchLink(e));
+      });
     }
-
-    const submit = [...form.elements].find((f) => f.type === 'submit' && f.name);
-    if (submit) felder.set(submit.name, submit.value);
-
-    const action = new URL(form.getAttribute('action') || url, url).href;
-    const antwort = await fetch(action, {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: felder.toString()
-    });
-    if (!antwort.ok) throw new Error('HTTP ' + antwort.status + ' beim Speichern');
-
-    // Gegenprobe
-    const kontrolle = await fetchDoc(url);
-    let ok = 0, fehler = 0;
-
-    gesetzteMarks.forEach((e) => {
-      const f = kontrolle.querySelector(`input[name="${CSS.escape(e.markfeld)}"]`);
-      const ist = f ? num(f.value) : null;
-      if (ist !== null && Math.abs(ist - e.neu) < 0.005) {
-        ok++; onLog(`✓ ${e.frage} — ${e.antwort || ''} → ${komma(e.neu)}`, versuchLink(e));
-      } else {
-        fehler++;
-        onLog(`✗ ${e.frage} — ${e.antwort || ''} — steht auf `
-            + `${ist == null ? 'keinem Wert' : komma(ist)} statt ${komma(e.neu)}`, versuchLink(e));
-      }
-    });
-
-    gesetzteKommentare.forEach((e) => {
-      const f = kontrolle.querySelector(`textarea[name="${CSS.escape(e.kommentarfeld)}"]`);
-      const drin = f ? f.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-      const soll = e.text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 30);
-      if (drin && soll && drin.includes(soll.slice(0, 20))) {
-        ok++; onLog(`💬 ${e.frage} — Feedback eingetragen`);
-      } else {
-        fehler++; onLog(`✗ ${e.frage} — Feedback nicht angekommen`, versuchLink(e));
-      }
-    });
-
-    // Uebersprungene Felder sind Fehler, keine Randnotiz. Frueher fielen sie weder
-    // in "ok" noch in "fehler" und die Kopfzeile meldete faelschlich 0 fehlgeschlagen.
-    return { ok, fehler: fehler + uebersprungen };
+    return { ok, offenMarks, offenKomm };
   }
 
   // Gruppiert Punkte und Kommentare nach Fragenseite — eine Seite, ein POST.
@@ -1049,7 +1127,7 @@ ${DATEN_PLATZHALTER}`;
     return [...map.values()];
   }
 
-  // Trockenlauf: jede Fragenseite laden und pruefen, ob wirklich jedes Punkte- und
+  // Trockenlauf: jede Fragenseite (mehrfach) laden und pruefen, ob jedes Punkte- und
   // Kommentarfeld dort steht — aber NICHTS absenden. Faengt den Fall ab, dass das
   // JSON zu einem anderen Auslese-Durchlauf gehoert, bevor irgendetwas geschrieben ist.
   async function trockenlauf(punkte, kommentare, onLog, onProgress) {
@@ -1057,10 +1135,8 @@ ${DATEN_PLATZHALTER}`;
     let ok = 0, fehler = 0, fertig = 0;
     for (const g of gruppen) {
       try {
-        const doc = await fetchDoc(seiteUrl(g.slot, g.qid, 'all'));
-        const form = doc.querySelector('form#manualgradingform');
-        if (!form) throw new Error('Bewertungsformular nicht gefunden');
-        const felder = formularFelder(form);
+        const benoetigt = [...g.marks.map((e) => e.markfeld), ...g.comments.map((e) => e.kommentarfeld)];
+        const { felder } = await formularSammeln(seiteUrl(g.slot, g.qid, 'all'), benoetigt);
         g.marks.forEach((e) => {
           if (felder.has(e.markfeld)) ok++;
           else { fehler++; onLog(`✗ Punktefeld fehlt — ${e.frage}: ${e.antwort || ''}`, versuchLink(e)); }
@@ -1079,21 +1155,37 @@ ${DATEN_PLATZHALTER}`;
     return { ok, fehler, gruppen: gruppen.length, trocken: true };
   }
 
+  // Bis zu SCHREIB_RUNDEN Durchlaeufe: Runde 2 und 3 schreiben NUR noch, was vorher
+  // nicht bestaetigt wurde. Doppelt schreiben ist unschaedlich — Punkte sind absolute
+  // Werte aus dem Auslesen, kein Zuschlag auf den aktuellen Stand.
   async function eintragen(punkte, kommentare, kiHinweis, onLog, onProgress) {
-    const gruppen = gruppieren(punkte, kommentare);
-    let ok = 0, fehler = 0, fertig = 0;
-    for (const g of gruppen) {
-      try {
-        const r = await seiteSchreiben(g, onLog, kiHinweis);
-        ok += r.ok; fehler += r.fehler;
-      } catch (e) {
-        fehler += g.marks.length + g.comments.length;
-        onLog(`✗ Frage ${(g.marks[0] || g.comments[0] || {}).frage}: ${e.message}`);
+    let restP = punkte || [], restK = kommentare || [];
+    let ok = 0, seiten = 0;
+    for (let runde = 1; runde <= SCHREIB_RUNDEN && (restP.length || restK.length); runde++) {
+      const letzte = runde === SCHREIB_RUNDEN;
+      if (runde > 1) {
+        onLog(`↻ Runde ${runde}/${SCHREIB_RUNDEN}: ${restP.length + restK.length} `
+          + 'noch nicht bestätigte Einträge erneut …');
+        await warte(1500);
       }
-      fertig++;
-      onProgress(fertig, gruppen.length);
+      const gruppen = gruppieren(restP, restK);
+      if (runde === 1) seiten = gruppen.length;
+      const naechsteP = [], naechsteK = [];
+      let fertig = 0;
+      for (const g of gruppen) {
+        try {
+          const r = await seiteSchreiben(g, onLog, kiHinweis, !letzte);
+          ok += r.ok; naechsteP.push(...r.offenMarks); naechsteK.push(...r.offenKomm);
+        } catch (e) {
+          naechsteP.push(...g.marks); naechsteK.push(...g.comments);
+          if (letzte) onLog(`✗ Frage ${(g.marks[0] || g.comments[0] || {}).frage}: ${e.message}`);
+        }
+        fertig++;
+        onProgress(fertig, gruppen.length);
+      }
+      restP = naechsteP; restK = naechsteK;
     }
-    return { ok, fehler, gruppen: gruppen.length };
+    return { ok, fehler: restP.length + restK.length, gruppen: seiten };
   }
 
   /* ================= Kontext ================= */
@@ -1169,7 +1261,7 @@ ${DATEN_PLATZHALTER}`;
       <label class="ce-check"><input type="checkbox" class="ce-ki" checked>
         KI-Hinweis ans Feedback anhängen</label>
       <p class="ce-kivorschau"></p>
-      <button class="ce-pruef">🔍 Prüfen</button>
+      <button class="ce-pruef ce-hidden">🔍 Prüfen</button>
       <p class="ce-pinfo ce-hidden"></p>
       <div class="ce-progress2 ce-hidden"><div class="ce-bar2"></div><span class="ce-ptext2"></span></div>
       <p class="ce-abschluss ce-hidden"></p>
@@ -1442,7 +1534,7 @@ ${DATEN_PLATZHALTER}`;
       });
 
       if (res.fehler.length) {
-        $('.ce-error').textContent = res.fehler.length + ' Frage(n) konnten nicht geladen werden.';
+        $('.ce-error').textContent = '⚠ ' + res.fehler.join(' · ');
         $('.ce-error').classList.remove('ce-hidden');
       }
       $('.ce-result').classList.remove('ce-hidden');
@@ -1524,6 +1616,14 @@ ${DATEN_PLATZHALTER}`;
   // rechnen unzuverlaessig und orientieren sich am naechstliegenden Anker (meist max).
   // Auch markfeld und kommentarfeld werden hier nachgeschlagen statt abgetippt.
 
+  // Bestaetigt eingetragenes Feedback in der gespeicherten Ernte vermerken. Sonst
+  // meldet die Abdeckungspruefung beim naechsten Einfuegen (etwa eines kleinen
+  // Nachtrags-JSON) alle schon versorgten Versuche erneut als „ohne Feedback-Text".
+  function markiereKommentiert(feld) {
+    if (!ausgabe || !Array.isArray(ausgabe.feedback)) return;
+    const f = ausgabe.feedback.find((x) => x.kommentarfeld === feld);
+    if (f && !f.hat_kommentar) { f.hat_kommentar = true; ernteSichern(); }
+  }
   function ernteIndex() {
     if (!ausgabe) return null;
     const funde = new Map(), rueckmeldungen = new Map();
@@ -1607,7 +1707,7 @@ ${DATEN_PLATZHALTER}`;
       return {
         frage: f.frage, qid: f.qid, slot: String(f.slot), qubaid: String(e.qubaid || f.qubaid || ''),
         kommentarfeld: f.kommentarfeld, text: e.text,
-        leereLuecken: (f.luecken || []).filter((l) => !String(l.antwort || '').trim()).length
+        leereLuecken: (f.luecken || []).filter((l) => !String(l.antwort || '').trim()).map((l) => l.nr)
       };
     });
   }
@@ -1659,8 +1759,14 @@ ${DATEN_PLATZHALTER}`;
 
       // Nennt ein Feedback-Text nicht alle leeren Luecken des Versuchs, fehlt der
       // Schuelerin genau die Angabe, wegen der sie das Feedback bekommt.
-      const lueckenwarnung = kListe.filter((k) =>
-        k.leereLuecken > 1 && !/Lücke\s*2/i.test(k.text)).length;
+      // Geprueft wird jede leere Luecke einzeln ueber ihre Nummer („Lücke 4"). Frueher
+      // stand hier ein Test auf „Lücke 2" — der schlug falsch an, wenn die leeren
+      // Luecken zufaellig 4 und 8 waren (1.1.5-Beschriftung-5 am 24.09.2026).
+      const lueckenwarnung = kListe.filter((k) => {
+        const leer = Array.isArray(k.leereLuecken) ? k.leereLuecken : [];
+        return leer.length > 1 && leer.some((nr) =>
+          !new RegExp('Lücke(?:n)?\\s*' + nr + '(?!\\d)', 'i').test(k.text));
+      }).length;
 
       // Abdeckung: Ein Sprachmodell fasst leicht mehrere Versuche derselben Frage
       // zu einem Kommentar zusammen. Dann geht ein Schueler leer aus, ohne dass es
@@ -1670,7 +1776,9 @@ ${DATEN_PLATZHALTER}`;
       if (idxAbdeckung && kListe.length) {
         const versorgt = new Set(kListe.map((k) => k.kommentarfeld));
         idxAbdeckung.rueckmeldungen.forEach((f) => {
-          if (f.kommentarfeld && !versorgt.has(f.kommentarfeld)) fehlendeRueckmeldungen.push(f);
+          if (f.kommentarfeld && !f.hat_kommentar && !versorgt.has(f.kommentarfeld)) {
+            fehlendeRueckmeldungen.push(f);
+          }
         });
       }
       offeneRueckmeldungen = fehlendeRueckmeldungen;
@@ -1694,12 +1802,13 @@ ${DATEN_PLATZHALTER}`;
       if (fehlendeRueckmeldungen.length) {
         zusatz.push(`⚠ ${fehlendeRueckmeldungen.length} von `
                   + `${(idxAbdeckung ? idxAbdeckung.rueckmeldungen.size : 0)} `
-                  + 'Feedback-Kandidaten haben keinen Text bekommen — siehe unten. '
+                  + 'Feedback-Kandidaten haben keinen Text bekommen — Liste unten. '
                   + 'Eintragen kannst du trotzdem.');
       }
       if (lueckenwarnung > 0) {
         zusatz.push(`⚠ ${lueckenwarnung} Feedback-Text nennt nur eine Lücke, obwohl der `
-                  + 'Versuch mehrere leere Lücken hat. Bitte vor dem Eintragen ansehen.');
+                  + 'Versuch mehrere leere Lücken hat — nicht jede leere Lücke wird mit '
+                  + 'ihrer Nummer genannt. Bitte vor dem Eintragen ansehen.');
       }
       info.textContent = `✓ ${teile.join(' und ')} auf ${seiten} Fragenseiten — bereit. `
         + zusatz.join(' ');
@@ -1727,8 +1836,14 @@ ${DATEN_PLATZHALTER}`;
       const altF = panel.querySelector('.ce-fehlend');
       if (altF) altF.remove();
       if (fehlendeRueckmeldungen.length) {
-        const box = el('div', 'ce-fehlend');
-        box.appendChild(el('div', 'ce-fehlendkopf', 'Ohne Feedback-Text geblieben:'));
+        // Eingeklappt: die Liste kann lang sein und soll nicht vom Eintragen ablenken.
+        const box = el('details', 'ce-fehlend');
+        box.appendChild(el('summary', 'ce-fehlendkopf',
+          `${fehlendeRueckmeldungen.length} Versuch(e) ohne Feedback-Text — anzeigen`));
+        box.appendChild(el('div', 'ce-logzeile',
+          'Für diese Versuche steht im eingefügten JSON kein Feedback. „Nachforderung '
+          + 'kopieren" legt eine fertige Bitte an die KI in die Zwischenablage — im '
+          + 'KI-Chat einfügen, das neue JSON hier einfügen, eintragen.'));
         fehlendeRueckmeldungen.forEach((f) => {
           const z = el('a', 'ce-logzeile');
           const href = versuchLink(f);
@@ -1843,4 +1958,12 @@ ${DATEN_PLATZHALTER}`;
 
   // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen, ein Klick weniger.
   $('.ce-json').addEventListener('paste', () => setTimeout(() => $('.ce-pruef').click(), 0));
+  // Seit 1.7.2 ohne sichtbaren Prüfen-Knopf: Er lief beim Einfügen ohnehin schon, ein
+  // zweiter Klick zeigte dasselbe Ergebnis und wirkte wie „tut nichts". Wer den Text
+  // von Hand ändert, bekommt die Prüfung nach einer kurzen Tipp-Pause automatisch.
+  let pruefUhr = null;
+  $('.ce-json').addEventListener('input', () => {
+    clearTimeout(pruefUhr);
+    pruefUhr = setTimeout(() => { if ($('.ce-json').value.trim()) $('.ce-pruef').click(); }, 800);
+  });
 }
