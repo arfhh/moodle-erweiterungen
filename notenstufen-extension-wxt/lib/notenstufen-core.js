@@ -1,4 +1,4 @@
-/* Moodle Notenstufen Autofill — Kern, aus content.js v2.7.0 uebernommen (WXT-Umzug 17.09.2026).
+/* Moodle Notenstufen Autofill — Kern, aus content.js v2.8.0 uebernommen (WXT-Umzug 17.09.2026).
  * Aenderungen beim Umzug, wie bei Coach und Aufgaben-Grader:
  *  1. chrome.* -> browser.*        (Polyfill, Chrome UND Firefox)
  *  2. IIFE/Top-Level-Code -> export function starteNotenstufen()
@@ -489,8 +489,11 @@ function baueUI() {
     panel.innerHTML = `
       <div class="not-head">
         <img class="not-head-icon" alt="" />
-        <strong>Notenstufen Autofill</strong>
-        <span class="not-close" title="Einklappen">–</span>
+        <div class="not-titelblock">
+          <span><strong>Notenstufen Autofill</strong> <span class="not-version"></span></span>
+          <span class="not-untertitel">Notenstufen des Kurses ausfüllen</span>
+        </div>
+        <span class="not-close" title="Schließen">✕</span>
       </div>
       <div class="not-body">
         <p class="not-hinweis">Werte gelten nur für diesen Browser und bleiben, bis sie hier geändert werden.</p>
@@ -513,6 +516,8 @@ function baueUI() {
         <button type="button" class="not-eintragen">⚡ Notenstufen eintragen</button>
       </div>
     `;
+    try { panel.querySelector('.not-version').textContent = browser.runtime.getManifest().version; }
+    catch (e) { /* ohne Versionsanzeige weiter */ }
     document.body.appendChild(panel);
 
     const toggle = document.createElement('button');

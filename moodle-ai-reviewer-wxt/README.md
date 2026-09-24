@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 1.5.10 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 1.6.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -356,14 +356,11 @@ Auswertung an anderer Stelle passiert.
    vergebenen Prozenten. Ein Klick auf die Zeile öffnet den Versuch in Moodle.
    Einträge, bei denen alle Lücken 0 % bekommen haben, werden dabei weggelassen und
    gezählt — sie würden in Moodle nichts ändern.
-2. **„Trockenlauf — nichts speichern"** klicken. Die Erweiterung lädt jede betroffene
-   Fragenseite und prüft, ob wirklich jedes Punkte- und Kommentarfeld dort steht —
-   ohne irgendetwas abzusenden. Das fängt den häufigsten Fehler ab: ein JSON, das zu
-   einem anderen Auslese-Durchlauf gehört.
-3. Meldet der Trockenlauf „Alles vorhanden", **„Alle eintragen"**.
+2. **„Alle eintragen"**. Jeder Eintrag wird nach dem Speichern gegengeprüft; was nicht
+   ankommt, steht im Protokoll. (Der frühere Trockenlauf ist seit 1.6.0 entfallen.)
 
 Gab es keinen einzigen Fehler, meldet die Erweiterung „✓ Fertig" und schließt sich
-nach vier Sekunden selbst. Gab es Fehler, bleibt sie offen — sonst verschwände genau
+nach drei Sekunden selbst. Gab es Fehler, bleibt sie offen — sonst verschwände genau
 die Zeile, die man lesen müsste. Ein Klick ins Panel bricht das Schließen ab.
 
 Nach jedem Speichern lädt die Erweiterung die Seite erneut und **vergleicht den

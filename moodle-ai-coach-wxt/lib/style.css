@@ -16,7 +16,7 @@
 
 .co-panel {
   position: fixed; top: 80px; right: 76px; z-index: 99997;
-  width: 430px; max-height: calc(100vh - 110px);
+  width: 420px; max-height: calc(100vh - 110px);
   display: flex; flex-direction: column;
   background: #fff; border: 1px solid #cbd5e1; border-radius: 10px;
   box-shadow: 0 6px 24px rgba(0,0,0,.22);
@@ -29,6 +29,8 @@
   border-radius: 9px 9px 0 0;
 }
 .co-title { font-weight: 600; }
+.co-titelblock { display: flex; flex-direction: column; min-width: 0; }
+.co-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
 .co-title { font-family: inherit; }
 .co-close { background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; }
 

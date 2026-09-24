@@ -63,12 +63,12 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Grader** · [Quelltext](moodle-ai-grader-wxt/) | 3.1.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip)** | **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
-| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.5.9 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| **Moodle AI Coach** · [Quelltext](moodle-ai-coach-wxt/) | 1.8.11 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip)** | **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
-| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.7.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
-| **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
-| **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.7.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
+| **Moodle AI Grader** · [Quelltext](moodle-ai-grader-wxt/) | 3.2.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip)** | **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
+| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.6.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
+| **Moodle AI Coach** · [Quelltext](moodle-ai-coach-wxt/) | 1.9.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip)** | **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
+| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.9.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
+| **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
+| **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
 
 ### Was du nach der Installation konkret siehst
 
@@ -178,8 +178,8 @@ Erwartungshorizonts, wer zuständig ist — `[moodle-ai-coach]` oder `[moodle-ai
 Der Coach überspringt fremde Fragen, der Grader weist nur darauf hin. Ausführlich steht
 das im Abschnitt „Wer ist zuständig" in beiden READMEs.
 
-**Fang mit einer Frage an.** Alle Erweiterungen, die schreiben, haben einen
-Trockenlauf oder eine Vorschau. Nutze sie beim ersten Mal — und sieh in Moodle nach,
+**Fang mit einer Frage an.** Alle Erweiterungen, die schreiben, zeigen
+vor dem Eintragen eine Prüfung. Nutze sie beim ersten Mal — und sieh in Moodle nach,
 ob wirklich das drinsteht, was du erwartet hast.
 
 **Wer schreibt, hinterlässt Spuren.** Punkte und Kommentare, die eine Erweiterung

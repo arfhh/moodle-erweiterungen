@@ -29,7 +29,7 @@
   top: 150px;
   right: 76px;
   z-index: 99999;
-  width: 430px;
+  width: 420px;
   max-height: calc(100vh - 180px);
   display: flex;
   flex-direction: column;
@@ -52,6 +52,8 @@
   border-radius: 9px 9px 0 0;
 }
 .ca-title { font-weight: 600; }
+.ca-titelblock { display: flex; flex-direction: column; min-width: 0; }
+.ca-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
 .ca-close {
   background: none; border: none; color: #fff;
   font-size: 16px; cursor: pointer; line-height: 1;

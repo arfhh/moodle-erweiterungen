@@ -1398,7 +1398,10 @@ ${DATEN_PLATZHALTER}`;
   const panel = el('div', 'co-panel co-hidden');
   panel.innerHTML = `
     <div class="co-head">
-      <span class="co-title">AI Coach <span class="co-version"></span></span>
+      <div class="co-titelblock">
+        <span class="co-title">AI Coach <span class="co-version"></span></span>
+        <span class="co-untertitel">(Zufalls-)Freitexte als Kurztest bewerten</span>
+      </div>
       <button class="co-close" title="Schließen">✕</button>
     </div>
     <div class="co-tabs">
@@ -1448,7 +1451,6 @@ ${DATEN_PLATZHALTER}`;
       <button class="co-pruef">🔍 Prüfen</button>
       <p class="co-pinfo co-hidden"></p>
       <div class="co-schreibknoepfe co-hidden">
-        <button class="co-probe">Trockenlauf — nichts speichern</button>
         <button class="co-alle">Alle eintragen</button>
       </div>
       <div class="co-progress2 co-hidden"><div class="co-bar2"></div><span class="co-ptext2"></span></div>
@@ -1497,7 +1499,6 @@ ${DATEN_PLATZHALTER}`;
       <p class="co-habschluss co-hidden"></p>
       <div class="co-hlog co-hidden"></div>
       <div class="co-hknoepfe co-hidden">
-        <button class="co-hprobe">Trockenlauf — nichts speichern</button>
         <button class="co-hschreib">In die Aufgaben eintragen</button>
       </div>
     </div>
@@ -1574,7 +1575,7 @@ ${DATEN_PLATZHALTER}`;
   // einen Reiter, wird der Sprung abgebrochen, statt ihm die Ansicht wegzuziehen.
   let reiterAutoTimer = null;
   function reiterAutoAbbrechen() {
-    if (reiterAutoTimer) { clearTimeout(reiterAutoTimer); reiterAutoTimer = null; }
+    if (reiterAutoTimer) { clearTimeout(reiterAutoTimer); clearInterval(reiterAutoTimer); reiterAutoTimer = null; }
   }
   panel.querySelectorAll('.co-tab').forEach((t) => {
     t.addEventListener('click', () => { reiterAutoAbbrechen(); reiterZeigen(t.dataset.tab); });
@@ -1905,28 +1906,33 @@ ${DATEN_PLATZHALTER}`;
     return kopie;
   }
 
-  function quittung(kl, urText) {
-    const b = $(kl); b.textContent = '✓ kopiert';
-    setTimeout(() => (b.textContent = urText), 2000);
+  // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): Kopieren quittiert,
+  // zaehlt 3 s herunter und springt dann dorthin, wo eingefuegt wird. Ein Klick
+  // auf einen Reiter bricht den Sprung ab (reiterAutoAbbrechen).
+  function quittung(kl, urText, ziel, feldKlasse) {
+    const b = $(kl);
+    reiterAutoAbbrechen();
+    let rest = 3;
+    b.textContent = `✓ Kopiert — weiter in ${rest} s`;
+    reiterAutoTimer = setInterval(() => {
+      rest--;
+      if (rest > 0) { b.textContent = `✓ Kopiert — weiter in ${rest} s`; return; }
+      reiterAutoAbbrechen();
+      b.textContent = urText;
+      if (ziel) reiterZeigen(ziel);
+      const feld = feldKlasse && $(feldKlasse);
+      if (feld) { feld.focus(); feld.scrollIntoView({ block: 'nearest' }); }
+    }, 1000);
   }
   $('.co-copy').addEventListener('click', async () => {
     if (!ausgabe) return;
     await inZwischenablage(bauePrompt(nurMitHorizont(ausgabe)));
-    quittung('.co-copy', '📋 Prompt + Daten kopieren');
-    // Erst nach erfolgreichem Kopieren wechselt der Reiter — schlaegt writeText fehl,
-    // bleibt die Ansicht stehen und die Fehlermeldung sichtbar.
-    reiterAutoAbbrechen();
-    reiterAutoTimer = setTimeout(() => {
-      reiterAutoTimer = null;
-      reiterZeigen('eintrag');
-      const feld = $('.co-json');
-      if (feld) feld.focus();
-    }, 1300);
+    quittung('.co-copy', '📋 Prompt + Daten kopieren', 'eintrag', '.co-json');
   });
   $('.co-copy2').addEventListener('click', async () => {
     if (!ausgabe) return;
     await inZwischenablage(JSON.stringify(nurMitHorizont(ausgabe), null, 1));
-    quittung('.co-copy2', '📋 nur JSON');
+    quittung('.co-copy2', '📋 nur JSON', 'eintrag', '.co-json');
   });
 
   /* ---- Reiter 2: Eintragen ---- */
@@ -2034,7 +2040,7 @@ ${DATEN_PLATZHALTER}`;
     log.innerHTML = ''; log.classList.remove('co-hidden');
     abschluss.classList.add('co-hidden');
     $('.co-progress2').classList.remove('co-hidden');
-    $('.co-probe').disabled = $('.co-alle').disabled = true;
+    $('.co-alle').disabled = true;
     $('.co-progress2').scrollIntoView({ block: 'nearest' });
     const schreibLog = logSchreiber(log);
     const fortschritt = (f, g) => {
@@ -2070,7 +2076,7 @@ ${DATEN_PLATZHALTER}`;
         // damit das Ende sichtbar ist. Mit Fehlern bleibt es offen — sonst verschwände
         // genau die Zeile, die man lesen muss. Ein Klick ins Panel bricht ab.
         if (!trocken) {
-          let rest = 4;
+          let rest = 3;
           const zaehler = setInterval(() => {
             rest--;
             abschluss.textContent =
@@ -2091,11 +2097,13 @@ ${DATEN_PLATZHALTER}`;
       schreibLog('✗ Abbruch: ' + e.message);
     } finally {
       $('.co-progress2').classList.add('co-hidden');
-      $('.co-probe').disabled = $('.co-alle').disabled = false;
+      $('.co-alle').disabled = false;
     }
   }
-  $('.co-probe').addEventListener('click', () => schreibLauf(true));
   $('.co-alle').addEventListener('click', () => schreibLauf(false));
+  // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen.
+  $('.co-json').addEventListener('paste', () => setTimeout(() => $('.co-pruef').click(), 0));
+  $('.co-hjson').addEventListener('paste', () => setTimeout(() => $('.co-hpruef').click(), 0));
 
   /* ---- Reiter 3: Erwartungshorizont ---- */
 
@@ -2143,7 +2151,7 @@ ${DATEN_PLATZHALTER}`;
         + 'wenn du die vorhandenen neu schreiben lassen willst.'; return; }
     await inZwischenablage(baueHorizontPrompt(auswahl));
     const urText = $('.co-hcopy').textContent;
-    quittung('.co-hcopy', urText);
+    quittung('.co-hcopy', urText, 'horizont', '.co-hjson');
   });
 
   $('.co-hpruef').addEventListener('click', () => {
@@ -2201,7 +2209,7 @@ ${DATEN_PLATZHALTER}`;
     log.innerHTML = ''; log.classList.remove('co-hidden');
     abschluss.classList.add('co-hidden');
     $('.co-progress3').classList.remove('co-hidden');
-    $('.co-hprobe').disabled = $('.co-hschreib').disabled = true;
+    $('.co-hschreib').disabled = true;
     $('.co-progress3').scrollIntoView({ block: 'nearest' });
     const schreibLog = logSchreiber(log);
     let ok = 0, fehler = 0, fertig = 0;
@@ -2233,12 +2241,16 @@ ${DATEN_PLATZHALTER}`;
           : `✓ ${ok} Horizonte stehen jetzt in den Fragen. Führe Reiter 1 noch einmal aus, `
             + 'dann sind sie im Bewertungs-Prompt dabei.');
       abschluss.scrollIntoView({ block: 'nearest' });
+      if (!fehler && !trocken) {
+        abschluss.textContent += ' Weiter zu Reiter 1 in 3 s …';
+        reiterAutoAbbrechen();
+        reiterAutoTimer = setTimeout(() => { reiterAutoTimer = null; reiterZeigen('lesen'); }, 3000);
+      }
     } finally {
       $('.co-progress3').classList.add('co-hidden');
-      $('.co-hprobe').disabled = $('.co-hschreib').disabled = false;
+      $('.co-hschreib').disabled = false;
     }
   }
-  $('.co-hprobe').addEventListener('click', () => horizontLauf(true));
   $('.co-hschreib').addEventListener('click', () => {
     // Das schreibt in die Fragensammlung, nicht in eine Bewertung. Einmal nachfragen.
     const n = horizonte ? horizonte.length : 0;

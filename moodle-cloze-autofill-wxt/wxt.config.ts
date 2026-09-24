@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle Cloze Autofill',
-    version: '2.0.5',
+    version: '2.1.0',
     description:
       'Trägt neue Antwortvarianten in die Cloze-Lücken der Fragensammlung ein: erzeugt einen Prompt aus den vorhandenen Lücken und setzt das von der KI gelieferte JSON chirurgisch in die Fragen ein.',
     permissions: ['storage'],

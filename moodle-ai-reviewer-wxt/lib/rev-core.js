@@ -1128,7 +1128,10 @@ ${DATEN_PLATZHALTER}`;
   const panel = el('div', 'ce-panel ce-hidden');
   panel.innerHTML = `
     <div class="ce-head">
-      <span class="ce-title">🔎 AI Reviewer <span class="ce-version"></span></span>
+      <div class="ce-titelblock">
+        <span class="ce-title">🔎 AI Reviewer <span class="ce-version"></span></span>
+        <span class="ce-untertitel">Unerkannte automatische Antworten nachbewerten</span>
+      </div>
       <button class="ce-close" title="Schließen">✕</button>
     </div>
     <div class="ce-tabs">
@@ -1172,7 +1175,6 @@ ${DATEN_PLATZHALTER}`;
       <p class="ce-abschluss ce-hidden"></p>
       <div class="ce-log ce-hidden"></div>
       <div class="ce-schreibknoepfe ce-hidden">
-        <button class="ce-probe">Trockenlauf — nichts speichern</button>
         <button class="ce-alle">Alle eintragen</button>
       </div>
     </div>
@@ -1341,7 +1343,12 @@ ${DATEN_PLATZHALTER}`;
   $('.ce-close').addEventListener('click', () => panel.classList.add('ce-hidden'));
 
   panel.querySelectorAll('.ce-tab').forEach((t) => {
-    t.addEventListener('click', () => {
+    t.addEventListener('click', (ev) => {
+      if (ev.isTrusted && typeof weiterUhr !== 'undefined' && weiterUhr) {
+        clearInterval(weiterUhr); weiterUhr = null;
+        $('.ce-copy').textContent = '📋 Prompt + Daten kopieren';
+        $('.ce-copy2').textContent = '📋 nur JSON';
+      }
       panel.querySelectorAll('.ce-tab').forEach((x) => x.classList.toggle('ce-aktiv', x === t));
       panel.querySelectorAll('[data-panel]').forEach((p) =>
         p.classList.toggle('ce-hidden', p.dataset.panel !== t.dataset.tab));
@@ -1470,10 +1477,27 @@ ${DATEN_PLATZHALTER}`;
          + 'mehrere zur selben Frage gehören:\n\n' + zeilen.join('\n');
   }
 
+  // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): Kopieren quittiert,
+  // zaehlt 3 s herunter und wechselt dann selbst in Reiter 2 — der Cursor steht
+  // im Einfuegefeld. Ein Klick auf einen anderen Reiter bricht den Wechsel ab.
+  let weiterUhr = null;
+  function reiterZeigen(name) {
+    const t = panel.querySelector('.ce-tab[data-tab="' + name + '"]');
+    if (t) t.click();
+  }
   function quittung(knopfKlasse, urText) {
     const b = $(knopfKlasse);
-    b.textContent = '✓ kopiert';
-    setTimeout(() => (b.textContent = urText), 2000);
+    clearInterval(weiterUhr);
+    let rest = 3;
+    b.textContent = `✓ Kopiert — weiter in ${rest} s`;
+    weiterUhr = setInterval(() => {
+      rest--;
+      if (rest > 0) { b.textContent = `✓ Kopiert — weiter in ${rest} s`; return; }
+      clearInterval(weiterUhr); weiterUhr = null;
+      b.textContent = urText;
+      reiterZeigen('eintrag');
+      $('.ce-json').focus();
+    }, 1000);
   }
 
   // Fertiger Prompt samt Daten — funktioniert in jedem KI-Chat, ohne Vorwissen.
@@ -1740,7 +1764,7 @@ ${DATEN_PLATZHALTER}`;
     log.innerHTML = ''; log.classList.remove('ce-hidden');
     abschluss.classList.add('ce-hidden');
     $('.ce-progress2').classList.remove('ce-hidden');
-    $('.ce-probe').disabled = $('.ce-alle').disabled = true;
+    $('.ce-alle').disabled = true;
     // Das Protokoll steht ueber den Knoepfen, aber ausserhalb des Sichtfelds, wenn
     // das Panel gescrollt ist. Ohne diesen Sprung sieht man nichts und glaubt,
     // der Klick habe nichts bewirkt.
@@ -1787,7 +1811,7 @@ ${DATEN_PLATZHALTER}`;
         // damit das Ende sichtbar ist. Mit Fehlern bleibt es offen — sonst
         // verschwaende genau die Zeile, die man lesen muss.
         if (!trocken) {
-          let rest = 4;
+          let rest = 3;
           const zaehler = setInterval(() => {
             rest--;
             abschluss.textContent =
@@ -1811,10 +1835,12 @@ ${DATEN_PLATZHALTER}`;
       abschluss.textContent = '⚠ Abgebrochen: ' + e.message;
     } finally {
       $('.ce-progress2').classList.add('ce-hidden');
-      $('.ce-probe').disabled = $('.ce-alle').disabled = false;
+      $('.ce-alle').disabled = false;
     }
   }
 
-  $('.ce-probe').addEventListener('click', () => schreibLauf(true));
   $('.ce-alle').addEventListener('click', () => schreibLauf(false));
+
+  // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen, ein Klick weniger.
+  $('.ce-json').addEventListener('paste', () => setTimeout(() => $('.ce-pruef').click(), 0));
 }

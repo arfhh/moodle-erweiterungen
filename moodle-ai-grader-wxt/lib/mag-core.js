@@ -1100,16 +1100,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   // Auf der Bewertungsseite steht die Korrektur vorn; Horizont und Einstellungen
   // sind dort Nacharbeit und bekommen keine Nummer.
   const REITER = KONTEXT === 'bearbeiten'
-    ? [['einst', '1 · Einstellungen'], ['horizont', '2 · Horizont'], ['vorlage', '3 · Vorlage']]
-    : [['korrektur', 'Korrektur'], ['horizont', 'Horizont'], ['einst', 'Einstellungen']];
+    ? [['horizont', '1 · Horizont'], ['vorlage', '2 · Vorlage'], ['einst', '⚙']]
+    : [['korrektur', '1 · Korrektur'], ['horizont', '2 · Horizont'], ['einst', '⚙']];
 
   const panel = el('div', 'mag-panel');
   panel.innerHTML = `
     <div class="mag-kopf">
       <img class="mag-kopfbild" alt="">
-      <span class="mag-titel">Moodle AI Grader <span class="mag-version"></span></span>
-      <button class="mag-ikon" data-tu="einst" title="Einstellungen">⚙</button>
-      <button class="mag-ikon" data-tu="zu" title="Schließen">✖</button>
+      <div class="mag-titelblock">
+        <span class="mag-titel">Moodle AI Grader <span class="mag-version"></span></span>
+        <span class="mag-untertitel">Klausuren bewerten mit Feedback</span>
+      </div>
+      <button class="mag-ikon" data-tu="zu" title="Schließen">✕</button>
     </div>
     <div class="mag-banner" hidden></div>
     <div class="mag-reiter">
@@ -1159,7 +1161,6 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       </details>
       <div class="mag-protokoll" data-rolle="vlog" hidden></div>
       <div class="mag-reihe">
-        <button class="mag-btn mag-btn-rand" data-tu="vtrocken">Trockenlauf</button>
         <button class="mag-btn mag-btn-ok" data-tu="beides">Beides eintragen</button>
       </div>
       <p class="mag-hinweis">Erwartungshorizont und Antwortvorlage gehen in <strong>einem</strong>
@@ -1195,7 +1196,6 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       <div class="mag-liste" data-rolle="kliste"></div>
       <div class="mag-protokoll" data-rolle="klog" hidden></div>
       <div class="mag-reihe" data-rolle="keintragen" hidden>
-        <button class="mag-btn mag-btn-rand" data-tu="ktrocken">Trockenlauf</button>
         <button class="mag-btn mag-btn-ok" data-tu="kschreiben">Alle eintragen</button>
       </div>
     </div>
@@ -1277,7 +1277,6 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   if (KONTEXT === 'bearbeiten') {
     hknoepfeContainer.appendChild(knoepfchen('Weiter zur Antwortvorlage →', 'mag-btn mag-btn-ok', 'weiter'));
   } else {
-    hknoepfeContainer.appendChild(knoepfchen('Trockenlauf', 'mag-btn mag-btn-rand', 'htrocken'));
     hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
   }
 
@@ -1399,7 +1398,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     }
     const v = R('vvorschau');
     if (v) setzeHtml(v, horizontAufgaben ? baueAntwortvorlage(horizontAufgaben)
-      : '<p class="mag-hinweis">Erst im Reiter „2 · Horizont" die Antwort der KI einlesen.</p>');
+      : '<p class="mag-hinweis">Erst im Reiter „Horizont" die Antwort der KI einlesen.</p>');
     const vh = R('vhorizont');
     if (vh) setzeHtml(vh, horizontAufgaben ? baueHorizont(horizontAufgaben)
       : '<p class="mag-hinweis">Noch kein Horizont eingelesen.</p>');
@@ -1417,9 +1416,26 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   }
 
   /* --- Zwischenablage --- */
-  function kopiere(text, rolle, meldung) {
+  // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): nach dem Kopieren
+  // 3 s Countdown, dann steht der Cursor im Einfuegefeld (feldRolle).
+  let weiterUhr = null;
+  function kopiere(text, rolle, meldung, feldRolle) {
     navigator.clipboard.writeText(text)
-      .then(() => status(rolle, meldung + '  (' + text.length.toLocaleString('de-DE') + ' Zeichen)'))
+      .then(() => {
+        const basis = meldung + '  (' + text.length.toLocaleString('de-DE') + ' Zeichen)';
+        status(rolle, basis);
+        if (!feldRolle || !R(feldRolle)) return;
+        clearInterval(weiterUhr);
+        let rest = 3;
+        status(rolle, basis + ' — weiter in ' + rest + ' s');
+        weiterUhr = setInterval(() => {
+          rest--;
+          if (rest > 0) return status(rolle, basis + ' — weiter in ' + rest + ' s');
+          clearInterval(weiterUhr); weiterUhr = null;
+          status(rolle, basis + ' — jetzt die Antwort der KI einfügen.');
+          const f = R(feldRolle); f.focus(); f.scrollIntoView({ block: 'nearest' });
+        }, 1000);
+      })
       .catch(() => status(rolle, 'Kopieren fehlgeschlagen — Text bitte von Hand markieren.', true));
   }
 
@@ -1486,7 +1502,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     const sRolle = imVorlagenReiter ? 'vstatus' : 'hstatus';
     if (!horizontAufgaben) {
       return status(sRolle, 'Es liegt noch kein geprüfter Horizont vor — '
-        + 'bitte erst im Reiter „2 · Horizont" die Antwort der KI einlesen und prüfen.', true);
+        + 'bitte erst im Reiter „Horizont" die Antwort der KI einlesen und prüfen.', true);
     }
     const ziel = frageBearbeitenUrl();
     if (!ziel) return status(sRolle, 'Die Adresse der Frage lässt sich hier nicht bestimmen — '
@@ -1597,9 +1613,9 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         teile === 1 ? '📋 Prompt kopieren' : '📋 Teil ' + (t + 1) + ' (Abgabe ' + (von + 1) + '–' + bis + ')');
       b.addEventListener('click', () => {
         if (!horizont) return status('kstatus',
-          'Kein Erwartungshorizont — bitte erst den Reiter „Erwartungshorizont" verwenden.', true);
+          'Kein Erwartungshorizont — bitte erst den Reiter „Horizont" verwenden.', true);
         kopiere(baueKorrekturPrompt(abgaben.slice(von, bis), horizont, t + 1, teile),
-          'kstatus', teile === 1 ? 'Prompt kopiert.' : 'Teil ' + (t + 1) + ' kopiert.');
+          'kstatus', teile === 1 ? 'Prompt kopiert.' : 'Teil ' + (t + 1) + ' kopiert.', 'kjson');
       });
       box.appendChild(b);
     }
@@ -1716,8 +1732,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         // die man lesen müsste.
         status('kstatus', r.fehler + ' fehlgeschlagen — Protokoll lesen.', true);
       } else {
-        status('kstatus', r.ok + ' Bewertungen eingetragen und gegengeprüft.');
-        setTimeout(() => { if (!panel.matches(':hover')) location.reload(); }, 4000);
+        // Einheitlich: ohne Fehler schliesst das Fenster nach 3 s, danach laedt die
+        // Seite neu, damit die eingetragenen Punkte sichtbar sind.
+        let rest = 3;
+        const basis = r.ok + ' Bewertungen eingetragen und gegengeprüft.';
+        status('kstatus', basis + ' Fenster schließt in ' + rest + ' s …');
+        const uhr = setInterval(() => {
+          rest--;
+          if (rest > 0) return status('kstatus', basis + ' Fenster schließt in ' + rest + ' s …');
+          clearInterval(uhr);
+          AKTIONEN.zu();
+          location.reload();
+        }, 1000);
       }
     } catch (e) {
       log('✗ ' + e.message);
@@ -1736,10 +1762,9 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     zueinst: () => { formularAusEinstellungen(); zeige('einst'); },
     zu:     () => { panel.classList.remove('offen'); knopf.classList.remove('versteckt'); },
 
-    hprompt: () => kopiere(baueHorizontPrompt(), 'hstatus', 'Prompt kopiert.'),
+    hprompt: () => kopiere(baueHorizontPrompt(), 'hstatus', 'Prompt kopiert.', 'hjson'),
     hedit:   () => oeffnePromptEditor('horizont'),
     hpruefen: horizontPruefen,
-    htrocken: () => horizontSchreiben(true),
     hschreiben: () => horizontSchreiben(false),
     hlokalsichern: () => {
       E.horizontLokal = R('hlokal').value.trim();
@@ -1751,18 +1776,16 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     },
 
     weiter:  () => zeige('vorlage'),
-    vtrocken: () => horizontSchreiben(true),
     beides:  () => horizontSchreiben(false),
     kopierh: () => horizontAufgaben
       ? kopiere(baueHorizont(horizontAufgaben), 'vstatus', 'Horizont-HTML kopiert.')
-      : status('vstatus', 'Erst im Reiter „Erwartungshorizont" die KI-Antwort einlesen.', true),
+      : status('vstatus', 'Erst im Reiter „Horizont" die KI-Antwort einlesen.', true),
     kopierv: () => horizontAufgaben
       ? kopiere(baueAntwortvorlage(horizontAufgaben), 'vstatus', 'Antwortvorlage kopiert.')
-      : status('vstatus', 'Erst im Reiter „Erwartungshorizont" die KI-Antwort einlesen.', true),
+      : status('vstatus', 'Erst im Reiter „Horizont" die KI-Antwort einlesen.', true),
 
     kedit:    () => oeffnePromptEditor('korrektur'),
     kpruefen: korrekturPruefen,
-    ktrocken: () => korrekturEintragen(true),
     kschreiben: () => korrekturEintragen(false),
     krohdaten: () => kopiere(JSON.stringify({
       stand: new Date().toLocaleString('de-DE'),
@@ -1847,9 +1870,19 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
   panel.addEventListener('click', ev => {
     const tab = ev.target.closest('.mag-tab');
-    if (tab) return zeige(tab.dataset.tab);
+    if (tab) {
+      if (weiterUhr) { clearInterval(weiterUhr); weiterUhr = null; }
+      return tab.dataset.tab === 'einst' ? AKTIONEN.einst() : zeige(tab.dataset.tab);
+    }
     const tu = ev.target.closest('[data-tu]');
     if (tu && AKTIONEN[tu.dataset.tu]) { ev.preventDefault(); AKTIONEN[tu.dataset.tu](); }
+  });
+
+  // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen, ein Klick weniger.
+  panel.addEventListener('paste', ev => {
+    const rolle = ev.target && ev.target.dataset && ev.target.dataset.rolle;
+    if (rolle === 'hjson') setTimeout(horizontPruefen, 0);
+    if (rolle === 'kjson') setTimeout(korrekturPruefen, 0);
   });
 
   panel.addEventListener('change', ev => {

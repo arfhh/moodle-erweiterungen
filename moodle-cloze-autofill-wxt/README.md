@@ -3,7 +3,7 @@
 **Trägt neue Antwortvarianten in die Cloze-Lücken der Fragensammlung ein**, statt sie
 Frage für Frage von Hand nachzupflegen.
 
-Version 2.0.5 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
+Version 2.1.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > ⚠️ **Nur für die eigene Fragensammlung.** Die Erweiterung schreibt direkt in die
 > Fragen der Sammlung, in der sie läuft. Wer eine **eigene** Sammlung pflegt, kann

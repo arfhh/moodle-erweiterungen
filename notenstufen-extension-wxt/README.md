@@ -1,6 +1,6 @@
 # Moodle Notenstufen Autofill
 
-*Version 2.7.0 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
+*Version 2.8.0 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
 Eine kleine Browser-Erweiterung, die die Notenstufen-Tabelle eines
 Moodle-Kurses automatisch ausfüllt, statt sie Zeile für Zeile per

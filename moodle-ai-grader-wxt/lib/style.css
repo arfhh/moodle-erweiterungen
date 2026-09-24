@@ -41,7 +41,9 @@
   background: #1d4ed8; color: #fff; padding: 8px 10px;
 }
 .mag-kopfbild { width: 20px; height: 20px; border-radius: 4px; display: block; flex: 0 0 20px; }
-.mag-titel { flex: 1; font-weight: 700; font-size: 13px; }
+.mag-titelblock { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mag-titel { font-weight: 700; font-size: 13px; }
+.mag-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
 .mag-ikon {
   background: none; border: none; color: #fff; cursor: pointer;
   font-size: 14px; padding: 2px 4px; border-radius: 4px; line-height: 1;

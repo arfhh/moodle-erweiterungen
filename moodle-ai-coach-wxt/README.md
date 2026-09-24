@@ -3,7 +3,7 @@
 Bewertet **kurze Freitextantworten** (ein bis drei Sätze) in Moodles Manueller
 Bewertung — Punkte **und** Sprachfeedback.
 
-Version 1.8.13 · vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
+Version 1.9.0 · vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
 *Notenstufen Autofill* · Lizenz: CC BY-SA 4.0 · A. Spielhoff
 
 ---
@@ -185,14 +185,13 @@ ohne `slot=`. Dort blenden weder Grader noch Reviewer etwas ein.
 je nachdem ob ein Horizont hinterlegt ist. Der Prompt wird **nur aus den ✓-Fragen**
 gebaut. Ein halb vorbereiteter Test lässt sich so trotzdem auswerten.
 
-**Reiter 2 · Eintragen** — JSON der KI einfügen, „🔍 Prüfen", **Trockenlauf**
-(lädt alle Seiten und prüft die Felder, ohne etwas zu speichern), dann
-„Alle eintragen". Nach jedem Speichern wird der tatsächlich gespeicherte Wert
+**Reiter 2 · Eintragen** — JSON der KI einfügen, „🔍 Prüfen" (läuft beim Einfügen von selbst),
+dann „Alle eintragen". Nach jedem Speichern wird der tatsächlich gespeicherte Wert
 gegengeprüft.
 
 **Reiter 3 · Horizont** — trägt eine rote Zahl, wenn irgendwo einer fehlt. Prompt
 kopieren, im KI-Chat erstellen lassen, JSON einfügen, jeden Text bei Bedarf noch
-ändern, Trockenlauf, dann „In die Aufgaben eintragen". Vor dem Schreiben kommt eine
+ändern, dann „In die Aufgaben eintragen". Vor dem Schreiben kommt eine
 Rückfrage — das ändert die **Fragensammlung**, nicht nur eine Bewertung.
 
 ## Die Rechnung

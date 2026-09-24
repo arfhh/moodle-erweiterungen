@@ -8,7 +8,7 @@
   top: 80px;
   right: 16px;
   z-index: 999999;
-  width: 400px;
+  width: 420px;
   max-width: calc(100vw - 32px);
   background: #fff;
   border: 2px solid #d3070f;
@@ -39,6 +39,9 @@
 #abg-panel .abg-head strong {
   font-size: 13px;
 }
+
+#abg-panel .abg-titelblock { display: flex; flex-direction: column; min-width: 0; }
+#abg-panel .abg-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
 
 #abg-panel .abg-version {
   font-size: 11px;

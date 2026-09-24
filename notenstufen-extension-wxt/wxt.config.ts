@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle Notenstufen Autofill',
-    version: '2.7.0',
+    version: '2.8.0',
     description:
       'Füllt die Notenstufen-Tabelle in Moodle-Kursen automatisch aus - in jeder Moodle-Installation, auch in einem Unterverzeichnis. Werte im Panel auf der Seite individuell anpassbar.',
     permissions: ['storage'],

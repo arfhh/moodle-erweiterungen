@@ -686,9 +686,11 @@ export function starteGrader() {
     wrap.id = 'abg-panel';
     wrap.innerHTML = `
       <div class="abg-head">
-        <strong>Moodle AI Aufgaben-Grader</strong>
-        <span class="abg-version"></span>
-        <span class="abg-close" title="Einklappen">–</span>
+        <div class="abg-titelblock">
+          <span><strong>Moodle AI Aufgaben-Grader</strong> <span class="abg-version"></span></span>
+          <span class="abg-untertitel">PDF-Abgaben anonym bewerten</span>
+        </div>
+        <span class="abg-close" title="Schließen">✕</span>
       </div>
       <div class="abg-body"></div>
     `;
@@ -747,6 +749,8 @@ export function starteGrader() {
   // =======================================================================
   // Übersichtstabelle (action=grading) — der einzige Ort, an dem die Erweiterung wirkt
   // =======================================================================
+  let weiterUhr = null;
+  let weiterNachGlobal = null;
   async function modusUebersicht(body) {
     const courseKey = ermittleCourseKey();
 
@@ -755,10 +759,10 @@ export function starteGrader() {
     const reiter = document.createElement('div');
     reiter.className = 'abg-reiter';
     reiter.innerHTML = `
-      <button class="abg-tab abg-aktiv" data-tab="download">Download</button>
-      <button class="abg-tab" data-tab="massstab">Maßstab</button>
-      <button class="abg-tab" data-tab="einfuegen">Einfügen</button>
-      <button class="abg-tab" data-tab="einstellungen">Einstellungen</button>
+      <button class="abg-tab" data-tab="massstab">1 · Maßstab</button>
+      <button class="abg-tab abg-aktiv" data-tab="download">2 · Download</button>
+      <button class="abg-tab" data-tab="einfuegen">3 · Eintragen</button>
+      <button class="abg-tab" data-tab="einstellungen" title="Einstellungen">⚙</button>
     `;
     body.appendChild(reiter);
 
@@ -973,7 +977,10 @@ export function starteGrader() {
         setTimeout(() => { knopf.textContent = alt; }, 1500);
       };
       navigator.clipboard.writeText(feld.value)
-        .then(() => quittieren('Kopiert'))
+        .then(() => weiterNach(knopf, 'Prompt erzeugen und kopieren', () => {
+          const antwort = panelMassstab.querySelector('#abg-m-text');
+          antwort.focus(); antwort.scrollIntoView({ block: 'nearest' });
+        }))
         .catch(() => {
           // Ohne Zwischenablage-Recht bleibt der Text markiert stehen.
           feld.focus(); feld.select();
@@ -1061,11 +1068,35 @@ export function starteGrader() {
       logZeile(body, 'Einstellungen gespeichert.', 'ok');
     });
 
+    // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): Kopieren quittiert,
+    // zaehlt 3 s herunter und fuehrt dann zum naechsten Schritt. Ein Reiterklick
+    // bricht ab.
+    function weiterNach(knopf, urText, danach) {
+      clearInterval(weiterUhr);
+      let rest = 3;
+      knopf.textContent = `✓ Kopiert — weiter in ${rest} s`;
+      weiterUhr = setInterval(() => {
+        rest--;
+        if (rest > 0) { knopf.textContent = `✓ Kopiert — weiter in ${rest} s`; return; }
+        clearInterval(weiterUhr); weiterUhr = null;
+        knopf.textContent = urText;
+        danach();
+      }, 1000);
+    }
+    weiterNachGlobal = (knopf, urText) => weiterNach(knopf, urText, () => zeige('einfuegen'));
+
     function zeige(name) {
       body.querySelectorAll('.abg-inhalt').forEach((n) => { n.hidden = n.dataset.panel !== name; });
       body.querySelectorAll('.abg-tab').forEach((t) => t.classList.toggle('abg-aktiv', t.dataset.tab === name));
     }
-    reiter.querySelectorAll('.abg-tab').forEach((t) => t.addEventListener('click', () => zeige(t.dataset.tab)));
+    reiter.querySelectorAll('.abg-tab').forEach((t) => t.addEventListener('click', () => {
+      if (weiterUhr) { clearInterval(weiterUhr); weiterUhr = null; }
+      zeige(t.dataset.tab);
+    }));
+
+    // Eingefuegt wird fast immer die fertige KI-Antwort: gleich einlesen.
+    panelMassstab.querySelector('#abg-m-text').addEventListener('paste', () =>
+      setTimeout(() => panelMassstab.querySelector('#abg-m-lesen').click(), 0));
 
     panelDownload.querySelector('#abg-download').addEventListener('click', () => {
       if (!kontextGueltig()) { logZeile(body, KONTEXT_TEXT, 'fehler'); return; }
@@ -1493,7 +1524,7 @@ export function starteGrader() {
     z.push(`${n++}. Erste Zeile des Feedbackfelds ist immer @${lauf.datum} (das Datum dieses Durchgangs). Ein Hinweis auf den Arbeitsstand kommt als eigene Zeile mit Ausrufezeichen davor: !Kopfzeile|Fließtext — er wird rot und ganz oben ausgegeben.`);
     z.push('   In den Rohwertzeilen darf kein Semikolon und kein gerades doppeltes Anführungszeichen stehen.');
     z.push(`${n++}. Die gesichteten Dateien aus dem Import- in den Output-Ordner übernehmen (gleicher Kürzel-Unterordner, geänderte Fassung ersetzt die alte), "_status.json" fortschreiben und den Import-Ordner leeren. Das Archiv im Output-Ordner enthält danach wieder ALLE Abgaben dieses Themas.`);
-    z.push(`${n++}. Ausgefüllte CSV zurückgeben — sie wird über den Reiter „Einfügen" wieder in Moodle eingetragen.`);
+    z.push(`${n++}. Ausgefüllte CSV zurückgeben — sie wird über den Reiter „3 · Eintragen" wieder in Moodle eingetragen.`);
     z.push('');
     if (lauf.laufart === 'abschluss') {
       z.push('Da dies der Abschlusslauf ist: Nach dem Eintragen der Noten kann das Archiv im Output-Ordner gelöscht werden.');
@@ -1507,7 +1538,7 @@ export function starteGrader() {
     z.push('');
     z.push(lauf.skill
       ? `Bewertungsregeln: Skill „${lauf.skill}".`
-      : 'Bewertungsregeln: [Name der Bewertungs-Skill hier ergänzen — dauerhaft hinterlegbar im Reiter „Einstellungen".]');
+      : 'Bewertungsregeln: [Name der Bewertungs-Skill hier ergänzen — dauerhaft hinterlegbar in den Einstellungen (⚙).]');
     return z.join('\n');
   }
 
@@ -1531,6 +1562,8 @@ export function starteGrader() {
       kopf.addEventListener('click', () => {
         navigator.clipboard.writeText(feld.value)
           .then(() => {
+            // Danach arbeitet die KI; weiter geht es hier in „3 · Eintragen".
+            if (weiterNachGlobal) return weiterNachGlobal(kopf, 'Prompt in die Zwischenablage kopieren');
             const alt = kopf.textContent;
             kopf.textContent = 'Kopiert';
             setTimeout(() => { kopf.textContent = alt; }, 1500);

@@ -36,7 +36,7 @@
   top: 90px;
   right: 20px;
   z-index: 99999;
-  width: 340px;
+  width: 420px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 110px);
   overflow-y: auto;
@@ -60,7 +60,10 @@
   border-radius: 9px 9px 0 0;
 }
 #not-panel .not-head-icon { width: 18px; height: 18px; display: block; }
-#not-panel .not-head strong { flex: 1; font-size: 13px; font-weight: 600; }
+#not-panel .not-head strong { font-size: 13px; font-weight: 600; }
+#not-panel .not-titelblock { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#not-panel .not-version { font-size: 11px; opacity: .85; }
+#not-panel .not-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
 #not-panel .not-close { cursor: pointer; font-weight: bold; padding: 0 4px; }
 
 #not-panel .not-body { padding: 12px; }

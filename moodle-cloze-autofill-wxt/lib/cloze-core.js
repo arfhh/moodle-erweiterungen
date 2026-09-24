@@ -1094,7 +1094,10 @@ export function starteClozeAutofill() {
   const panel = el('div', 'ca-panel ca-hidden');
   panel.innerHTML = `
     <div class="ca-head">
-      <span class="ca-title">🧩 Cloze Autofill <span class="ca-ver"></span></span>
+      <div class="ca-titelblock">
+        <span class="ca-title">🧩 Cloze Autofill <span class="ca-ver"></span></span>
+        <span class="ca-untertitel">Antwortvarianten in Cloze-Fragen eintragen</span>
+      </div>
       <button class="ca-close" title="Schließen">✕</button>
     </div>
     <div class="ca-tabs">
@@ -1125,7 +1128,7 @@ export function starteClozeAutofill() {
       <p class="ca-hinweis">Hier das JSON von Claude einfügen. Geprüft wird zuerst — eingetragen
       wird erst danach, und nur was die Prüfung überstanden hat.</p>
       <textarea class="ca-json" rows="7" placeholder='{ "eintraege": [ … ] }'></textarea>
-      <button class="ca-pruef">🔍 Prüfen — nichts speichern</button>
+      <button class="ca-pruef">🔍 Prüfen</button>
       <div class="ca-progress2 ca-hidden"><div class="ca-bar2"></div></div>
       <p class="ca-ptext2"></p>
       <div class="ca-plan"></div>
@@ -1159,7 +1162,12 @@ export function starteClozeAutofill() {
   $('.ca-close').addEventListener('click', () => panel.classList.add('ca-hidden'));
 
   panel.querySelectorAll('.ca-tab').forEach((t) => {
-    t.addEventListener('click', () => {
+    t.addEventListener('click', (ev) => {
+      if (ev.isTrusted && weiterUhr) {
+        clearInterval(weiterUhr); weiterUhr = null;
+        $('.ca-copy').textContent = '📋 Prompt + Daten kopieren';
+        $('.ca-copy2').textContent = '📋 nur die Daten';
+      }
       panel.querySelectorAll('.ca-tab').forEach((x) => x.classList.remove('ca-aktiv'));
       t.classList.add('ca-aktiv');
       panel.querySelectorAll('.ca-body').forEach((b) => {
@@ -1189,11 +1197,26 @@ export function starteClozeAutofill() {
     }
   }
 
+  // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): Kopieren quittiert,
+  // zaehlt 3 s herunter und wechselt dann selbst in Reiter 2, Cursor im Feld.
+  let weiterUhr = null;
   function quittung(knopf, urText) {
     const b = $(knopf);
-    b.textContent = '✓ kopiert';
-    setTimeout(() => { b.textContent = urText; }, 1500);
+    clearInterval(weiterUhr);
+    let rest = 3;
+    b.textContent = `✓ Kopiert — weiter in ${rest} s`;
+    weiterUhr = setInterval(() => {
+      rest--;
+      if (rest > 0) { b.textContent = `✓ Kopiert — weiter in ${rest} s`; return; }
+      clearInterval(weiterUhr); weiterUhr = null;
+      b.textContent = urText;
+      const t = panel.querySelector('.ca-tab[data-tab="einfuegen"]');
+      if (t) t.click();
+      $('.ca-json').focus();
+    }, 1000);
   }
+  // Eingefuegt wird fast immer die fertige KI-Antwort: gleich pruefen.
+  $('.ca-json').addEventListener('paste', () => setTimeout(() => $('.ca-pruef').click(), 0));
 
   $('.ca-go').addEventListener('click', async () => {
     const fehler = $('.ca-error');
@@ -1455,13 +1478,13 @@ export function starteClozeAutofill() {
       nl.classList.remove('ca-hidden');
       protokollSichern();
       // Von selbst neu laden, aber mit Bedenkzeit und Ausstieg.
-      let rest = 8;
+      let rest = 3;
       const abbruch = $('.ca-nichtladen');
       abbruch.classList.remove('ca-hidden');
       const ticken = setInterval(() => {
         rest--;
         nl.textContent = '↻ Seite wird in ' + rest + ' s neu geladen';
-        if (rest <= 0) { clearInterval(ticken); location.reload(); }
+        if (rest <= 0) { clearInterval(ticken); panel.classList.add('ca-hidden'); location.reload(); }
       }, 1000);
       nl.textContent = '↻ Seite wird in ' + rest + ' s neu geladen';
       nl.onclick = () => { clearInterval(ticken); location.reload(); };

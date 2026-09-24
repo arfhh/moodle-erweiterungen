@@ -1,6 +1,6 @@
 # Moodle AI Grader
 
-**Version 3.1.1** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
+**Version 3.2.0** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
 Entwickelt von **T. Henken & A. Spielhoff** · Lizenz **CC BY-SA 4.0**
 
 Bewertet Klausuren mit mehreren Aufgaben in **einer** Moodle-Freitextfrage: legt den
@@ -22,7 +22,7 @@ ChatGPT, Claude oder einen anderen Chat einfügst, und liest die Antwort wieder 
 | Antwortvorlage | — | wird mit angelegt, gliedert die Abgabe je Aufgabe |
 | Wirkt auf | jede Seite | nur Bewertungsseite **und** Frage-Bearbeiten |
 | Berechtigungen | „alle Daten auf allen Websites" | nur `storage` |
-| Sicherheitsnetze | Warnung vor dem Eintragen | Prüfen · Trockenlauf · Gegenprobe |
+| Sicherheitsnetze | Warnung vor dem Eintragen | Prüfen · Gegenprobe |
 
 **Warum die Erweiterung rechnet:** Sprachmodelle beurteilen Sprache zuverlässig, rechnen
 aber unzuverlässig. In einer früheren Fassung bestätigte die KI in der Tabelle 75 % und
@@ -132,9 +132,7 @@ Abgabe verlässlich Aufgabe für Aufgabe zu zerlegen.
 2. „📋 Prompt kopieren" → in den KI-Chat → Antwort zurück in das Feld → **🔍 Prüfen**.
 3. Je Abgabe erscheint eine Zeile mit alter und neuer Punktzahl, den Prozentwerten je
    Aufgabe und der Fehlerdichte. Das Feedback lässt sich vorher noch bearbeiten.
-4. **Trockenlauf** prüft, ob jedes Punkte- und Kommentarfeld wirklich auf der Seite steht.
-   Das fängt den häufigsten Fehler ab: ein JSON aus einem anderen Auslese-Durchlauf.
-5. **Alle eintragen.** Danach lädt die Erweiterung die Seite erneut und vergleicht jeden
+4. **Alle eintragen.** Danach lädt die Erweiterung die Seite erneut und vergleicht jeden
    gespeicherten Wert mit dem gewollten. Es wird nichts als Erfolg gemeldet, was nicht
    wirklich angekommen ist.
 
@@ -252,5 +250,5 @@ bleibt der Prozentwert.
 - Eine Moodle-Freitextfrage je Bewertungsseite. Für Kurztests mit Zufallsfragen ist der
   **Moodle AI Coach** zuständig, für Cloze-Lücken der **Moodle AI Reviewer**.
 - Die Erweiterung ändert nichts an Fragen, die sie nicht kennt: Geschrieben wird nur, was
-  du im Trockenlauf gesehen und dann bestätigt hast.
+  du beim Prüfen gesehen und dann bestätigt hast.
 - Anhänge und Dateiabgaben werden nicht gelesen.
