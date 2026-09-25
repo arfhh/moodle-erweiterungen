@@ -1,6 +1,6 @@
 # Moodle Namen verbergen
 
-*Version 1.0.1 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
+*Version 1.0.2 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
 **Idee: Andreas Schenkel** — [moodle-textblock-blurmode_controller](https://github.com/andreasschenkel/moodle-textblock-blurmode_controller).
 
@@ -42,8 +42,9 @@ Namensspalte der Teilnehmerliste und Profilbilder.
 
 - Die Selektoren sind Moodle-Standard. Ein abweichendes Theme oder Plugin kann Namen anders
   auszeichnen — die fehlende Stelle im Zahnrad-Menü unter „Weitere CSS-Selektoren" nachtragen.
-- E-Mail-Adressen als **reiner Text** (ohne `mailto:`-Link), etwa in der Teilnehmerliste, werden
-  nicht erkannt.
+- E-Mail-Adressen und Benutzernamen werden in **Tabellen mit passendem Spaltenkopf** („E-Mail",
+  „Benutzername", „ID-Nummer") und in Elementen erkannt, die nur die Adresse enthalten. Steht eine
+  Adresse mitten in einem Fließtext, bleibt sie sichtbar.
 - Namen in **Kurstiteln, Dateinamen oder Freitexten** verwischt sie nicht.
 - Sie verwischt nur, was **in deinem Browser** angezeigt wird. Moodle selbst bleibt unverändert;
   Screenshots, die du machst, sind verwischt.
@@ -78,6 +79,7 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.0.2** (25.09.2026) — E-Mail-Adressen und Benutzernamen in Tabellen (Testauswertung „Übersicht" und „Antworten", Teilnehmerliste) werden über den Spaltenkopf erkannt und verwischt; ebenso Elemente, die nur aus einer Adresse bestehen. Neu nachgeladene Tabellen werden mit erfasst.
 - **1.0.1** (25.09.2026) — Urheberhinweis vollständig: Matthias Giger und Florian Dagner mit Links ergänzt (README, Panel, Quelltext).
 - **1.0.0** (25.09.2026) — Erstfassung: Umschalter auf der Seite und in der Symbolleiste, Stärke,
   Profilbilder, eigene Selektoren, Zustand über `storage.sync`.

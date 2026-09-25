@@ -31,6 +31,8 @@ const SEL_NAMEN = [
   '[data-region="grade-panel"] .user-name',
   '#page-user-profile .page-header-headings h1',
   '#page-user-profile .userprofile .contact-details',
+  // Von markiereTabellen() gesetzt: E-Mail-/Benutzername-Spalten und Zellen, die nur eine Adresse enthalten.
+  '[data-mnv-blur]',
 ];
 const SEL_AVATARE = [
   'img.userpicture',
@@ -76,6 +78,52 @@ export function baueCss(e) {
 }`;
 }
 
+// E-Mail-Adressen und Benutzernamen stehen in Moodle-Tabellen (Teilnehmerliste, Testauswertung,
+// Bewertungsuebersicht) als reiner Text ohne eigene Klasse. Deshalb per Spaltenkopf erkennen und die
+// Zellen der Spalte markieren; zusaetzlich jedes Blatt-Element, das nur aus einer Adresse besteht.
+// Namensspalten werden hier bewusst NICHT markiert: dort steht neben dem Namen oft ein Knopf
+// ("Versuch ueberpruefen"), der lesbar bleiben soll — den Namen selbst erfassen die Profil-Links.
+const KOPF_SPALTE = /e-?mail|benutzername|username|id-?nummer|idnumber|matrikel/i;
+const NUR_ADRESSE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MARKE = 'data-mnv-blur';
+
+function markiereTabellen() {
+  if (!einst.aktiv) return;
+  for (const tab of document.querySelectorAll('table')) {
+    const koepfe = tab.querySelectorAll('thead th');
+    const kopfzellen = koepfe.length ? koepfe : (tab.rows[0] ? tab.rows[0].querySelectorAll('th') : []);
+    const spalten = [];
+    for (const th of kopfzellen) {
+      if (KOPF_SPALTE.test(th.textContent || '')) spalten.push(th.cellIndex);
+    }
+    if (!spalten.length) continue;
+    for (const tr of tab.querySelectorAll('tbody tr')) {
+      for (const i of spalten) {
+        const z = tr.cells[i];
+        if (z && z.tagName === 'TD' && !z.hasAttribute(MARKE)) z.setAttribute(MARKE, '');
+      }
+    }
+  }
+  for (const el of document.body.querySelectorAll('td, dd, li, span, p, div, a')) {
+    if (el.childElementCount || el.hasAttribute(MARKE)) continue;
+    const s = (el.textContent || '').trim();
+    if (s.length < 200 && NUR_ADRESSE.test(s)) el.setAttribute(MARKE, '');
+  }
+}
+
+let markTimer = null;
+function planeMarkierung() {
+  clearTimeout(markTimer);
+  markTimer = setTimeout(markiereTabellen, 250);
+}
+let beobachter = null;
+function beobachte() {
+  if (beobachter || !document.body) return;
+  // Moodle laedt Tabellen und Blockinhalte nach; neue Knoten muessen auch markiert werden.
+  beobachter = new MutationObserver(() => { if (einst.aktiv) planeMarkierung(); });
+  beobachter.observe(document.body, { childList: true, subtree: true });
+}
+
 function setzeCss() {
   let el = document.getElementById(CSS_ID);
   if (!el) {
@@ -94,6 +142,7 @@ function istMoodle() {
 function anwenden() {
   setzeCss();
   document.documentElement.classList.toggle(KLASSE, !!einst.aktiv);
+  if (einst.aktiv) { markiereTabellen(); beobachte(); }
   aktualisiereUi();
 }
 
