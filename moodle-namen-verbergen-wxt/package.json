@@ -1,0 +1,23 @@
+{
+  "name": "namen-verbergen",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt -b chrom",
+    "dev:firefox": "wxt -b firefox",
+    "build:chrome": "wxt build -b chrom",
+    "build:firefox": "wxt build -b firefox",
+    "build:edge": "wxt build -b edge",
+    "build-all": "npm run build:chrome && npm run build:firefox && npm run build:edge",
+    "zip:chrome": "wxt zip -b chrom",
+    "zip:firefox": "wxt zip -b firefox",
+    "lint": "web-ext lint --source-dir=Erweiterung/moodle-namen-verbergen-chrom && web-ext lint --source-dir=Erweiterung/moodle-namen-verbergen-firefox",
+    "postinstall": "wxt prepare",
+    "paket": "bash scripts/paketieren.sh"
+  },
+  "devDependencies": {
+    "wxt": "^0.21.4",
+    "web-ext": "^10.6.0"
+  }
+}

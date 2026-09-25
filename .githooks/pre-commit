@@ -8,7 +8,7 @@
 set -e
 cd "$(git rev-parse --show-toplevel)"
 
-PROJECTS="moodle-ai-grader-wxt moodle-ai-reviewer-wxt moodle-ai-coach-wxt moodle-ai-aufgaben-grader-wxt moodle-cloze-autofill-wxt notenstufen-extension-wxt"
+PROJECTS="moodle-ai-grader-wxt moodle-ai-reviewer-wxt moodle-ai-coach-wxt moodle-ai-aufgaben-grader-wxt moodle-cloze-autofill-wxt notenstufen-extension-wxt moodle-namen-verbergen-wxt"
 
 STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
 REBUILT=""

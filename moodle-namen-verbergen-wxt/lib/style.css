@@ -1,0 +1,17 @@
+#mnv-wurzel { position: fixed; left: 16px; bottom: 16px; z-index: 2147483000; font: 14px/1.4 system-ui, sans-serif; color: #1d2733; }
+#mnv-wurzel * { box-sizing: border-box; }
+#mnv-leiste { display: flex; align-items: center; gap: 6px; }
+#mnv-wurzel button { cursor: pointer; border: 1px solid #5b6b7d; background: #fff; color: #1d2733; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+#mnv-toggle { width: 44px; height: 44px; }
+#mnv-toggle.mnv-an { background: #1f6f43; border-color: #1f6f43; color: #fff; }
+#mnv-zahn { width: 28px; height: 28px; }
+#mnv-wurzel button:hover { filter: brightness(.95); }
+#mnv-wurzel button:focus-visible { outline: 3px solid #0b5fff; outline-offset: 2px; }
+#mnv-panel { width: 280px; margin-bottom: 8px; padding: 12px; background: #fff; border: 1px solid #5b6b7d; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+#mnv-panel[hidden] { display: none; }
+#mnv-panel .mnv-zeile { display: block; margin: 0 0 10px; }
+#mnv-panel .mnv-check { display: flex; gap: 6px; align-items: center; }
+#mnv-panel input[type="range"] { width: 100%; display: block; }
+#mnv-panel textarea { width: 100%; display: block; margin-top: 4px; font: 12px/1.3 ui-monospace, monospace; }
+#mnv-panel .mnv-hinweis { margin: 0; font-size: 12px; color: #44515f; }
+#mnv-panel a { color: #0b4fb8; }

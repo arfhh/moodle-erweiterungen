@@ -1,7 +1,7 @@
 # Moodle-Erweiterungen für Chrome, Firefox und Edge
 
-Sechs kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen —
-Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen. Alle sechs sind
+Sieben kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen —
+Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen. Alle sieben sind
 mit **WXT** aus **einer** Codebasis für Chrome, Firefox und Edge gebaut.
 
 Alle laufen **ausschließlich im Browser**. Keine Erweiterung schickt Daten an einen
@@ -13,7 +13,7 @@ liest die **Antwort als JSON** wieder ein — welchen Chat du benutzt, entscheid
 
 ## Was ist das hier eigentlich?
 
-Diese sechs Programme sind **Browser-Erweiterungen** — kleine Zusatzprogramme,
+Diese sieben Programme sind **Browser-Erweiterungen** — kleine Zusatzprogramme,
 die man einmalig im Browser installiert (nicht auf dem Computer) und die dann
 automatisch auf bestimmten Seiten mitlaufen. Du kennst das Prinzip vielleicht
 von einem Werbeblocker oder einem Passwort-Manager: einmal eingerichtet,
@@ -59,7 +59,7 @@ werden".
 
 ---
 
-## Die sechs Erweiterungen
+## Die sieben Erweiterungen
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
@@ -69,6 +69,7 @@ werden".
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.9.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
+| **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel |
 
 ### Was du nach der Installation konkret siehst
 
@@ -95,6 +96,11 @@ werden".
 - **Moodle Notenstufen Autofill** — auf der Notenstufen-Seite eines Kurses:
   fuellt die ganze Tabelle auf einen Klick, fuer einen Kurs oder fuer alle
   gemeinsam.
+- **Moodle Namen verbergen** — auf allen Moodle-Seiten: verwischt Namen,
+  E-Mail-Adressen und Profilbilder per Klick (Knopf unten links oder Symbol in
+  der Symbolleiste), damit man Moodle vorfuehren kann, ohne Schuelerdaten zu
+  zeigen. Idee: Andreas Schenkel (moodle-textblock-blurmode_controller); der
+  Code ist eine eigene Umsetzung.
 
 Bei allen gilt dasselbe Muster: Erweiterung liest und schlaegt vor, du
 pruefst und speicherst selbst. Genaueres — auch was die Erweiterung NICHT
@@ -166,6 +172,9 @@ https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofil
 
 notenstufen-autofill
 https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip
+
+moodle-namen-verbergen
+https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip
 ```
 
 ---
@@ -218,7 +227,7 @@ benutzen. Näheres in der README des Autofill.
 
 ## Versionsnummern
 
-Alle sechs Erweiterungen benutzen dieselbe dreistellige Form **`x.y.z`** — auch
+Alle sieben Erweiterungen benutzen dieselbe dreistellige Form **`x.y.z`** — auch
 dann, wenn die letzte Stelle 0 ist.
 
 | Stelle | Bedeutet | Beispiel |
@@ -238,7 +247,7 @@ Erweiterungsverwaltung sichtbar, welche Fassung wirklich läuft.
 
 ## Womit diese Erweiterungen gebaut werden
 
-Alle sechs entstehen aus je einem eigenen **WXT**-Projekt (`*-wxt/`): eine
+Alle sieben entstehen aus je einem eigenen **WXT**-Projekt (`*-wxt/`): eine
 JavaScript/CSS-Codebasis, aus der `npm run build-all` die drei Browserfassungen baut
 und `npm run paket` sie zusammen mit der README zu `dist/<name>.zip` packt — dieselbe
 ZIP, auf die die Download-Links oben zeigen. Der Ordner **im** Zip heißt nach der
@@ -247,7 +256,7 @@ beim Entpacken mehrerer ZIPs nacheinander „Erweiterung", „Erweiterung (1)",
 „Erweiterung (2)" … entstehen.
 
 **Die ZIPs bauen sich beim Commit von selbst neu.** Ein Git-Hook
-(`.githooks/pre-commit`) prüft bei jedem `git commit`, ob Quelltext einer der sechs
+(`.githooks/pre-commit`) prüft bei jedem `git commit`, ob Quelltext einer der sieben
 `*-wxt`-Projekte mit eingecheckt wird, baut in dem Fall automatisch `npm run paket`
 für genau dieses Projekt und nimmt die frische `dist/<name>.zip` gleich mit in denselben
 Commit auf. Damit ist ausgeschlossen, dass eine ZIP im Download hinter dem
@@ -260,7 +269,7 @@ dauerhaft in `.git/config`):
 git config core.hooksPath .githooks
 ```
 
-Fehlt in einem der sechs Projekte `node_modules/` (z. B. nach einem frischen Klonen
+Fehlt in einem der sieben Projekte `node_modules/` (z. B. nach einem frischen Klonen
 ohne `npm install`), überspringt der Hook diese Erweiterung mit einer Warnung, statt
 den Commit zu blockieren — dann `npm install` in dem Ordner nachholen und den Commit
 notfalls wiederholen.
