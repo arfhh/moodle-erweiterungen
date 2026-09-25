@@ -1,6 +1,6 @@
 # Moodle Namen verbergen
 
-*Version 1.0.3 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
+*Version 1.0.4 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
 **Idee: Andreas Schenkel** — [moodle-textblock-blurmode_controller](https://github.com/andreasschenkel/moodle-textblock-blurmode_controller).
 
@@ -79,6 +79,7 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.0.4** (25.09.2026) — Die Fehlerbehebung aus 1.0.3 war durch einen Übertragungsfehler nicht im Code angekommen; jetzt tatsächlich enthalten.
 - **1.0.3** (25.09.2026) — Fehlerbehebung zu 1.0.2: Bei gespeichertem „an" lief die Markierung schon vor dem Aufbau der Seite (noch ohne `<body>`), warf einen Fehler und verhinderte damit den Knopf; die Markierung prüft jetzt `<body>` und kann den Aufbau der Oberfläche nicht mehr blockieren.
 - **1.0.2** (25.09.2026) — E-Mail-Adressen und Benutzernamen in Tabellen (Testauswertung „Übersicht" und „Antworten", Teilnehmerliste) werden über den Spaltenkopf erkannt und verwischt; ebenso Elemente, die nur aus einer Adresse bestehen. Neu nachgeladene Tabellen werden mit erfasst.
 - **1.0.1** (25.09.2026) — Urheberhinweis vollständig: Matthias Giger und Florian Dagner mit Links ergänzt (README, Panel, Quelltext).

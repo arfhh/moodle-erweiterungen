@@ -88,7 +88,15 @@ const NUR_ADRESSE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MARKE = 'data-mnv-blur';
 
 function markiereTabellen() {
-  if (!einst.aktiv) return;
+  // Beim fruehen Anwenden (document_start) gibt es <body> noch nicht. Ein Fehler hier darf
+  // ausserdem NIE den Aufbau der Oberflaeche verhindern (Fehler 1.0.2: Knopf fehlte).
+  if (!einst.aktiv || !document.body) return;
+  try {
+    markiereTabellenUnsicher();
+  } catch (e) { /* Markierung ist Zugabe; Blur per CSS wirkt trotzdem */ }
+}
+
+function markiereTabellenUnsicher() {
   for (const tab of document.querySelectorAll('table')) {
     const koepfe = tab.querySelectorAll('thead th');
     const kopfzellen = koepfe.length ? koepfe : (tab.rows[0] ? tab.rows[0].querySelectorAll('th') : []);
