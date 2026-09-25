@@ -9,7 +9,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle Namen verbergen',
-    version: '1.0.0',
+    version: '1.0.1',
     description:
       'Verwischt Namen, E-Mail-Adressen und Profilbilder in Moodle per Klick - z. B. für Vorführungen mit Bildschirmfreigabe. Der Zustand wird im Browser gemerkt.',
     permissions: ['storage'],

@@ -1,9 +1,12 @@
 # Moodle Namen verbergen
 
-*Version 1.0.0 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
+*Version 1.0.1 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
-**Idee: Andreas Schenkel** — [moodle-textblock-blurmode_controller](https://github.com/andreasschenkel/moodle-textblock-blurmode_controller),
-das seinerseits auf Code und Ideen von Matthias Giger und Florian Dagner beruht.
+**Idee: Andreas Schenkel** — [moodle-textblock-blurmode_controller](https://github.com/andreasschenkel/moodle-textblock-blurmode_controller).
+
+> Author/Copyright des Originals: *Andreas Schenkel based on code and ideas from
+> Matthias Giger ([github.com/mattgig](https://github.com/mattgig)) and
+> Florian Dagner ([github.com/fdagner](https://github.com/fdagner))*.
 Schenkels Lösung ist ein HTML-Textblock, den man in jeden Kurs einfügt. Diese Erweiterung
 setzt denselben Gedanken als Browser-Erweiterung um.
 
@@ -75,5 +78,6 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.0.1** (25.09.2026) — Urheberhinweis vollständig: Matthias Giger und Florian Dagner mit Links ergänzt (README, Panel, Quelltext).
 - **1.0.0** (25.09.2026) — Erstfassung: Umschalter auf der Seite und in der Symbolleiste, Stärke,
   Profilbilder, eigene Selektoren, Zustand über `storage.sync`.

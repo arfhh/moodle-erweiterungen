@@ -1,8 +1,9 @@
 /* Moodle Namen verbergen — Kern.
  *
  * Verwischt Namen, E-Mail-Adressen und (optional) Profilbilder auf Moodle-Seiten per CSS-Filter.
- * Ideengeber: Andreas Schenkel (github.com/andreasschenkel/moodle-textblock-blurmode_controller,
- * beruhend auf Ideen von Matthias Giger und Florian Dagner). Dies ist eine eigene Umsetzung als
+ * Ideengeber: Andreas Schenkel (github.com/andreasschenkel/moodle-textblock-blurmode_controller).
+ * Original-Vermerk dort: "Andreas Schenkel based on code and ideas from Matthias Giger
+ * (github.com/mattgig) and Florian Dagner (github.com/fdagner)". Dies ist eine eigene Umsetzung als
  * Browser-Erweiterung — es ist kein Code aus jenem Repo uebernommen (das Repo traegt keine Lizenz).
  *
  * Arbeitsweise: Ein <style>-Element mit Regeln, die nur greifen, wenn <html> die Klasse
@@ -113,7 +114,9 @@ function baueUi() {
       <label class="mnv-zeile mnv-check"><input type="checkbox" id="mnv-avatare"> Profilbilder auch verwischen</label>
       <label class="mnv-zeile">Weitere CSS-Selektoren (einer pro Zeile)
         <textarea id="mnv-eigene" rows="3" spellcheck="false" placeholder=".meine-klasse"></textarea></label>
-      <p class="mnv-hinweis">Idee: <a href="https://github.com/andreasschenkel/moodle-textblock-blurmode_controller" target="_blank" rel="noopener noreferrer">Andreas Schenkel</a>.
+      <p class="mnv-hinweis">Idee: <a href="https://github.com/andreasschenkel/moodle-textblock-blurmode_controller" target="_blank" rel="noopener noreferrer">Andreas Schenkel</a>,
+      nach Code und Ideen von <a href="https://github.com/mattgig" target="_blank" rel="noopener noreferrer">Matthias Giger</a>
+      und <a href="https://github.com/fdagner" target="_blank" rel="noopener noreferrer">Florian Dagner</a>.
       Umsetzung: A. Spielhoff · CC BY-SA 4.0. Die Einstellung wird im Browser gemerkt.</p>
     </div>
     <div id="mnv-leiste">

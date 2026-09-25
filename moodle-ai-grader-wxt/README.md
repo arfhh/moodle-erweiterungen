@@ -1,6 +1,6 @@
 # Moodle AI Grader
 
-**Version 3.2.1** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
+**Version 3.2.2** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
 Entwickelt von **T. Henken & A. Spielhoff** · Lizenz **CC BY-SA 4.0**
 
 Bewertet Klausuren mit mehreren Aufgaben in **einer** Moodle-Freitextfrage: legt den
@@ -130,6 +130,10 @@ Abgabe verlässlich Aufgabe für Aufgabe zu zerlegen.
 1. Reiter **Korrektur**. Die Erweiterung schlägt vor, wie viele Abgaben in einen Durchgang
    passen — hergeleitet aus der tatsächlichen Textlänge, nicht aus einer festen Zahl.
 2. „📋 Prompt kopieren" → in den KI-Chat → Antwort zurück in das Feld — geprüft wird sofort.
+   Ist die Klasse in mehrere Teile aufgeteilt, jeden Teil einfach nacheinander ins selbe
+   Feld einfügen (er wird immer hinten angehängt, mit oder ohne ```-Zeilen). Bis alle
+   Abgaben da sind, zeigt die Erweiterung nur „Teil erkannt: 12 von 28 Abgaben"; die
+   Liste und „Alle eintragen" erscheinen erst, wenn alles vollständig ist.
 3. Je Abgabe erscheint eine Zeile mit alter und neuer Punktzahl, den Prozentwerten je
    Aufgabe und der Fehlerdichte. Das Feedback lässt sich vorher noch bearbeiten.
 4. **Alle eintragen.** Danach lädt die Erweiterung die Seite erneut und vergleicht jeden

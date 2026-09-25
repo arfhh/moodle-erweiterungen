@@ -972,13 +972,36 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
      ═══════════════════════════════════════════════════════════════════ */
 
   // Nimmt mehrere Teile in einem Rutsch an: Codebloecke, blanke Objekte, Arrays.
+  function jsonObjekteImText(text) {
+    const stuecke = [];
+    let tiefe = 0, start = -1, inString = false, escape = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inString) {
+        if (escape) escape = false;
+        else if (c === '\\') escape = true;
+        else if (c === '"') inString = false;
+        continue;
+      }
+      if (c === '"') { if (tiefe > 0) inString = true; continue; }
+      if (c === '{') { if (tiefe === 0) start = i; tiefe++; }
+      else if (c === '}' && tiefe > 0) {
+        tiefe--;
+        if (tiefe === 0 && start >= 0) { stuecke.push(text.slice(start, i + 1)); start = -1; }
+      }
+    }
+    return stuecke;
+  }
+
   function leseJson(roh, schluessel) {
     const treffer = [];
     const bloecke = [];
     const cb = /```(?:json)?\s*([\s\S]*?)```/g;
     let m;
     while ((m = cb.exec(roh)) !== null) bloecke.push(m[1]);
-    if (!bloecke.length) bloecke.push(roh);
+    // Was ausserhalb der ```-Bloecke steht, zaehlt auch: ein Teil mit, der naechste
+    // ohne Codezeilen eingefuegt, muss beides ergeben.
+    bloecke.push(roh.replace(/```(?:json)?\s*[\s\S]*?```/g, ''));
 
     bloecke.forEach(b => {
       const text = b.trim();
@@ -989,14 +1012,16 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         if (liste) treffer.push(...liste);
         return;
       } catch (e) { /* weiter mit der Suche nach Teilobjekten */ }
-      const objekt = text.match(/\{[\s\S]*\}/);
-      if (objekt) {
+      // Mehrere Teile ohne ```-Zeilen (der Kopier-Knopf im KI-Chat laesst sie weg)
+      // stehen einfach hintereinander: alle vollstaendigen {...}-Objekte der obersten
+      // Ebene einzeln herausloesen, Klammern in Zeichenketten zaehlen nicht mit.
+      jsonObjekteImText(text).forEach(stueck => {
         try {
-          const o = JSON.parse(objekt[0]);
+          const o = JSON.parse(stueck);
           const liste = Array.isArray(o) ? o : (o[schluessel] || (o.nr != null ? [o] : null));
           if (liste) treffer.push(...liste);
-        } catch (e) { /* dieser Block ist unbrauchbar */ }
-      }
+        } catch (e) { /* dieses Stueck ist unbrauchbar */ }
+      });
     });
     if (!treffer.length) throw new Error('Kein verwertbares JSON gefunden.');
     return treffer;
@@ -1621,6 +1646,11 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     }
   }
 
+  // Mehrteilige Korrektur (Klasse in Durchgaenge geteilt): Solange Abgaben fehlen,
+  // wird nur der Stand gemeldet — keine Liste, kein Eintragen-Knopf. Sonst traegt man
+  // versehentlich nur Teil 1 ein, die Seite laedt neu und die uebrigen Teile sind weg.
+  // Der Link „Trotzdem nur diese pruefen" setzt teilErlaubt fuer genau diesen Text.
+  let teilErlaubt = false;
   function korrekturPruefen() {
     const roh = R('kjson').value.trim();
     if (!roh) return status('kstatus', 'Bitte erst die Antworten der KI einfügen.', true);
@@ -1631,6 +1661,21 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       const liste = leseJson(roh, 'bewertungen').filter(b => b && b.nr != null);
       const { fehlend, doppelt } = pruefeVollstaendig(liste, abgaben.map(a => a.nr));
       if (doppelt.length) throw new Error('Abgabe ' + doppelt.join(', ') + ' kommt doppelt vor.');
+      if (fehlend.length && !teilErlaubt) {
+        const box0 = R('kliste'); box0.innerHTML = '';
+        R('keintragen').hidden = true;
+        eintragungen = null;
+        const abgl0 = R('rsabgleich'); if (abgl0) abgl0.hidden = true;
+        const da = abgaben.length - fehlend.length;
+        status('kstatus', 'Teil erkannt: ' + da + ' von ' + abgaben.length + ' Abgaben. '
+          + 'Nächsten Teil einfach dazu einfügen — geprüft wird, sobald alle da sind. '
+          + '(Es fehlen: ' + fehlend.join(', ') + ')');
+        const link = el('button', 'mag-btn mag-btn-klein mag-btn-grau',
+          'Trotzdem nur diese ' + da + ' prüfen');
+        link.addEventListener('click', () => { teilErlaubt = true; korrekturPruefen(); });
+        box0.appendChild(link);
+        return;
+      }
 
       // Rechtschreibungs-Prozent: Horizont gegen Einstellung abgleichen (seit 3.1.0).
       // Ohne "erzwingen" hat der Horizont-Wert Vorrang — er wurde beim Anlegen des
@@ -1882,7 +1927,19 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   panel.addEventListener('paste', ev => {
     const rolle = ev.target && ev.target.dataset && ev.target.dataset.rolle;
     if (rolle === 'hjson') setTimeout(horizontPruefen, 0);
-    if (rolle === 'kjson') setTimeout(korrekturPruefen, 0);
+    if (rolle === 'kjson') {
+      // Jeder weitere Teil wird ans Ende gehaengt, egal wo der Cursor steht — ein
+      // Klick mitten ins Feld wuerde sonst einen Teil in einen anderen hineinsetzen.
+      const neu = ev.clipboardData && ev.clipboardData.getData('text');
+      if (neu) {
+        ev.preventDefault();
+        const f = ev.target, alt = f.value.replace(/\s+$/, '');
+        f.value = alt ? alt + '\n\n' + neu : neu;
+        f.scrollTop = f.scrollHeight;
+      }
+      teilErlaubt = false;
+      setTimeout(korrekturPruefen, 0);
+    }
   });
   // Ohne sichtbaren Prüfen-Knopf (wie Reviewer 1.7.2): geprüft wird beim Einfügen
   // sofort und nach Handänderungen nach einer kurzen Tipp-Pause.
@@ -1890,6 +1947,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   panel.addEventListener('input', ev => {
     const rolle = ev.target && ev.target.dataset && ev.target.dataset.rolle;
     if ((rolle !== 'hjson' && rolle !== 'kjson') || ev.inputType === 'insertFromPaste') return;
+    if (rolle === 'kjson') teilErlaubt = false;
     clearTimeout(pruefUhr);
     pruefUhr = setTimeout(() => {
       if (!ev.target.value.trim()) return;

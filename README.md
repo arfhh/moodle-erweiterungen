@@ -63,13 +63,13 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Grader** · [Quelltext](moodle-ai-grader-wxt/) | 3.2.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip)** | **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
+| **Moodle AI Grader** · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip)** | **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
 | **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.7.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
 | **Moodle AI Coach** · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip)** | **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.9.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
-| **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel |
+| **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
 
 ### Was du nach der Installation konkret siehst
 
@@ -99,8 +99,9 @@ werden".
 - **Moodle Namen verbergen** — auf allen Moodle-Seiten: verwischt Namen,
   E-Mail-Adressen und Profilbilder per Klick (Knopf unten links oder Symbol in
   der Symbolleiste), damit man Moodle vorfuehren kann, ohne Schuelerdaten zu
-  zeigen. Idee: Andreas Schenkel (moodle-textblock-blurmode_controller); der
-  Code ist eine eigene Umsetzung.
+  zeigen. Idee: Andreas Schenkel (moodle-textblock-blurmode_controller, nach
+  Code und Ideen von Matthias Giger und Florian Dagner); der Code ist eine
+  eigene Umsetzung.
 
 Bei allen gilt dasselbe Muster: Erweiterung liest und schlaegt vor, du
 pruefst und speicherst selbst. Genaueres — auch was die Erweiterung NICHT
