@@ -1317,6 +1317,28 @@ export function starteClozeAutofill() {
     panel.classList.remove('ca-hidden');
     panel.querySelectorAll('.ca-tab').forEach((t) => t.classList.toggle('ca-aktiv', t.dataset.tab === 'einfuegen'));
     panel.querySelectorAll('.ca-body').forEach((b) => b.classList.toggle('ca-hidden', b.dataset.panel !== 'einfuegen'));
+
+    // Seit 2.1.1, wie beim Reviewer: Ist der Lauf ohne Fehler durchgegangen, schliesst
+    // das Fenster nach dem Neuladen nach 3 s von selbst. Mit Fehlern (✖) oder unklarer
+    // Gegenprobe (?) bleibt es offen — sonst verschwaende genau die Zeile, die man lesen muss.
+    const probleme = o.zeilen.some((z) => /^\s*(✖|\?)/.test(z));
+    if (!probleme) {
+      const hinweis = el('div', 'ca-protokollkopf');
+      log.prepend(hinweis);
+      let rest = 3;
+      const text = () => { hinweis.textContent = `✓ Alles gespeichert — Fenster schließt in ${rest} s (Klick ins Fenster: offen lassen)`; };
+      text();
+      const uhr = setInterval(() => {
+        rest--;
+        if (rest > 0) { text(); return; }
+        clearInterval(uhr);
+        hinweis.textContent = '✓ Alles gespeichert.';
+        panel.classList.add('ca-hidden');
+      }, 1000);
+      panel.addEventListener('click', () => {
+        clearInterval(uhr); hinweis.textContent = '✓ Alles gespeichert.';
+      }, { once: true });
+    }
   }
 
   function logZeile(text) {

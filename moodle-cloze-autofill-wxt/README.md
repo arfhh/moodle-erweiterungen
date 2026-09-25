@@ -3,7 +3,7 @@
 **Trägt neue Antwortvarianten in die Cloze-Lücken der Fragensammlung ein**, statt sie
 Frage für Frage von Hand nachzupflegen.
 
-Version 2.1.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
+Version 2.1.1 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > ⚠️ **Nur für die eigene Fragensammlung.** Die Erweiterung schreibt direkt in die
 > Fragen der Sammlung, in der sie läuft. Wer eine **eigene** Sammlung pflegt, kann
@@ -273,6 +273,8 @@ moodle-cloze-autofill-wxt/
 Gebaut wird nach `Erweiterung/moodle-cloze-autofill-{chrom,firefox,edge}/`.
 
 ## Änderungen
+
+**2.1.1:** Nach einem fehlerfreien Lauf schließt das Protokollfenster nach dem Neuladen nach 3 s von selbst (wie beim Reviewer). Bei Fehlern (✖) oder unklarer Gegenprobe (?) bleibt es offen; ein Klick ins Fenster hält es ebenfalls offen.
 
 **WXT-Umstellung (18.09.2026):** Ab dieser Fassung wird die Erweiterung mit **WXT**
 gebaut (siehe Skill `1-browser-wxt`) — eine Codebasis, drei Browser (Chrome, Firefox,
