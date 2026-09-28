@@ -645,7 +645,7 @@ export function starteGrader() {
         ...u32(data.length), ...u32(data.length),
         ...u16(nameBytes.length), ...u16(0), ...u16(0),
         ...u16(0), ...u16(0),
-        ...u32(0),
+        ...u32(f.ordner ? 0x10 : 0),   // MS-DOS-Attribut "Verzeichnis" für leere Ordner
         ...u32(offset),
       ]);
       zentral.push(zentralHeader, nameBytes);
@@ -1232,9 +1232,46 @@ export function starteGrader() {
         });
       }
 
-      ergebnis.push({ userid, name, statusText: statusText.trim(), ohneAbgabe, dateien, grUrl: bewertenLink ? bewertenLink.href : null });
+      // Ab 6 Dateien klappt Moodle die Liste zu: statt der Datei-Links steht nur
+      // "11 Dateien" mit einem Lupen-Link (action=viewpluginassignsubmission,
+      // plugin=file). Bis v1.9.1 wurden diese SuS mit 0 Dateien geführt und bekamen
+      // "keine Abgabe" als Feedback (Arne, 28.09.2026). Link merken, die Dateien
+      // holt herunterladen() von der Unterseite nach.
+      let mehrUrl = null;
+      if (!dateien.length && abgabeZelle) {
+        const lupe = Array.from(abgabeZelle.querySelectorAll('a[href]')).find((a) => {
+          const h = a.getAttribute('href') || '';
+          return h.includes('viewpluginassignsubmission') && /[?&]plugin=file(&|$)/.test(h);
+        });
+        if (lupe) mehrUrl = lupe.href;
+      }
+
+      ergebnis.push({ userid, name, statusText: statusText.trim(), ohneAbgabe, dateien, mehrUrl, grUrl: bewertenLink ? bewertenLink.href : null });
     });
     return ergebnis;
+  }
+
+  // Zugeklappte Dateiliste (ab 6 Dateien) von der Unterseite nachladen — dort stehen
+  // alle Datei-Links samt div.fileuploadsubmissiontime (live geprüft 28.09.2026:
+  // 11 von 11 Dateien und 11 Zeiten).
+  async function dateienVonUnterseite(url) {
+    const resp = await fetch(url, { credentials: 'include' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+    const base = doc.createElement('base');
+    base.href = location.origin;
+    if (doc.head) doc.head.prepend(base);
+    const bereich = doc.querySelector('[role="main"]') || doc;
+    const gesehen = {};
+    const dateien = [];
+    bereich.querySelectorAll('a[href*="pluginfile.php"]').forEach((a) => {
+      if (!a.href.includes('assignsubmission_file') || gesehen[a.href]) return;
+      gesehen[a.href] = true;
+      const teile = decodeURIComponent(a.href).split('/');
+      const dateiname = teile[teile.length - 1].split('?')[0] || 'abgabe.pdf';
+      dateien.push({ url: a.href, dateiname, zeit: dateiZeit(a) });
+    });
+    return dateien;
   }
 
   // Moodle schreibt neben jeden Abgabe-Link den Hochladezeitpunkt dieser einen Datei
@@ -1291,9 +1328,23 @@ export function starteGrader() {
     if (garnichts.length) {
       logZeile(body, `${garnichts.length} Person(en) ohne jede Abgabe — sie stehen mit in der CSV, damit sie eine Rückmeldung bekommen können: ${garnichts.map((t) => karte[t.userid].kuerzel).join(', ')}`);
     }
+    const zugeklappt = teilnehmer.filter((t) => !t.dateien.length && t.mehrUrl);
+    if (zugeklappt.length) {
+      logZeile(body, `${zugeklappt.length} Abgabe(n) mit mehr als 5 Dateien — lade die Dateiliste nach …`);
+      for (const t of zugeklappt) {
+        try {
+          t.dateien = await dateienVonUnterseite(t.mehrUrl);
+          t.quelleUnterseite = true;
+        } catch (e) {
+          logZeile(body, `Dateiliste von ${karte[t.userid].kuerzel} konnte nicht nachgeladen werden (${e.message}).`, 'fehler');
+        }
+      }
+    }
     const ohneDatei = teilnehmer.filter((t) => !t.ohneAbgabe && !t.dateien.length);
+    ohneDatei.forEach((t) => { t.dateiFehlt = true; });
     if (ohneDatei.length) {
-      logZeile(body, `${ohneDatei.length} Abgabe(n) ohne erkannte Datei (z. B. Online-Text statt Datei-Abgabe): ${ohneDatei.map((t) => karte[t.userid].kuerzel).join(', ')}`, 'fehler');
+      logZeile(body, `ACHTUNG: ${ohneDatei.length} Person(en) mit Abgabe-Status, aber OHNE erkannte Datei: ${ohneDatei.map((t) => karte[t.userid].kuerzel).join(', ')}. `
+        + 'Nicht als "keine Abgabe" bewerten — in Moodle von Hand nachsehen.', 'fehler');
     }
 
     // Ein einziger Wurzelordner im ZIP, mit STABILEM Namen (Kurs + Aufgabe, ohne
@@ -1340,6 +1391,9 @@ export function starteGrader() {
 
     for (const t of teilnehmer) {
       const kuerzel = karte[t.userid].kuerzel;
+      // Jede Person bekommt einen eigenen Ordner, auch ohne Datei — zur Kontrolle
+      // für die Lehrkraft: fehlt ein Ordner, fehlt eine Person (Arne, 28.09.2026).
+      zipDateien.push({ name: `${ordnerName}/${kuerzel}/`, data: new Uint8Array(0), ordner: true });
       const frueher = (alt[t.userid] && alt[t.userid].dateien) || [];
       const eigene = [];
 
@@ -1406,7 +1460,10 @@ export function starteGrader() {
         }
       }
 
-      inhalt.push({ kuerzel, ohne_abgabe: !!t.ohneAbgabe, dateien: eigene.map((x) => ({
+      inhalt.push({ kuerzel, ohne_abgabe: !!t.ohneAbgabe,
+        ...(t.quelleUnterseite ? { quelle: 'unterseite' } : {}),
+        ...(t.dateiFehlt ? { datei_fehlt_trotz_abgabe: true } : {}),
+        dateien: eigene.map((x) => ({
         datei: x.datei, blatt: x.blatt, status: x.status, im_zip: x.im_zip,
         pruefsumme: x.pruefsumme.slice(0, 16), name_ersetzt: x.name_ersetzt,
       })) });
@@ -1416,7 +1473,7 @@ export function starteGrader() {
     logZeile(body, `Abgleich mit dem letzten Lauf: ${zaehler.neu} neu, ${zaehler.geaendert} geändert, ${zaehler.unveraendert} unverändert`
       + (zaehler.uebersprungen ? ` (davon ${zaehler.uebersprungen} nicht geladen).` : '.'));
 
-    const anzahlAbgabeDateien = zipDateien.length;
+    const anzahlAbgabeDateien = zipDateien.filter((z) => !z.ordner).length;
     if (!anzahlAbgabeDateien) {
       logZeile(body, 'Keine neue oder geänderte Datei — es entsteht trotzdem ein ZIP mit CSV und Laufzettel.');
     }
