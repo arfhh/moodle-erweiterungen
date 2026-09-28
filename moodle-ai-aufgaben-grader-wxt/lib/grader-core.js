@@ -1205,8 +1205,19 @@ export function starteGrader() {
       const nameZelle = zellen[idx.name];
       if (!nameZelle) return;
       const nameLink = nameZelle.querySelector('a[href*="user/view.php"]') || nameZelle.querySelector('a');
-      const name = (nameLink ? nameLink.textContent : nameZelle.textContent).trim();
-      if (!name) return;
+      // Kürzel-Grundlage stabil halten: Ohne Profilbild setzt Moodle einen
+      // Initialen-Platzhalter (span.userinitials, z. B. "MB") VOR den Namen, und
+      // textContent lieferte "MBMarcel Byrtov". Mit Profilbild fehlte dieser Teil —
+      // ein hochgeladenes oder gelöschtes Profilbild hätte das Kürzel geändert.
+      // Jetzt immer: Initialen + reiner Name, mit oder ohne Bild. Für alle SuS ohne
+      // Profilbild ergibt das exakt das bisherige Kürzel (Arne, 28.09.2026).
+      const quelle = (nameLink || nameZelle).cloneNode(true);
+      const platzhalter = quelle.querySelector('.userinitials');
+      const iniText = platzhalter ? platzhalter.textContent.trim() : '';
+      quelle.querySelectorAll('.userinitials, img').forEach((x) => x.remove());
+      const reinerName = quelle.textContent.replace(/\s+/g, ' ').trim();
+      if (!reinerName) return;
+      const name = (iniText || initialen(reinerName)) + reinerName;
 
       // userid: bevorzugt aus einem "Bewerten"-Link mit action=grader, sonst aus dem Namenslink.
       const bewertenLink = tr.querySelector('a[href*="action=grader"]');
