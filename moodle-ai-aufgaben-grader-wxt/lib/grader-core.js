@@ -453,7 +453,9 @@ export function starteGrader() {
   const STRENGE_FOLGE = ['nur_v', 'mild', 'normal', 'streng', 'fachlich'];
 
   const EINST_STANDARD = { ordner: '', skill: '', duplikate: true, loesungen: true, modus: 'schnell',
-    kiHinweis: true, kiHinweisText: KI_HINWEIS_STANDARD, strenge: 'normal' };
+    kiHinweis: true, kiHinweisText: KI_HINWEIS_STANDARD, strenge: 'normal',
+    // Bewertungsübersicht + -struktur + Notenstufen mit ins ZIP (Arne, 28.09.2026). Standard: nein.
+    notenExport: false };
 
   async function einstellungenLaden() {
     const d = await storageGet([EINST_KEY]);
@@ -1032,6 +1034,12 @@ export function starteGrader() {
         <option value="schnell">Schnell — nur neue und geänderte Abgaben laden</option>
         <option value="backup">Vollständig — alle Abgaben laden (erster Lauf, neuer Rechner)</option>
       </select>
+      <label for="abg-noten">Bewertungsübersicht und -struktur mitspeichern</label>
+      <select id="abg-noten">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+      <div class="abg-hinweis">Bei „Ja“ liegen im ZIP zusätzlich Bewertungsuebersicht.csv (Rohpunkte aller Tests, H5P und Aufgaben des Kurses je Kürzel), Bewertungsstruktur.csv (Kategorien und Gewichte) und Notenstufen.csv — Grundlage für eine Zwischennote. Nur Kürzel, keine Namen. Wird nur gelesen, in Moodle ändert sich nichts.</div>
       <label class="abg-check"><input type="checkbox" id="abg-ki"> KI-Hinweis unter jedes Feedback setzen</label>
       <label for="abg-ki-text">Wortlaut des KI-Hinweises</label>
       <textarea id="abg-ki-text" rows="2"></textarea>
@@ -1049,6 +1057,7 @@ export function starteGrader() {
     panelEinstellungen.querySelector('#abg-loes').checked = !!einst.loesungen;
     panelEinstellungen.querySelector('#abg-ordner').value = einst.ordner || '';
     panelEinstellungen.querySelector('#abg-modus').value = einst.modus === 'backup' ? 'backup' : 'schnell';
+    panelEinstellungen.querySelector('#abg-noten').value = einst.notenExport ? 'ja' : 'nein';
     panelEinstellungen.querySelector('#abg-ki').checked = einst.kiHinweis !== false;
     panelEinstellungen.querySelector('#abg-ki-text').value = einst.kiHinweisText || KI_HINWEIS_STANDARD;
     panelEinstellungen.querySelector('#abg-reset').addEventListener('click', async () => {
@@ -1062,6 +1071,7 @@ export function starteGrader() {
       einst.duplikate = panelEinstellungen.querySelector('#abg-dupl').checked;
       einst.loesungen = panelEinstellungen.querySelector('#abg-loes').checked;
       einst.modus = panelEinstellungen.querySelector('#abg-modus').value;
+      einst.notenExport = panelEinstellungen.querySelector('#abg-noten').value === 'ja';
       einst.kiHinweis = panelEinstellungen.querySelector('#abg-ki').checked;
       einst.kiHinweisText = panelEinstellungen.querySelector('#abg-ki-text').value.trim() || KI_HINWEIS_STANDARD;
       await einstellungenSpeichern(einst);
@@ -1324,6 +1334,258 @@ export function starteGrader() {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // 5b · Bewertungsübersicht und -struktur mitspeichern (Arne, 28.09.2026)
+  // ---------------------------------------------------------------------
+  // Liefert der KI die Rohdaten für eine Zwischennote: Rohpunkte je Kürzel und
+  // Bewertungsaspekt, die Gewichte aus dem Setup und die Notenstufen des Kurses.
+  // Gerechnet wird hier NICHTS — die KI nimmt die Aspekte bis zum Stichtag,
+  // verteilt die Gewichte neu und rechnet selbst. Alles nur lesend:
+  //   Werte     → Moodles Textexport (grade/export/txt), im Hintergrund abgerufen.
+  //               Unabhängig von Seitengröße und zugeklappten Spalten der Übersicht.
+  //   Gewichte  → Setup für Bewertungen (grade/edit/tree) — einzige Quelle dafür.
+  //   Namen     → core_grades_get_grade_tree (sauber, ohne Menütexte), sonst Setup.
+  //   Zuordnung → gradereport_grader_get_users_in_report: Nutzer-ID ↔ E-Mail. Die
+  //               Nutzer-ID ist dieselbe wie in der Abgabentabelle → Kürzel.
+  //   Stufen    → grade/edit/letter/index.php?id=<Kurskontext>.
+  // Live geprüft 28.09.2026 (Kurs 281245): Exportspalten stehen in derselben
+  // Reihenfolge wie die itemids-Kästchen des Exportformulars; "-" = nicht bewertet.
+  // In die Dateien kommen KEINE Namen und E-Mails.
+  function moodleWurzel() {
+    const i = location.href.indexOf('/mod/assign/');
+    return i > 0 ? location.href.slice(0, i) : location.origin;
+  }
+  function kursIdLesen() {
+    const kl = /(?:^|\s)course-(\d+)(?:\s|$)/.exec(document.body.className || '');
+    return kl ? kl[1] : null;
+  }
+  async function htmlHolen(url) {
+    const r = await fetch(url, { credentials: 'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return new DOMParser().parseFromString(await r.text(), 'text/html');
+  }
+  async function ajaxRufen(wurzel, sesskey, methode, args) {
+    const r = await fetch(`${wurzel}/lib/ajax/service.php?sesskey=${encodeURIComponent(sesskey)}&info=${methode}`, {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ index: 0, methodname: methode, args }]),
+    });
+    const j = await r.json();
+    const x = Array.isArray(j) ? j[0] : j;
+    if (!x || x.error) throw new Error((x && x.exception && x.exception.errorcode) || 'Webservice-Fehler');
+    return x.data;
+  }
+  // Deutsche Zahl ("1.242,50" / "23,81 %") → Number, leer/"-" → null
+  function zahlDe(s) {
+    if (s === undefined || s === null) return null;
+    let t = String(s).replace(/[\s% ]/g, '');
+    if (t === '' || t === '-') return null;
+    if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    const n = Number(t);
+    return isFinite(n) ? n : null;
+  }
+  function zahlAus(n) { return n === null || n === undefined ? '' : String(Math.round(n * 1000) / 1000).replace('.', ','); }
+  // Moodles Textexport: Tab-getrennt, Felder ggf. in "…" mit "" als Maskierung.
+  function tsvLesen(text) {
+    const zeilen = []; let z = [], f = '', q = false, feldAnfang = true;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c;
+      } else if (c === '"' && feldAnfang) { q = true; feldAnfang = false; }
+      else if (c === '\t') { z.push(f); f = ''; feldAnfang = true; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        z.push(f); f = ''; feldAnfang = true;
+        if (z.length > 1 || z[0] !== '') zeilen.push(z);
+        z = [];
+      } else { f += c; feldAnfang = false; }
+    }
+    if (f !== '' || z.length) { z.push(f); zeilen.push(z); }
+    return zeilen;
+  }
+  function namenAusBaum(knoten, karte) {
+    if (!knoten) return;
+    const id = String(knoten.id);
+    karte[(knoten.iscategory ? 'cg' : 'ig') + id] = String(knoten.name || '').trim();
+    (knoten.children || []).forEach((k) => namenAusBaum(k, karte));
+  }
+  function strukturLesen(doc, namen) {
+    const zeilen = Array.from(doc.querySelectorAll('table.setup-grades tbody tr[id^="grade-item-"], table#grade_edit_tree_table tbody tr[id^="grade-item-"]'));
+    const liste = [];
+    zeilen.forEach((tr) => {
+      const id = tr.id.slice('grade-item-'.length);
+      const kl = tr.className.split(/\s+/).filter(Boolean);
+      const art = kl.includes('courseitem') ? 'kurs_gesamt'
+        : kl.includes('categoryitem') ? 'kategorie_gesamt'
+        : kl.includes('coursecategory') ? 'kurs'
+        : kl.includes('category') ? 'kategorie' : 'aspekt';
+      const cgs = kl.filter((c) => /^cg\d+$/.test(c) && c !== id);
+      const z = tr.children;
+      const name0 = z[0] ? z[0].innerText || z[0].textContent || '' : '';
+      const img = z[0] && z[0].querySelector('img');
+      const w = z[1] && z[1].querySelector('input[type="text"], input[type="number"]');
+      const ov = z[1] && z[1].querySelector('input[type="checkbox"]');
+      liste.push({
+        id, art,
+        eltern: cgs.length ? cgs[cgs.length - 1] : null,
+        typ: img ? (img.getAttribute('alt') || img.getAttribute('title') || '') : '',
+        name: namen[id] || name0.split(/\n| auswählen/)[0].replace(/\s+/g, ' ').replace(/^Gesamtergebnis\s*/, '').trim(),
+        gewicht: w ? zahlDe(w.value) : null,
+        ueberschrieben: !!(ov && ov.checked),
+        max: z[2] ? zahlDe(z[2].textContent) : null,
+        summenart: (art === 'kategorie' || art === 'kurs') && z[3] ? z[3].textContent.replace(/\s+/g, ' ').trim() : '',
+        verborgen: !!(tr.querySelector('a[href*="action=show"]') || /Sichtbar machen/.test(tr.textContent)),
+      });
+    });
+    // Anteil am Kursgesamt = Produkt der Gewichte entlang der Kategorien (nominell;
+    // "Leere Bewertungen ausnehmen" verschiebt die Anteile je Person — das rechnet die KI).
+    const nachId = {}; liste.forEach((e) => { nachId[e.id] = e; });
+    const anteil = (e, tiefe) => {
+      if (!e || tiefe > 20) return null;
+      if (e.art === 'kurs') return 1;
+      if (e.gewicht === null) return null;
+      const p = anteil(nachId[e.eltern], tiefe + 1);
+      return p === null ? null : p * e.gewicht / 100;
+    };
+    liste.forEach((e) => {
+      e.kategorie = e.eltern && nachId[e.eltern] ? nachId[e.eltern].name : '';
+      const a = (e.art === 'aspekt' || e.art === 'kategorie') ? anteil(e, 0) : null;
+      e.anteil = a === null ? null : a * 100;
+    });
+    return liste;
+  }
+
+  // Rückgabe: { dateien: [{name, text}], info } — wirft nie, Fehler landen im Protokoll.
+  async function bewertungsuebersichtHolen(body, teilnehmer, karte) {
+    const wurzel = moodleWurzel();
+    const kursId = kursIdLesen();
+    if (!kursId) { logZeile(body, 'Bewertungsübersicht: Kurs-ID nicht gefunden — übersprungen.', 'fehler'); return null; }
+    logZeile(body, 'Lese Bewertungsübersicht, Gewichte und Notenstufen …');
+    const info = { kurs_id: Number(kursId), abgerufen: new Date().toISOString(), warnungen: [] };
+    const warn = (t) => { info.warnungen.push(t); logZeile(body, 'Bewertungsübersicht: ' + t, 'fehler'); };
+
+    // 1. Exportformular: liefert sesskey und die Aspekt-IDs in Spaltenreihenfolge.
+    const formDoc = await htmlHolen(`${wurzel}/grade/export/txt/index.php?id=${kursId}`);
+    const form = formDoc.querySelector('form[action*="grade/export/txt/export.php"]');
+    if (!form) throw new Error('Exportformular nicht gefunden (fehlt die Berechtigung zum Notenexport?)');
+    const sesskey = (form.querySelector('input[name="sesskey"]') || {}).value;
+    const itemIds = Array.from(form.querySelectorAll('input[type="checkbox"][name^="itemids["]'))
+      .map((i) => 'ig' + (/\d+/.exec(i.name) || [''])[0]);
+    const fd = new FormData(form);
+    fd.delete('nosubmit_checkbox_controller1');
+    Array.from(fd.keys()).filter((k) => k.startsWith('display[')).forEach((k) => fd.delete(k));
+    fd.set('display[real]', '1');
+    fd.set('export_feedback', '0');
+    fd.set('export_onlyactive', '1');
+    fd.set('separator', 'tab');
+    fd.set('decimals', '2');
+    const exp = await fetch(new URL(form.getAttribute('action'), wurzel + '/').toString(), { method: 'POST', credentials: 'include', body: fd });
+    if (!exp.ok) throw new Error('Export: HTTP ' + exp.status);
+    const tab = tsvLesen(await exp.text());
+    if (tab.length < 1) throw new Error('Export ist leer');
+    const kopf = tab[0];
+    // Feste Spalten vorn: Vorname, Nachname, ID-Nummer, Institution, Abteilung, E-Mail.
+    // Hinten: "Zuletzt aus diesem Kurs geladen". Dazwischen die Aspekte.
+    const ERSTE = 6;
+    const wertSpalten = kopf.length - ERSTE - 1;
+    if (wertSpalten !== itemIds.length) {
+      throw new Error(`Export hat ${wertSpalten} Wertspalten, das Formular ${itemIds.length} Aspekte — Zuordnung unsicher, abgebrochen`);
+    }
+
+    // 2. Struktur: Setup-Seite (Gewichte) + Bewertungsbaum (Namen).
+    const setupDoc = await htmlHolen(`${wurzel}/grade/edit/tree/index.php?id=${kursId}`);
+    const namen = {};
+    try {
+      const baum = await ajaxRufen(wurzel, sesskey, 'core_grades_get_grade_tree', { courseid: Number(kursId) });
+      namenAusBaum(typeof baum === 'string' ? JSON.parse(baum) : baum, namen);
+    } catch (e) { warn(`Namen aus dem Bewertungsbaum nicht lesbar (${e.message}) — nehme die Namen der Setup-Seite.`); }
+    const struktur = strukturLesen(setupDoc, namen);
+    if (!struktur.length) warn('Setup-Seite ohne erkennbare Tabelle — Bewertungsstruktur.csv bleibt leer.');
+    const strukturNachId = {}; struktur.forEach((e) => { strukturNachId[e.id] = e; });
+    itemIds.forEach((id, k) => {
+      if (!strukturNachId[id]) warn(`Exportspalte "${kopf[ERSTE + k]}" (${id}) fehlt in der Setup-Seite.`);
+    });
+
+    // 3. Zuordnung Exportzeile → Nutzer-ID → Kürzel. Über die E-Mail; sonst über den Namen.
+    const idNachMail = {};
+    try {
+      const d = await ajaxRufen(wurzel, sesskey, 'gradereport_grader_get_users_in_report', { courseid: Number(kursId) });
+      (d.users || []).forEach((u) => { if (u.email) idNachMail[String(u.email).toLowerCase()] = String(u.id); });
+    } catch (e) { warn(`Nutzerliste nicht lesbar (${e.message}) — ordne über den Namen zu.`); }
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFC').replace(/\s+/g, ' ').trim();
+    const idNachName = {};
+    teilnehmer.forEach((t) => { idNachName[norm(t.name)] = String(t.userid); });
+    const zeilenNachKuerzel = {};
+    let fremd = 0;
+    tab.slice(1).forEach((r) => {
+      if (r.length < kopf.length - 1) return;
+      let uid = idNachMail[String(r[5] || '').toLowerCase()];
+      if (!uid || !karte[uid]) uid = idNachName[norm(r[0] + ' ' + r[1])];
+      if (!uid || !karte[uid]) { fremd += 1; return; }
+      zeilenNachKuerzel[karte[uid].kuerzel] = r;
+    });
+    const fehlend = teilnehmer.map((t) => karte[t.userid].kuerzel).filter((k) => !zeilenNachKuerzel[k]);
+    if (fremd) logZeile(body, `Bewertungsübersicht: ${fremd} Person(en) im Kurs, die nicht in dieser Aufgabe stehen — weggelassen.`);
+    if (fehlend.length) warn(`Keine Noten gefunden für: ${fehlend.join(', ')}`);
+
+    // 4. Notenstufen über den Kurskontext (steht im M.cfg der Setup-Seite).
+    let stufen = [];
+    const ctx = (/"contextid":(\d+)/.exec(setupDoc.documentElement.innerHTML) || [])[1];
+    if (ctx) {
+      try {
+        const lDoc = await htmlHolen(`${wurzel}/grade/edit/letter/index.php?id=${ctx}`);
+        const t = lDoc.querySelector('table.generaltable');
+        if (t) {
+          Array.from(t.querySelectorAll('tbody tr, tr')).forEach((tr) => {
+            const c = Array.from(tr.children).map((x) => x.textContent.trim());
+            if (c.length >= 3 && zahlDe(c[1]) !== null) stufen.push({ note: c[2], von: zahlDe(c[1]), bis: zahlDe(c[0]) });
+          });
+        }
+      } catch (e) { /* unten gemeldet */ }
+    }
+    if (!stufen.length) warn('Notenstufen nicht lesbar — Notenstufen.csv fehlt.');
+
+    // 5. Dateien bauen (Semikolon, deutsches Komma — wie bewertung.csv).
+    const spaltenKopf = itemIds.map((id, k) => {
+      const e = strukturNachId[id];
+      return `${e ? e.name : kopf[ERSTE + k].replace(/ \(Punkte\)$/, '')} [${id}]`;
+    });
+    const ue = [['Kuerzel-ID'].concat(spaltenKopf).map(csvZelle).join(';')];
+    teilnehmer.forEach((t) => {
+      const k = karte[t.userid].kuerzel;
+      const r = zeilenNachKuerzel[k];
+      const werte = itemIds.map((_, i) => {
+        if (!r) return '';
+        const roh = String(r[ERSTE + i] || '').trim();
+        const n = zahlDe(roh.replace(/\./g, ','));
+        return n === null ? '-' : zahlAus(n);
+      });
+      ue.push([csvZelle(k)].concat(werte).join(';'));
+    });
+    const st = ['ID;Art;Typ;Name;Kategorie-ID;Kategorie;Hoechstpunkte;Gewicht_in_Kategorie_%;Gewicht_ueberschrieben;Anteil_am_Kursgesamt_%;Summenart;Verborgen;Im_Export'];
+    struktur.forEach((e) => {
+      st.push([e.id, e.art, e.typ, e.name, e.eltern || '', e.kategorie, zahlAus(e.max), zahlAus(e.gewicht),
+        e.ueberschrieben ? 'ja' : 'nein', zahlAus(e.anteil), e.summenart, e.verborgen ? 'ja' : 'nein',
+        itemIds.includes(e.id) ? 'ja' : 'nein'].map(csvZelle).join(';'));
+    });
+    const ns = ['Note;Von_%;Bis_%'];
+    stufen.forEach((s) => ns.push([csvZelle(s.note), zahlAus(s.von), zahlAus(s.bis)].join(';')));
+
+    const dateien = [
+      { name: 'Bewertungsuebersicht.csv', text: '﻿' + ue.join('\r\n') },
+      { name: 'Bewertungsstruktur.csv', text: '﻿' + st.join('\r\n') },
+    ];
+    if (stufen.length) dateien.push({ name: 'Notenstufen.csv', text: '﻿' + ns.join('\r\n') });
+    Object.assign(info, {
+      dateien: dateien.map((d) => d.name),
+      anzahl_personen: teilnehmer.length - fehlend.length,
+      anzahl_aspekte: itemIds.length,
+      werte: 'Rohpunkte je Aspekt; "-" = nicht bewertet/nicht bearbeitet, 0 = mit 0 Punkten bewertet',
+    });
+    logZeile(body, `Bewertungsübersicht: ${info.anzahl_personen} Person(en) × ${itemIds.length} Aspekte, ${struktur.length} Zeilen Struktur, ${stufen.length} Notenstufen.`, 'ok');
+    return { dateien, info };
+  }
+
   // ---- Schritt 1: Herunterladen -----------------------------------------
   async function herunterladen(body, courseKey, feedbackArt, einst) {
     logZeile(body, 'Lese Bewertungstabelle (alle Seiten) …');
@@ -1523,6 +1785,20 @@ export function starteGrader() {
       zip_enthaelt_alle_abgaben: !schnell,
       abgaben: inhalt,
     };
+    // Bewertungsübersicht nur auf Wunsch (Einstellung, Standard nein). Scheitert der
+    // Abruf, entsteht das ZIP trotzdem — ohne die drei Dateien, mit Meldung.
+    if (einst && einst.notenExport) {
+      try {
+        const bu = await bewertungsuebersichtHolen(body, teilnehmer, karte);
+        if (bu) {
+          bu.dateien.forEach((d) => zipDateien.push({ name: `${ordnerName}/${d.name}`, data: new TextEncoder().encode(d.text) }));
+          lauf.bewertungsuebersicht = bu.info;
+        }
+      } catch (e) {
+        logZeile(body, `Bewertungsübersicht konnte nicht gelesen werden (${e.message}) — ZIP entsteht ohne sie.`, 'fehler');
+        lauf.bewertungsuebersicht = { fehler: e.message };
+      }
+    }
     // Der Massstab reist in der ZIP mit — sonst muesste ihn ein
     // ChatGPT-Nutzer von Hand nachreichen (Arne, 16.09.2026).
     const massFuerZip = await massstabLaden();

@@ -2,7 +2,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.9.1 · Lizenz: CC BY-SA 4.0
+Version 1.10.0 · Lizenz: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Grader, Reviewer, Coach — alle für
 > Testfragen) bewertet der Abgabengrader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -99,6 +99,23 @@ ohne Namensraten funktioniert:
 ├── bewertung.csv     ← fester Name, wird von der KI ausgefüllt
 └── _lauf.json        ← Laufzettel: Datum, Aufgabe, Lauf-Art, Kürzel-IDs (keine Klarnamen)
 ```
+
+Nur wenn in den **Einstellungen** „Bewertungsübersicht und -struktur mitspeichern" auf
+**Ja** steht (Standard: Nein), liegen zusätzlich im Wurzelordner:
+
+```
+├── Bewertungsuebersicht.csv  ← je Kürzel die Rohpunkte ALLER Bewertungsaspekte des Kurses
+│                               (Tests, H5P, Aufgaben); "-" = nicht bewertet, 0 = 0 Punkte
+├── Bewertungsstruktur.csv    ← Kategorien, Höchstpunkte, Gewichte, Anteil am Kursgesamt
+└── Notenstufen.csv           ← die Notenstufen des Kurses (Note, von %, bis %)
+```
+
+Grundlage für eine Zwischennote: Die KI nimmt die Aspekte bis zu einem Stichtag, verteilt
+die Gewichte neu und rechnet daraus Prozent und Note. Die Erweiterung liest dafür nur
+(Notenexport, Setup für Bewertungen, Notenstufen) — in Moodle ändert sich nichts. In den
+Dateien stehen nur Kürzel, keine Namen oder E-Mail-Adressen. Scheitert der Abruf, entsteht
+das ZIP trotzdem, ohne diese Dateien und mit Meldung im Protokoll. Voraussetzung ist die
+Berechtigung zum Notenexport im Kurs.
 
 Der **ZIP-Dateiname** trägt zusätzlich das Datum, sonst hängt Chrome bei mehreren
 Downloads am selben Tag „ (1)" an.
