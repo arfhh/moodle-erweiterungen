@@ -1,0 +1,224 @@
+/* Moodle AI Coach — Violett, damit es sich von Grader (blau) und Reviewer (petrol) unterscheidet */
+
+.co-hidden { display: none !important; }
+
+.co-fab {
+  position: fixed; top: 80px; right: 20px; z-index: 99996;
+  width: 46px; height: 46px; border: none; border-radius: 50%;
+  background: #7c3aed; color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px; font-weight: 700; letter-spacing: .5px; line-height: 46px;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+.co-fab:hover { background: #6d28d9; }
+.co-fab { padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.co-fab .co-fab-icon { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.co-panel {
+  position: fixed; top: 80px; right: 76px; z-index: 99997;
+  width: 420px; max-height: calc(100vh - 110px);
+  display: flex; flex-direction: column;
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.22);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px; color: #1e293b;
+}
+.co-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; background: #7c3aed; color: #fff;
+  border-radius: 9px 9px 0 0;
+}
+.co-title { font-weight: 600; }
+.co-titelblock { display: flex; flex-direction: column; min-width: 0; }
+.co-untertitel { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
+.co-title { font-family: inherit; }
+.co-close { background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; }
+
+.co-tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
+.co-tab {
+  flex: 1; padding: 9px 4px; border: none; background: none;
+  font-size: 12px; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent;
+}
+.co-tab.co-aktiv { color: #6d28d9; border-bottom-color: #7c3aed; font-weight: 600; }
+.co-badge {
+  display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 3px;
+  border-radius: 8px; background: #dc2626; color: #fff; font-size: 10px; line-height: 16px;
+}
+
+.co-body { padding: 14px; overflow-y: auto; }
+
+.co-meta { margin: 0 0 10px; font-size: 12px; color: #64748b; }
+.co-hinweis { margin: 0 0 10px; font-size: 12px; color: #64748b; line-height: 1.45; }
+.co-hinweis code { padding: 1px 4px; border-radius: 3px; background: #f1f5f9; font-size: 11px; }
+
+.co-check {
+  display: flex; align-items: flex-start; gap: 7px; font-size: 12px;
+  color: #475569; margin-bottom: 10px; cursor: pointer; line-height: 1.35;
+}
+.co-label { display: block; font-size: 12px; color: #475569; margin-bottom: 12px; }
+.co-label > textarea, .co-label > input[type="text"] {
+  display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-family: inherit; font-size: 12px; line-height: 1.45; color: #1e293b; resize: vertical;
+}
+.co-label > textarea.co-prompt, .co-label > textarea.co-hprompt {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 11px;
+}
+
+.co-body button {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 12px;
+  border: none; border-radius: 6px; background: #7c3aed; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.co-body button:hover { background: #6d28d9; }
+.co-body button:disabled { background: #c4b5fd; cursor: default; }
+.co-body button.co-zweit { background: #fff; color: #6d28d9; border: 1px solid #c4b5fd; }
+.co-body button.co-zweit:hover { background: #f5f3ff; }
+.co-alle, .co-hschreib { background: #b45309 !important; }
+.co-alle:hover, .co-hschreib:hover { background: #92400e !important; }
+.co-probe, .co-hprobe { background: #fff !important; color: #6d28d9 !important; border: 1px solid #c4b5fd !important; }
+
+.co-json, .co-hjson {
+  width: 100%; box-sizing: border-box; padding: 8px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; resize: vertical;
+}
+.co-htext {
+  width: 100%; box-sizing: border-box; margin-top: 5px; padding: 8px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.45;
+  resize: vertical;
+}
+.co-hcard { margin-top: 10px; padding: 9px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fafafa; }
+
+.co-progress, .co-progress2, .co-progress3 {
+  margin-top: 12px; height: 20px; position: relative;
+  background: #e2e8f0; border-radius: 10px; overflow: hidden;
+}
+.co-bar, .co-bar2, .co-bar3 { height: 100%; width: 0; background: #7c3aed; transition: width .15s linear; }
+.co-ptext, .co-ptext2, .co-ptext3 {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #0f172a;
+}
+
+.co-summary { margin: 12px 0 8px; font-size: 13px; font-weight: 600; }
+.co-groesse { margin: 6px 0; font-size: 11px; color: #94a3b8; }
+.co-warn {
+  margin: 8px 0; padding: 8px 10px; border-radius: 6px;
+  background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; font-size: 12px;
+}
+.co-error {
+  margin: 10px 0 0; padding: 8px 10px; border-radius: 6px;
+  background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; font-size: 12px;
+}
+.co-pinfo, .co-hinfo {
+  margin: 10px 0 0; padding: 8px 10px; border-radius: 6px; font-size: 13px;
+  background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155;
+}
+.co-pinfo.co-ok, .co-hinfo.co-ok { background: #f5f3ff; border-color: #c4b5fd; color: #5b21b6; }
+.co-pinfo.co-error, .co-hinfo.co-error { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+
+.co-abschluss, .co-habschluss {
+  margin-top: 12px; padding: 9px 11px; border-radius: 6px;
+  font-size: 13px; font-weight: 600; line-height: 1.4;
+}
+.co-abok { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+.co-abfehler { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+.co-abfrage { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; font-weight: 500; }
+.co-jetzt { margin-top: 8px !important; background: #b45309 !important; }
+
+.co-log, .co-hlog, .co-rechnung {
+  margin-top: 12px; max-height: 240px; overflow-y: auto;
+  border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px;
+  font-size: 12px; background: #f8fafc;
+}
+.co-logkopf { font-weight: 600; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+.co-logzeile { display: block; padding: 2px 0; word-break: break-word; color: inherit; text-decoration: none; }
+a.co-logzeile:hover { text-decoration: underline; }
+.co-logfehler { color: #991b1b; }
+
+/* Beschriftung ueber einem Eingabefeld. Felder stehen UNTER ihrer Beschriftung,
+   nie daneben, und fuellen die Panelbreite. */
+.co-feldkopf {
+  display: block; margin-top: 10px; font-weight: 600; font-size: 13px; color: #334155;
+}
+/* Das Wunschfeld haengt nicht in einem .co-label, braucht die Breitenregel also selbst. */
+textarea.co-hwunsch {
+  display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px;
+  border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 13px;
+}
+
+/* Protokoll des Marker-Nachtragens: waechst waehrend des Laufs, deshalb gedeckelt
+   und scrollbar, damit das Panel nicht bei jeder Frage in die Hoehe springt. */
+.co-marklog {
+  margin-top: 8px; max-height: 160px; overflow-y: auto;
+  border-left: 3px solid #ddd6fe; padding-left: 8px;
+}
+.co-fehlendkopf { font-weight: 600; margin-bottom: 5px; }
+
+.co-vorschauzeile {
+  display: grid; grid-template-columns: 1fr; gap: 1px;
+  padding: 5px 0; border-bottom: 1px solid #eef2f6;
+}
+.co-vorschauzeile:last-child { border-bottom: none; }
+.co-vfrage { font-weight: 600; color: #334155; }
+.co-vans { color: #475569; font-style: italic; }
+.co-vpkt { color: #6d28d9; font-variant-numeric: tabular-nums; }
+
+.co-list { margin-top: 10px; max-height: 260px; overflow-y: auto; }
+.co-qname { margin-top: 8px; font-size: 12px; font-weight: 600; color: #334155; }
+.co-ok { color: #059669; }
+.co-fehlt { color: #dc2626; }
+.co-row {
+  display: flex; gap: 8px; padding: 3px 0 3px 14px;
+  font-size: 12px; color: #475569; text-decoration: none;
+}
+.co-row:hover { background: #f5f3ff; }
+.co-nr { color: #94a3b8; min-width: 26px; }
+.co-ans { flex: 1; word-break: break-word; }
+
+.co-fallback { position: fixed; left: -9999px; top: 0; }
+
+/* ---- ab 0.92: Prompt-Anpassung dort, wo der Prompt kopiert wird ---- */
+
+.co-details {
+  margin-top: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 8px 10px;
+}
+.co-details > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6d28d9;
+  list-style: none;
+}
+.co-details > summary::-webkit-details-marker { display: none; }
+.co-details > summary::before { content: '▸ '; }
+.co-details[open] > summary::before { content: '▾ '; }
+.co-details textarea {
+  width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px;
+  border: 1px solid #cbd5e1; border-radius: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  line-height: 1.45; resize: vertical;
+}
+
+.co-schritt {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.co-vorschau:empty { display: none; }
+
+/* Zustaendigkeit: welche Fragen gehoeren dem Coach, welche dem Grader */
+.co-zust {
+  margin: 8px 0; padding: 8px 10px;
+  background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px;
+}
+.co-zustkopf { font-weight: 600; margin: 4px 0 2px; }
+.co-zustkopf + .co-logzeile { margin-top: 0; }
+.co-marker { margin-top: 8px; }

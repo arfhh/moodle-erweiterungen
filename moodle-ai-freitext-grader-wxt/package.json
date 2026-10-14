@@ -1,0 +1,24 @@
+{
+  "name": "moodle-ai-freitext-grader",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node node_modules/wxt/bin/wxt.mjs -b chrom",
+    "dev:firefox": "node node_modules/wxt/bin/wxt.mjs -b firefox",
+    "build:chrome": "node node_modules/wxt/bin/wxt.mjs build -b chrom",
+    "build:firefox": "node node_modules/wxt/bin/wxt.mjs build -b firefox",
+    "build:edge": "node node_modules/wxt/bin/wxt.mjs build -b edge",
+    "build-all": "npm run build:chrome && npm run build:firefox && npm run build:edge",
+    "zip:chrome": "node node_modules/wxt/bin/wxt.mjs zip -b chrom",
+    "zip:firefox": "node node_modules/wxt/bin/wxt.mjs zip -b firefox",
+    "lint": "web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-chrom && web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-firefox",
+    "postinstall": "node node_modules/wxt/bin/wxt.mjs prepare",
+    "paket": "bash scripts/paketieren.sh",
+    "sign:firefox": "web-ext sign --source-dir=Erweiterung/moodle-ai-freitext-grader-firefox --artifacts-dir=web-ext-artifacts --channel=unlisted"
+  },
+  "devDependencies": {
+    "wxt": "^0.21.4",
+    "web-ext": "^10.6.0"
+  }
+}
