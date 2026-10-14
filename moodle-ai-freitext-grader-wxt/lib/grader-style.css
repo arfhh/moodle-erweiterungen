@@ -176,3 +176,7 @@
 
 /* hidden-Attribut muss gegen display:block der Knopfregeln gewinnen */
 .mag-panel [hidden] { display: none !important; }
+
+/* Freitext Grader: Modus-Auswahl im Horizont-Reiter */
+.mag-modus { margin: 6px 0 10px; }
+.mag-modus select { width: 100%; margin: 4px 0; }

@@ -23,6 +23,7 @@
  */
 import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
+import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
 
 export function starteCoach() {
   'use strict';
@@ -918,11 +919,11 @@ MOODLE AI COACH – BEWERTUNG KURZER FREITEXTANTWORTEN
 
 BEGRÜSSUNG
 Beginne mit genau diesen drei Punkten, dann folge den Arbeitsanweisungen:
-1. „Willkommen beim Moodle AI Coach."
+1. „Willkommen beim Moodle AI Freitext Grader."
 2. „Ich bewerte kurze Freitextantworten nach dem Erwartungshorizont, der in der
    Aufgabe hinterlegt ist, und schreibe jedem Schüler eine Rückmeldung zur Sprache.
    Entscheiden tust du."
-3. „Der „Moodle AI Coach" wurde von A. Spielhoff entwickelt und ist unter der Lizenz
+3. „Der „Moodle AI Freitext Grader" wurde von T. Henken und A. Spielhoff entwickelt und ist unter der Lizenz
    CC BY-SA 4.0 veröffentlicht – du darfst ihn frei verwenden, teilen und anpassen,
    solange du ihn nennst."
 
@@ -1154,91 +1155,7 @@ ${DATEN_PLATZHALTER}`;
   }
 
   function horizontPromptVorlage() {
-    return `═══════════════════════════════════════════════════════
-MOODLE AI COACH – ERWARTUNGSHORIZONT ERSTELLEN
-═══════════════════════════════════════════════════════
-
-Für die unten stehenden Aufgaben brauchst du einen Erwartungshorizont – einen je
-Aufgabe, in genau dem Format unten. Er wird anschließend in das Moodle-Feld
-„Bewerterinformation" der Frage geschrieben und dort dauerhaft benutzt.
-
-Steht bei einer Aufgabe „horizont_bisher", gibt es dort schon einen. Er ist der
-**Ausgangspunkt, keine Vorlage zum Abschreiben**: Er wird ersetzt, weil an ihm etwas
-nicht stimmt. Übernimm, was gut ist, und weiche dort ab, wo die Änderungswünsche der
-Lehrkraft es verlangen – auch dann, wenn der bisherige Horizont das Gegenteil sagt.
-Steht kein „horizont_bisher" dabei, schreibst du neu.
-
-Die Kernaussage bekommen die Schülerinnen und Schüler zu sehen: Die Erweiterung setzt
-sie bei unvollständigen Antworten als „So hättest du es schreiben können" unter die
-Rückmeldung. Schreib sie deshalb als vollständige Musterantwort in einfacher Sprache –
-Name und Funktion, ein bis zwei kurze Sätze.
-
-WICHTIG – was NICHT hineingehört:
-Keine Sprachregeln, kein Rechtschreibabzug, kein Feedback-Stil, keine Rolle, keine
-Punktzahl. Das steht global in der Erweiterung. Im Horizont steht ausschließlich,
-was für DIESE eine Aufgabe gilt. Sonst entstehen so viele Kopien der Regeln, wie es
-Fragen gibt, und sie laufen auseinander.
-
-FORMAT je Aufgabe:
-
-Erwartungshorizont
-
-Kernaussage:
-<der eine Satz, der die volle Inhaltspunktzahl trägt>
-
-Muss enthalten:
-- <Teilaspekt 1>
-- <Teilaspekt 2>
-
-Auch richtig:
-<gleichwertige Formulierungen, Synonyme, umgangssprachliche Varianten>
-
-Inhalt:
-100 % – <Bedingung>
- 75 % – <Bedingung>            (nur wenn die Aufgabe eine solche Stufe hergibt)
- 50 % – <Bedingung>
- 25 % – <Bedingung>
-  0 % – <Bedingung>
-
-Reicht nicht:
-<typische halbe Antwort und warum sie nicht reicht>
-
-Häufiger Fehler:
-<typischer Denkfehler – hilft später beim Feedback>
-
-REGELN:
-• Benutze nur die Stufen 100 / 75 / 50 / 25 / 0. Kein 90 – das ist im Projekt die
-  Rechtschreibstufe und hat mit Inhalt nichts zu tun.
-• Lass Stufen weg, die die Aufgabe nicht hergibt. Bei einer Aufzählung von drei
-  Dingen sind 100 / 75 / 50 / 0 natürlicher als fünf Stufen.
-• Die Antwort soll ein bis drei Sätze lang sein. Halte den Horizont entsprechend
-  knapp – er ist kein Lehrbuchtext.
-• „Auch richtig" ist der wichtigste Abschnitt. Denk daran, wie Vierzehnjährige
-  formulieren, und nimm diese Varianten ausdrücklich auf.
-• Der Operator der Aufgabe zählt: Bei „Nenne" reicht die Nennung, bei „Erkläre"
-  muss ein Zusammenhang dastehen, bei „Vergleiche" beide Seiten.
-
-AUSGABE:
-Gib zuerst alle Horizonte als lesbaren Text aus, damit die Lehrkraft sie prüfen kann.
-Frage dann: „Passt das so?"
-Erst nach „ok" gibst du sie als JSON aus:
-
-\`\`\`json
-{
-  "horizonte": [
-    { "qid": "115576570", "frage": "alkoholischen Gärung (AFB I)",
-      "text": "Erwartungshorizont\\n\\nKernaussage:\\n…" }
-  ]
-}
-\`\`\`
-
-„qid" übernimmst du unverändert aus den Daten unten.
-
-═══════════════════════════════════════════════════════
-AUFGABEN OHNE ERWARTUNGSHORIZONT
-═══════════════════════════════════════════════════════
-
-[MOODLE_AI_COACH_AUFGABEN]`;
+    return kurztestHorizontVorlage();
   }
 
   // Kompakte Fassung: setzt voraus, dass die KI die Skills "2-didaktik-bewertung"
@@ -1385,7 +1302,7 @@ ${DATEN_PLATZHALTER}`;
   // Zeichen zurueck, wenn das Bild nicht geladen werden kann (z. B. wenn der Eintrag
   // web_accessible_resources im Manifest fehlt).
   const knopf = el('button', 'co-fab');
-  knopf.title = 'Moodle AI Coach';
+  knopf.title = 'Moodle AI Freitext Grader';
   try {
     const bild = document.createElement('img');
     bild.src = browser.runtime.getURL('icon/128.png');
@@ -1400,7 +1317,7 @@ ${DATEN_PLATZHALTER}`;
   panel.innerHTML = `
     <div class="co-head">
       <div class="co-titelblock">
-        <span class="co-title">AI Coach <span class="co-version"></span></span>
+        <span class="co-title">Freitext Grader · Kurztest <span class="co-version"></span></span>
         <span class="co-untertitel">(Zufalls-)Freitexte als Kurztest bewerten</span>
       </div>
       <button class="co-close" title="Schließen">✕</button>

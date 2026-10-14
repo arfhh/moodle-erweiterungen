@@ -20,7 +20,9 @@
  * (WXT legt public/icon/ als icon/ ab). Sonst zeilengleich mit v3.1.0.
  */
 import { browser } from 'wxt/browser';
-import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_ZEILE_RE_M, MARKER_KLAUSUR, markerWer } from './gemeinsam/marker.js';
+import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_ZEILE_RE_M, MARKER_KLAUSUR, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
+import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
+import { schreibeEditorfeldLive } from './gemeinsam/editor-live.js';
 
 export function starteGrader() {
   'use strict';
@@ -138,7 +140,8 @@ export function starteGrader() {
     entferneQuellen: true,
     promptHorizont:  null,
     promptKorrektur: null,
-    horizontLokal:   ''         // Rueckfallebene: Horizont im Plugin statt in der Frage
+    horizontLokal:   '',        // Rueckfallebene: Horizont im Plugin statt in der Frage
+    sprachabzugKurztest: '30'   // Kurztest-Modus: hoechster Sprachabzug in % vom Inhalt (wie Coach)
   };
 
   let E = JSON.parse(JSON.stringify(STANDARD));   // aktive Einstellungen
@@ -809,6 +812,14 @@ die Aufgabe selbst — die setzt die Erweiterung. Keine Punktzahlen im Fließtex
   }
 
   function baueHorizontPrompt() {
+    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
+      const name = ($('[name="name"]') || {}).value || 'Diese Frage';
+      const e = { qid: 'diese-frage', frage: name, aufgabe: leseAufgabenstellung(), max: leseGesamtpunkte() };
+      const bisher = htmlZuText(leseHorizontRoh());
+      if (bisher) e.horizont_bisher = ohneMarker(bisher);
+      const block = 'Rahmendaten:\n' + rahmendaten() + '\n\n```json\n' + JSON.stringify([e], null, 1) + '\n```';
+      return kurztestHorizontVorlage().replace('[MOODLE_AI_COACH_AUFGABEN]', block);
+    }
     const eigen = (E.promptHorizont || '').trim();
     return (eigen || horizontPromptVorlage())
       .replace('[MAG_RAHMENDATEN]', rahmendaten())
@@ -1133,7 +1144,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     <div class="mag-kopf">
       <img class="mag-kopfbild" alt="">
       <div class="mag-titelblock">
-        <span class="mag-titel">Moodle AI Grader <span class="mag-version"></span></span>
+        <span class="mag-titel">Freitext Grader <span class="mag-version"></span></span>
         <span class="mag-untertitel">Klausuren bewerten mit Feedback</span>
       </div>
       <button class="mag-ikon" data-tu="zu" title="Schließen">✕</button>
@@ -1145,6 +1156,14 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
     <div class="mag-inhalt" data-panel="horizont">
       <div class="mag-status" data-rolle="hstatus"></div>
+      <div class="mag-modus" data-rolle="hmodus" hidden>
+        <label>Modus dieser Frage</label>
+        <select data-rolle="hmodussel">
+          <option value="kurztest">Kurztest – kurze Antworten, schnelle Bewertung</option>
+          <option value="klausur">Klausur – Teilaufgaben, Portionen, Review</option>
+        </select>
+        <div class="mag-hinweis" data-rolle="hmodushinweis"></div>
+      </div>
       <div class="mag-rahmen">
         <div class="mag-rahmen-titel">Diese Angaben gehen in den Prompt</div>
         <div data-rolle="hrahmen"></div>
@@ -1308,10 +1327,10 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   // Runder Knopf mit dem Erweiterungs-Icon — wie bei Reviewer und Coach.
   // Das Bild braucht web_accessible_resources im Manifest, sonst bleibt es leer.
   const knopf = el('button', 'mag-knopf');
-  knopf.title = 'Moodle AI Grader';
+  knopf.title = 'Moodle AI Freitext Grader';
   const knopfBild = document.createElement('img');
   knopfBild.className = 'mag-knopf-bild';
-  knopfBild.alt = 'Moodle AI Grader';
+  knopfBild.alt = 'Moodle AI Freitext Grader';
   try { knopfBild.src = browser.runtime.getURL('icon/128.png'); } catch (e) { knopf.textContent = 'AI'; }
   if (knopfBild.src) knopf.appendChild(knopfBild);
 
@@ -1323,6 +1342,79 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   let bewertungen      = null;   // geprüfte Bewertungen
   let eintragungen     = null;   // fertig gerechnete Einträge
   let letzterReiter    = REITER[0][0];
+  let mehrereFragen    = false;  // Zufallsfrage ohne qid-Filter -> Korrektur gesperrt
+
+  /* --- Modus der Frage (Freitext Grader) ---
+     Kurztest = Horizont im Coach-Format, Bewertung auf der Uebersicht.
+     Klausur  = Horizont je Teilaufgabe, Bewertung auf der Einzelseite.
+     Vorbelegt aus dem Marker; ohne Marker ein aenderbarer Vorschlag. */
+  function istNeueFrage() {
+    return KONTEXT === 'bearbeiten' && !new URLSearchParams(location.search).get('id');
+  }
+  function modusVorschlag() {
+    const z = zustaendigkeit();
+    if (z.wer === 'coach') return 'kurztest';
+    if (z.wer === 'grader') return 'klausur';
+    const text = leseAufgabenstellung();
+    const teilaufgaben = /(^|\n)\s*(?:[a-h]\)|aufgabe\s*\d|\d+[.)]\s)/i.test(text);
+    return (!teilaufgaben && (leseGesamtpunkte() || 0) <= 3) ? 'kurztest' : 'klausur';
+  }
+  let MODUS = KONTEXT === 'bearbeiten' ? modusVorschlag() : 'klausur';
+  let horizontKurztest = null;   // Kurztest-Horizont als Text, noch nicht geschrieben
+
+  if (KONTEXT === 'bearbeiten') {
+    hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
+  }
+  function modusAnzeigen() {
+    const box = R('hmodus');
+    if (!box) return;
+    box.hidden = KONTEXT !== 'bearbeiten';
+    R('hmodussel').value = MODUS;
+    R('hmodushinweis').textContent = MODUS === 'kurztest'
+      ? 'Kurztest: Horizont mit Kernaussage, „Auch richtig" und Prozentstufen. Bewertet wird auf '
+        + 'der Übersicht, alle Kurztest-Fragen eines Tests zusammen. Feedback kurz.'
+      : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und AFB, dazu eine Antwortvorlage. '
+        + 'Bewertet wird auf der Einzelseite der Frage, in Portionen, mit Review vor dem Eintragen.';
+    const vt = panel.querySelector('.mag-tab[data-tab="vorlage"]');
+    if (vt) vt.hidden = MODUS === 'kurztest';
+    if (KONTEXT === 'bearbeiten') {
+      const w = hknoepfeContainer.querySelector('[data-tu="weiter"]');
+      const h = hknoepfeContainer.querySelector('[data-tu="hschreiben"]');
+      if (w) w.hidden = MODUS === 'kurztest';
+      if (h) h.hidden = MODUS !== 'kurztest';
+    }
+  }
+  if (KONTEXT === 'bearbeiten') {
+    R('hmodussel').addEventListener('change', () => {
+      MODUS = R('hmodussel').value;
+      horizontAufgaben = null; horizontKurztest = null;
+      R('hliste').innerHTML = ''; R('hknoepfe').hidden = true;
+      status('hstatus', 'Modus: ' + (MODUS === 'kurztest' ? 'Kurztest' : 'Klausur')
+        + '. Bitte den Prompt jetzt (neu) kopieren.');
+      modusAnzeigen();
+    });
+  }
+  modusAnzeigen();
+
+  // Kurztest-Horizont als HTML fuer graderinfo: Marker, Sprachabzug-Zeile, Text.
+  function kurztestHorizontHtml(text) {
+    const ohne = ohneMarker(String(text || '').replace(/\r/g, '')).trim();
+    const absaetze = ohne.split(/\n\s*\n/).filter(a => a.trim())
+      .map(a => '<p>' + escapeHtml(a.trim()).replace(/\n/g, '<br>') + '</p>').join('');
+    return '<p>' + MARKER_KURZTEST + '</p><p>[Rechtschreibung: '
+      + komma(E.sprachabzugKurztest || 30) + '%]</p>' + absaetze;
+  }
+
+  // Neue Frage: direkt ins offene Formular, Moodle speichert mit der Frage.
+  function liveEintragen(felder, statusRolle) {
+    try {
+      const arten = Object.keys(felder).map(n => n + ' (' + schreibeEditorfeldLive(n, felder[n]) + ')');
+      status(statusRolle, 'Ins Formular eingesetzt: ' + arten.join(', ')
+        + '. Wird mit „Änderungen speichern" zusammen mit der Frage gespeichert.');
+    } catch (e) {
+      status(statusRolle, 'Fehler: ' + e.message, true);
+    }
+  }
 
   /* --- Bearbeiten-URL der Frage, auch von der Bewertungsseite aus --- */
   function frageBearbeitenUrl() {
@@ -1473,6 +1565,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   function horizontPruefen() {
     const roh = R('hjson').value.trim();
     if (!roh) return status('hstatus', 'Bitte erst die Antwort der KI einfügen.', true);
+    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') return horizontPruefenKurztest(roh);
     try {
       const liste = leseJson(roh, 'aufgaben')
         .map(a => ({
@@ -1522,7 +1615,41 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     }
   }
 
+  function horizontPruefenKurztest(roh) {
+    try {
+      const liste = leseJson(roh, 'horizonte');
+      const h = liste.find(x => x && (x.text || x.horizont));
+      if (!h) throw new Error('Kein Horizont im JSON (erwartet: "horizonte").');
+      horizontKurztest = String(h.text || h.horizont).trim();
+      const box = R('hliste'); box.innerHTML = '';
+      const k = el('div', 'mag-karte');
+      k.appendChild(el('div', 'mag-kartenkopf', 'Kurztest-Horizont'));
+      const ta = el('textarea', 'mag-kartentext');
+      ta.value = horizontKurztest;
+      ta.rows = 12;
+      ta.addEventListener('input', () => { horizontKurztest = ta.value; });
+      k.appendChild(ta);
+      box.appendChild(k);
+      status('hstatus', 'Horizont gelesen. Prüfen, bei Bedarf ändern, dann „In die Frage eintragen".');
+      R('hknoepfe').hidden = false;
+      modusAnzeigen();
+    } catch (e) {
+      status('hstatus', 'Konnte nicht gelesen werden: ' + e.message, true);
+    }
+  }
+
   async function horizontSchreiben(trocken) {
+    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
+      if (!horizontKurztest) return status('hstatus', 'Es liegt noch kein geprüfter Horizont vor.', true);
+      const f = { 'graderinfo[text]': kurztestHorizontHtml(horizontKurztest) };
+      if (istNeueFrage()) return liveEintragen(f, 'hstatus');
+      return schreibenAusfuehren(f, trocken, protokoll('hlog'), 'hstatus');
+    }
+    if (istNeueFrage() && horizontAufgaben) {
+      const f = { 'graderinfo[text]': baueHorizont(horizontAufgaben) };
+      if (P('vorlage')) f['responsetemplate[text]'] = baueAntwortvorlage(horizontAufgaben);
+      return liveEintragen(f, 'vstatus');
+    }
     const imVorlagenReiter = KONTEXT === 'bearbeiten';
     const sRolle = imVorlagenReiter ? 'vstatus' : 'hstatus';
     if (!horizontAufgaben) {
@@ -1652,6 +1779,8 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   // Der Link „Trotzdem nur diese pruefen" setzt teilErlaubt fuer genau diesen Text.
   let teilErlaubt = false;
   function korrekturPruefen() {
+    if (mehrereFragen) return status('kstatus', 'Gesperrt: Antworten zu mehreren Fragen auf dieser Seite. '
+      + 'Bitte jede Frage einzeln über die Übersicht öffnen.', true);
     const roh = R('kjson').value.trim();
     if (!roh) return status('kstatus', 'Bitte erst die Antworten der KI einfügen.', true);
     try {
@@ -1984,7 +2113,21 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
     const z = zustaendigkeit();
     const banner = panel.querySelector('.mag-banner');
-    if (z.wer === 'coach') {
+    // Zufallsfrage ohne qid-Filter: dann stehen Antworten auf VERSCHIEDENE Fragen mit
+    // verschiedenen Horizonten auf einer Seite. Bewertet wuerde alles gegen den ersten
+    // Horizont — deshalb hier anhalten und auf die Seiten je Frage verweisen.
+    const verschiedene = KONTEXT === 'bewertung'
+      ? new Set($$('.que .graderinfo').map(g => g.innerText.trim()).filter(Boolean)).size : 0;
+    mehrereFragen = verschiedene > 1;
+    if (verschiedene > 1) {
+      banner.hidden = false;
+      banner.textContent = 'Auf dieser Seite stehen Antworten zu ' + verschiedene + ' verschiedenen '
+        + 'Fragen (Zufallsfrage). Bitte über die Übersicht jede Frage einzeln öffnen — sonst würde '
+        + 'alles gegen einen einzigen Horizont bewertet.';
+      R('kstatus') && status('kstatus', 'Gesperrt: mehrere Fragen auf einer Seite (siehe oben).', true);
+      const ks = panel.querySelector('[data-tu="kschreiben"]');
+      if (ks) ks.disabled = true;
+    } else if (z.wer === 'coach') {
       banner.hidden = false;
       banner.textContent = 'Diese Frage ist als Kurztest angelegt. '
         + 'Sie lässt sich hier trotzdem im Klausur-Weg bewerten.';
