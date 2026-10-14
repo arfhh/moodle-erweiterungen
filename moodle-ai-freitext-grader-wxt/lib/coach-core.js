@@ -24,6 +24,7 @@
 import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
+import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
 
 export function starteCoach() {
   'use strict';
@@ -1688,7 +1689,33 @@ ${DATEN_PLATZHALTER}`;
         if (fuerGrader.length) {
           zustBox.appendChild(el('div', 'co-zustkopf',
             `↷ ${fuerGrader.length} Klausur-Frage(n) — werden auf ihrer Einzelseite bewertet, hier übersprungen.`));
-          fuerGrader.forEach((f) => zustBox.appendChild(el('div', 'co-logzeile', f.name)));
+          // Rundgang: Klausur-Fragen als Links, Liste fuer die Einzelseiten ablegen.
+          const klausurListe = fuerGrader.map((f) => ({ slot: f.slot, qid: f.qid, name: f.name }));
+          rundgangSpeichern(CMID, klausurListe);
+          fuerGrader.forEach((f) => {
+            const a = el('a', 'co-logzeile', '→ ' + f.name);
+            a.href = einzelseiteUrl(CMID, f);
+            zustBox.appendChild(a);
+          });
+          const kurztestZahl = Object.keys(ausgabe.fragen || {}).length;
+          const los = el('button', 'co-jetzt', kurztestZahl
+            ? `Nach den Kurztests: weiter zur Klausur-Frage 1 von ${klausurListe.length}`
+            : `Weiter zur Klausur-Frage 1 von ${klausurListe.length}`);
+          los.addEventListener('click', () => { location.href = einzelseiteUrl(CMID, klausurListe[0]); });
+          zustBox.appendChild(los);
+          // Keine Kurztest-Fragen in diesem Test: gleich zur ersten Klausur-Frage springen.
+          if (!kurztestZahl) {
+            let rest = 3;
+            const hinweis = el('div', 'co-logzeile', `Nur Klausur-Fragen — Sprung zur ersten in ${rest} s … (Klick hier bricht ab)`);
+            zustBox.appendChild(hinweis);
+            const uhr = setInterval(() => {
+              rest--;
+              if (rest > 0) { hinweis.textContent = `Nur Klausur-Fragen — Sprung zur ersten in ${rest} s … (Klick hier bricht ab)`; return; }
+              clearInterval(uhr);
+              location.href = einzelseiteUrl(CMID, klausurListe[0]);
+            }, 1000);
+            hinweis.addEventListener('click', () => { clearInterval(uhr); hinweis.textContent = 'Automatischer Sprung abgebrochen.'; });
+          }
         }
         if (streng.length) {
           zustBox.appendChild(el('div', 'co-zustkopf',

@@ -23,6 +23,7 @@ import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_ZEILE_RE_M, MARKER_KLAUSUR, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
 import { schreibeEditorfeldLive } from './gemeinsam/editor-live.js';
+import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
 
 export function starteGrader() {
   'use strict';
@@ -73,9 +74,10 @@ export function starteGrader() {
   const RS_ZEILE_RE = /rechtschreibung\s*[:\-]?\s*(\d{1,3}(?:[.,]\d+)?)\s*%/i;
   const SCHRITTE_ZEILE_RE = /punkteschritte\s*[:\-]?\s*([\d.,]+)/i;
 
-  function metaZeilen(prozent, punkteschritte) {
+  function metaZeilen(prozent, punkteschritte, feedback) {
     return '<p>[Rechtschreibung: ' + komma(prozent) + '%]</p>'
-         + '<p>[Punkteschritte: ' + komma(punkteschritte) + ']</p>';
+         + '<p>[Punkteschritte: ' + komma(punkteschritte) + ']</p>'
+         + (feedback ? '<p>[Feedback: ' + feedback + ']</p>' : '');
   }
 
   // Die Meta-Zeilen stehen ganz oben im Horizont, vor der ersten "Aufgabe N"-Zeile.
@@ -95,6 +97,18 @@ export function starteGrader() {
   function rechtschreibungAusHorizont(horizontRoh) {
     const m = metaKopf(horizontRoh).match(RS_ZEILE_RE);
     return m ? parseFloat(m[1].replace(',', '.')) : null;
+  }
+
+  // Freitext Grader: Feedbacklaenge je Frage als Meta-Zeile, Vorrang vor der Einstellung.
+  const FEEDBACK_ZEILE_RE = /^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel|ausführlich|umfangreich)\s*\]?\s*$/im;
+  function feedbackAusHorizont(horizontRoh) {
+    const m = metaKopf(horizontRoh).match(FEEDBACK_ZEILE_RE);
+    return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : null;
+  }
+  function fbLaenge() {
+    let roh = '';
+    try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* Seite ohne Horizont */ }
+    return feedbackAusHorizont(roh) || E.feedbacklaenge;
   }
 
   function punkteschritteAusHorizont(horizontRoh) {
@@ -201,9 +215,9 @@ export function starteGrader() {
     }
     // Rechtschreibungs- und Punkteschritte-Meta-Zeilen ebenfalls entfernen (3.1.0) — sie
     // sind Verwaltung, kein Bewertungsmassstab, egal ob als eigene <p>-Zeile oder Text.
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       const zz = ersteZeile(t);
-      if (zz && (RS_ZEILE_RE.test(zz) || SCHRITTE_ZEILE_RE.test(zz))) {
+      if (zz && (RS_ZEILE_RE.test(zz) || SCHRITTE_ZEILE_RE.test(zz) || FEEDBACK_ZEILE_RE.test(zz))) {
         t = t.replace(zz, '').replace(/^\s*\n/, '');
       } else break;
     }
@@ -713,7 +727,7 @@ export function starteGrader() {
     // trotzdem in den ersten Block geschrieben, nicht doppelt setzen — wie im Coach.
     const schonDa = (aufgaben || []).some(a => MARKER_RE.test(ersteZeile(htmlZuText(a.horizont))));
     const kopf = schonDa ? ''
-      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(E.rechtschreibung, E.punkteschritte);
+      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(E.rechtschreibung, E.punkteschritte, E.feedbacklaenge);
     const bloecke = (aufgaben || []).map(a => {
       let inhalt = String(a.horizont || '').trim();
       if (!/<[a-z][\s\S]*>/i.test(inhalt)) {
@@ -735,7 +749,7 @@ export function starteGrader() {
       'Fach: '                 + (E.fach || '[nicht angegeben]'),
       'Jahrgang: '             + (E.jahrgang || '[nicht angegeben]'),
       'Kursniveau: '           + (NIVEAU[E.kursniveau] || E.kursniveau),
-      'Feedbacklänge: '        + E.feedbacklaenge,
+      'Feedbacklänge: '        + fbLaenge(),
       'Anrede im Feedback: '   + anrede() + ' …'
     ].join('\n');
   }
@@ -909,7 +923,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     let p = (eigen || korrekturPromptVorlage())
       .replace('[MAG_RAHMENDATEN]', rahmendaten())
       .replace('[MAG_HORIZONT]', horizontText || '[kein Horizont hinterlegt]')
-      .replace('[MAG_FBLAENGE]', FB_LAENGE[E.feedbacklaenge] || FB_LAENGE['Ausführlich'])
+      .replace('[MAG_FBLAENGE]', FB_LAENGE[fbLaenge()] || FB_LAENGE['Ausführlich'])
       .replace('[MAG_ANREDE]', anrede())
       .replace('[MAG_ABGABEN]', daten);
 
@@ -936,7 +950,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       abs.push(zeile + '\n' + (a.begruendung || '').trim());
     });
 
-    if (E.feedbacklaenge === 'Umfangreich') {
+    if (fbLaenge() === 'Umfangreich') {
       const ops = (bewertung.aufgaben || []).filter(a => a.operator);
       if (ops.length) {
         abs.push('Operatorerfüllung:\n' + ops.map(a => 'Aufgabe ' + a.nr + ': ' + a.operator).join('\n'));
@@ -1343,6 +1357,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   let eintragungen     = null;   // fertig gerechnete Einträge
   let letzterReiter    = REITER[0][0];
   let mehrereFragen    = false;  // Zufallsfrage ohne qid-Filter -> Korrektur gesperrt
+  let reviewTrotzdem   = false;  // zweiter Klick auf „Alle eintragen" trotz ungesehener Karten
+
+  // Review: Karten der Pruefliste als „gesehen" markieren, sobald sie zur Haelfte sichtbar waren.
+  if (typeof IntersectionObserver !== 'undefined') {
+    const sicht = new IntersectionObserver(eintraege => eintraege.forEach(e => {
+      if (e.isIntersecting) { e.target.dataset.gesehen = '1'; sicht.unobserve(e.target); }
+    }), { threshold: 0.5 });
+    const liste = R('kliste');
+    if (liste) new MutationObserver(m => m.forEach(x => x.addedNodes.forEach(n => {
+      if (n.nodeType === 1 && n.classList.contains('mag-karte')) { reviewTrotzdem = false; sicht.observe(n); }
+    }))).observe(liste, { childList: true });
+  }
 
   /* --- Modus der Frage (Freitext Grader) ---
      Kurztest = Horizont im Coach-Format, Bewertung auf der Uebersicht.
@@ -1479,7 +1505,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       (E.fach || '⚠ Fach fehlt'),
       'Jahrgang ' + (E.jahrgang || '⚠ fehlt'),
       'Niveau ' + (NIVEAU[E.kursniveau] || E.kursniveau).split(' ')[0],
-      'Feedback ' + E.feedbacklaenge,
+      'Feedback ' + fbLaenge(),
       rs,
       'Schritte ' + komma(E.punkteschritte)
     ].join(' · ');
@@ -1908,15 +1934,27 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       } else {
         // Einheitlich: ohne Fehler schliesst das Fenster nach 3 s, danach laedt die
         // Seite neu, damit die eingetragenen Punkte sichtbar sind.
+        // Rundgang: weiter zur naechsten Klausur-Frage, nach der letzten zur Uebersicht.
+        const q = new URLSearchParams(location.search);
+        const cmid = q.get('id');
+        const pos = rundgangPosition(await rundgangLaden(cmid), q.get('slot'), q.get('qid'));
+        let ziel = null, wohin = 'Fenster schließt';
+        if (pos && pos.naechste) {
+          ziel = einzelseiteUrl(cmid, pos.naechste);
+          wohin = 'Weiter zur Klausur-Frage ' + (pos.index + 2) + ' von ' + pos.gesamt;
+        } else if (pos) {
+          ziel = uebersichtUrl(cmid);
+          wohin = 'Alle Klausur-Fragen bewertet — zurück zur Übersicht';
+        }
         let rest = 3;
         const basis = r.ok + ' Bewertungen eingetragen und gegengeprüft.';
-        status('kstatus', basis + ' Fenster schließt in ' + rest + ' s …');
+        status('kstatus', basis + ' ' + wohin + ' in ' + rest + ' s …');
         const uhr = setInterval(() => {
           rest--;
-          if (rest > 0) return status('kstatus', basis + ' Fenster schließt in ' + rest + ' s …');
+          if (rest > 0) return status('kstatus', basis + ' ' + wohin + ' in ' + rest + ' s …');
           clearInterval(uhr);
           AKTIONEN.zu();
-          location.reload();
+          if (ziel) location.href = ziel; else location.reload();
         }, 1000);
       }
     } catch (e) {
@@ -1960,7 +1998,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
     kedit:    () => oeffnePromptEditor('korrektur'),
     kpruefen: korrekturPruefen,
-    kschreiben: () => korrekturEintragen(false),
+    kschreiben: () => {
+      // Review-Pflicht im Klausur-Weg: jede Karte muss einmal sichtbar gewesen sein.
+      const karten = $$('.mag-karte', R('kliste'));
+      const offen = karten.filter(k => k.dataset.gesehen !== '1').length;
+      if (offen && !reviewTrotzdem) {
+        reviewTrotzdem = true;
+        return status('kstatus', '⚠ ' + offen + ' von ' + karten.length + ' Bewertungen noch nicht angesehen. '
+          + 'Bitte durchblättern — oder „Alle eintragen" noch einmal drücken, um trotzdem einzutragen.', true);
+      }
+      reviewTrotzdem = false;
+      korrekturEintragen(false);
+    },
     krohdaten: () => kopiere(JSON.stringify({
       stand: new Date().toLocaleString('de-DE'),
       fach: E.fach, jahrgang: E.jahrgang,
