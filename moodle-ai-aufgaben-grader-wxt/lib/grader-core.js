@@ -351,8 +351,9 @@ export function starteGrader() {
   function feedbackLesen(roh) {
     const zeilen = String(roh || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     const blaetter = []; let stand = null; const frei = [];
-    let lauf = null;
+    let lauf = null; let abschluss = false;
     zeilen.forEach((z) => {
+      if (/^#abschluss$/i.test(z)) { abschluss = true; return; }
       if (z.startsWith('@')) { lauf = z.slice(1).trim(); return; }
       if (z.startsWith('!')) {
         const t = z.slice(1).split('|');
@@ -366,11 +367,13 @@ export function starteGrader() {
       } else { frei.push(z); }
     });
     if (!lauf && blaetter.length) lauf = blaetter.map((b) => b.datum).sort().pop();
-    return { blaetter, stand, frei, lauf };
+    return { blaetter, stand, frei, lauf, abschluss };
   }
 
   // Baut aus den Rohwerten das fertige HTML. Neuestes Datum oben, innerhalb
-  // eines Datums absteigend nach Bezeichnung. Der Stand-Hinweis steht direkt
+  // eines Datums absteigend nach Bezeichnung. Abschluss (Zeile #abschluss):
+  // aufsteigend nach Bezeichnung, ohne Unterstreichung, am Ende die Summe
+  // (gilt fuer jede Aufgabe, nicht nur fuer ein Thema). Der Stand-Hinweis steht direkt
   // unter der obersten Kopfzeile — dort fangen die SuS an zu lesen.
   function feedbackBauen(daten, faktoren, punkteJeBlatt) {
     if (!daten.blaetter.length) {
@@ -398,8 +401,8 @@ export function starteGrader() {
         aus.push(`<p>${NICHTS_NEU}</p>`);
       }
       // Unterstrichen wird nur, was in DIESEM Durchgang dazugekommen ist.
-      const neu = (d === daten.lauf);
-      (daten_nach[d] || []).sort((a, b) => b.name.localeCompare(a.name, 'de', { numeric: true }));
+      const neu = (d === daten.lauf) && !daten.abschluss;
+      (daten_nach[d] || []).sort((a, b) => (daten.abschluss ? -1 : 1) * b.name.localeCompare(a.name, 'de', { numeric: true }));
       (daten_nach[d] || []).forEach((b) => {
         const fak = faktoren[b.f] != null ? faktoren[b.f] : 1;
         const erg = b.v * fak;
@@ -420,6 +423,17 @@ export function starteGrader() {
         aus.push(`<p>${titel} <small style='color:#777'>(${teile.join(' · ')}${rechts})</small><br>${b.text}</p>`);
       });
     });
+    if (daten.abschluss) {
+      const maxP = Object.values(punkteJeBlatt).reduce((a, x) => a + x, 0);
+      if (maxP > 0) {
+        const erreicht = daten.blaetter.reduce((a, b) => {
+          const pk = punkteJeBlatt[b.name];
+          const fak = faktoren[b.f] != null ? faktoren[b.f] : 1;
+          return pk != null && b.v > 0 ? a + pk * b.v * fak / 100 : a;
+        }, 0);
+        aus.push(`<p><strong>Summe: ${zahl(erreicht)} von ${zahl(maxP)} Punkten</strong></p>`);
+      }
+    }
     frei_dazu(aus, daten.frei);
     return aus.join('\n');
   }
@@ -1876,6 +1890,7 @@ export function starteGrader() {
     z.push(`   Datum: der Tag, an dem das Blatt abgegeben wurde — heute ist ${lauf.datum}, ältere Blätter behalten ihr altes Datum aus "_status.json".`);
     z.push('   Text: ein bis drei Sätze, ohne Prozentangabe und ohne Punktzahl — die rechnet die Erweiterung selbst aus.');
     z.push(`${n++}. Erste Zeile des Feedbackfelds ist immer @${lauf.datum} (das Datum dieses Durchgangs). Ein Hinweis auf den Arbeitsstand kommt als eigene Zeile mit Ausrufezeichen davor: !Kopfzeile|Fließtext — er wird rot und ganz oben ausgegeben.`);
+    if (lauf.laufart === 'abschluss') z.push('   Abschluss: Direkt unter @' + lauf.datum + ' eine eigene Zeile #abschluss. Die Erweiterung sortiert dann aufsteigend und hängt die Punktsumme an.');
     z.push('   In den Rohwertzeilen darf kein Semikolon und kein gerades doppeltes Anführungszeichen stehen.');
     z.push(`${n++}. Die gesichteten Dateien aus dem Import- in den Output-Ordner übernehmen (gleicher Kürzel-Unterordner, geänderte Fassung ersetzt die alte), "_status.json" fortschreiben und den Import-Ordner leeren. Das Archiv im Output-Ordner enthält danach wieder ALLE Abgaben dieses Themas.`);
     z.push(`${n++}. Ausgefüllte CSV zurückgeben — sie wird über den Reiter „3 · Eintragen" wieder in Moodle eingetragen.`);
