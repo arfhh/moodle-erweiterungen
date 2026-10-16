@@ -182,3 +182,6 @@
 .mag-modus select { width: 100%; margin: 4px 0; }
 .mag-hilfe summary { cursor: pointer; font-weight: 600; }
 .mag-modus { border: 1px solid #dde3e9; border-radius: 6px; padding: 8px 10px; }
+
+/* Freitext Grader 0.3: Erklaerkasten oben in jedem Reiter */
+.mag-wozu { margin: 0 0 8px; }

@@ -222,3 +222,10 @@ textarea.co-hwunsch {
 .co-zustkopf { font-weight: 600; margin: 4px 0 2px; }
 .co-zustkopf + .co-logzeile { margin-top: 0; }
 .co-marker { margin-top: 8px; }
+
+/* Freitext Grader 0.3: Erklaerkasten oben in jedem Reiter */
+.co-wozu { margin: 0 0 8px; }
+
+/* Freitext Grader 0.7: Vergleich bisher → neu in der Vorschau */
+.co-vbisher { margin-left: 8px; font-size: 12px; color: #5f6b78; white-space: nowrap; }
+.co-vbisher.co-vanders { color: #b45309; font-weight: 700; }

@@ -24,6 +24,8 @@
 import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
+import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
+import { materialBlock } from './gemeinsam/horizont-bausteine.js';
 import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
 
 export function starteCoach() {
@@ -33,6 +35,16 @@ export function starteCoach() {
   // nach "↺ neu laden" sofort sichtbar ist, welche Fassung wirklich aktiv ist.
   // Aus dem Manifest gelesen, nie von Hand gepflegt: so kann sie nicht auseinanderlaufen.
   const VERSION = (browser.runtime.getManifest ? browser.runtime.getManifest().version : '');
+  // Rahmendaten (Fach, Jahrgang, Kursniveau) teilen sich beide Wege: sie stehen in den
+  // Grundeinstellungen (⚙) und gehen in die Rolle des Bewertungsprompts.
+  const NIVEAU_TEXT = { G: 'G — gymnasial', M: 'M — mittel', E: 'E — einfach' };
+  let RAHMEN = {};
+  try {
+    browser.storage.local.get(['magSettings']).then((r) => {
+      const m = (r && r.magSettings) || {};
+      RAHMEN = { fach: m.fach || '', jahrgang: m.jahrgang || '', niveau: NIVEAU_TEXT[m.kursniveau] || m.kursniveau || '' };
+    }).catch(() => {});
+  } catch (e) { /* ohne Speicher: neutrale Rolle */ }
 
   const P = new URLSearchParams(location.search);
   if (P.get('mode') !== 'grading') return;
@@ -145,7 +157,7 @@ export function starteCoach() {
   // Abschnittsueberschrift; im Moodle-Feld stehen die Abschnitte direkt untereinander.
   function kernaussage(horizont) {
     const t = String(horizont || '').replace(/\r/g, '');
-    const m = t.match(/Kernaussage\s*:?\s*([\s\S]*?)(?=\n\s*(?:Muss enthalten|Auch richtig|Inhalt|Reicht nicht|Häufiger Fehler)\s*:|$)/i);
+    const m = t.match(/Kernaussage\s*:?\s*([\s\S]*?)(?=\n\s*(?:Muss enthalten|Auch richtig|Inhalt|Reicht nicht|Häufiger Fehler|Wichtigster Hinweis|Teile)\s*:|$)/i);
     const satz = m ? m[1].replace(/\s+/g, ' ').trim() : '';
     // Sehr lange Kernaussagen sind keine Musterloesung mehr, sondern ein Absatz.
     return satz.length > 300 ? '' : satz;
@@ -397,8 +409,16 @@ export function starteCoach() {
   // "kein Essay" verworfen und tauchen nirgends mehr auf.
   const essayFeld = (q) =>
     q.querySelector('textarea.qtype_essay_response, div.qtype_essay_response');
+  // Kopfzeile der Layout-Vorlage („Deine Antwort · AFB II (2 Punkte)") gehoert nicht
+  // zur Schuelerantwort — sonst zaehlt sie als Text und als moegliche Sprachfehler.
+  // Mit Teilen: „a · Deine Antwort AFB I (1 Punkt)" — wird zu „a) ", damit die KI die Teile auseinanderhaelt.
+  const VORLAGE_KOPF_RE = /^\s*Deine Antwort(?:\s+AFB\s+I{1,3}(?:\s*[-–]\s*I{1,3})?)?(?:\s+\(\s*[\d.,]+\s+Punkte?\s*\))?\s*/i;
+  const VORLAGE_TEIL_RE = /(^|\s)([a-h])\s*·\s*Deine Antwort(?:\s+AFB\s+I{1,3}(?:\s*[-–]\s*I{1,3})?)?(?:\s+\(\s*[\d.,]+\s+Punkte?\s*\))?\s*/gi;
   const essayWert = (feld) =>
-    (feld.tagName === 'TEXTAREA' ? (feld.value || '') : txt(feld)).trim();
+    (feld.tagName === 'TEXTAREA' ? (feld.value || '') : txt(feld))
+      .replace(VORLAGE_TEIL_RE, (m0, vor, b) => (vor ? '\n' : '') + b.toLowerCase() + ') ')
+      .replace(VORLAGE_KOPF_RE, '').trim()
+      .replace(/^(?:[a-h]\)\s*)+$/i, '');   // nur leere Teilkaesten = leere Antwort
 
   // Live am 11.09.2026 bestaetigt (siehe seiteMitFeldernLaden weiter unten):
   // Bei einer Zufallsfrage mit mehr Versuchen, als Moodle auf einen Schlag zeigt,
@@ -477,7 +497,9 @@ export function starteCoach() {
         markfeld: mark.name,
         kommentarfeld: komm ? komm.name : null,
         hat_kommentar: !!(komm && komm.value.trim()),
-        schon_bewertet: schonBewertet
+        schon_bewertet: schonBewertet,
+        // Nur fuer den Vergleich in der Vorschau — geht NICHT an die KI (sonst ankert sie daran).
+        bisher: schonBewertet ? num(mark.value) : null
       });
     });
     return { frage, versuche };
@@ -921,7 +943,7 @@ export function starteCoach() {
   function bewertungsPromptVorlage() {
     const maxAb = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
     return `═══════════════════════════════════════════════════════
-MOODLE AI COACH – BEWERTUNG KURZER FREITEXTANTWORTEN
+MOODLE AI FREITEXT GRADER – BEWERTUNG KURZTEST
 ═══════════════════════════════════════════════════════
 
 BEGRÜSSUNG
@@ -933,6 +955,12 @@ Beginne mit genau diesen drei Punkten, dann folge den Arbeitsanweisungen:
 3. „Der „Moodle AI Freitext Grader" wurde von T. Henken und A. Spielhoff entwickelt und ist unter der Lizenz
    CC BY-SA 4.0 veröffentlicht – du darfst ihn frei verwenden, teilen und anpassen,
    solange du ihn nennst."
+
+═══════════════════════════════════════════════════════
+BEWERTUNGSMASSSTAB
+═══════════════════════════════════════════════════════
+
+${bewertungsKopf(RAHMEN)}
 
 ═══════════════════════════════════════════════════════
 AUSGANGSLAGE
@@ -957,14 +985,8 @@ die Lehrkraft hat für diese Aufgabe bereits entschieden.
 
 Steht im Horizont ausnahmsweise keine Abstufung, benutze 100 / 75 / 50 / 25 / 0.
 
-Grundregeln:
-• Bewerte nur, was tatsächlich dasteht. Interpretiere nichts hinein.
-• „Auch richtig" im Horizont ist verbindlich: Wer eine dort genannte Formulierung
-  benutzt, bekommt die volle Stufe – auch umgangssprachlich.
-• Fachlich richtige Zusätze, die nicht verlangt waren, geben keine Punkte, kosten
-  aber auch keine.
-• Eine Antwort in Stichworten statt in Sätzen ist inhaltlich nicht schlechter.
-  Der Satzbau wird in Teil 2 bewertet, nicht hier.
+Es gelten die Grundregeln oben. Dazu: Eine Antwort in Stichworten ist inhaltlich nicht
+schlechter – der Satzbau wird in Teil 2 bewertet, nicht hier.
 
 ═══════════════════════════════════════════════════════
 TEIL 2 – SPRACHE
@@ -1060,6 +1082,23 @@ hinterlegt hat. Im Feld „inhalt" steht deshalb nur, WAS fehlte oder falsch war
 die fertige Lösung.
 
 ═══════════════════════════════════════════════════════
+MODUSFRAGE – STELLE SIE ZUERST UND WARTE
+═══════════════════════════════════════════════════════
+
+Stelle nach der Begrüßung GENAU DIESE EINE Frage und gib danach nichts weiter aus, bis
+die Lehrkraft geantwortet hat:
+
+„Wie sollen wir vorgehen?
+  1. GEMEINSAM – Ich zeige dir alle Bewertungen als Tabelle, du kannst einzelne ändern,
+     dann gebe ich das JSON aus. (empfohlen)
+  2. AUTOMATISCH – Ich bewerte alles und gebe sofort das JSON aus.
+Antworte mit 1 oder 2."
+
+AUTOMATISCH ist eine bewusste Wahl der Lehrkraft, kein stiller Standard.
+Bei 1 folgst du Schritt 1 und Schritt 2. Bei 2 überspringst du Schritt 1.
+Im JSON steht ganz oben "besprochen": true (Modus 1) oder false (Modus 2).
+
+═══════════════════════════════════════════════════════
 SCHRITT 1 – TABELLE ZUR PRÜFUNG
 ═══════════════════════════════════════════════════════
 
@@ -1083,10 +1122,11 @@ Wenn alles stimmt, antworte mit ok – dann gebe ich dir das JSON aus."
 SCHRITT 2 – JSON
 ═══════════════════════════════════════════════════════
 
-Erst nach „ok":
+Erst nach „ok" (Modus GEMEINSAM) bzw. sofort (Modus AUTOMATISCH):
 
 \`\`\`json
 {
+  "besprochen": true,
   "bewertungen": [
     { "frage": "alkoholischen Gärung (AFB I)", "qubaid": "2433013", "slot": "6",
       "inhalt": 50,
@@ -1161,8 +1201,8 @@ DATEN AUS MOODLE
 ${DATEN_PLATZHALTER}`;
   }
 
-  function horizontPromptVorlage() {
-    return kurztestHorizontVorlage();
+  function horizontPromptVorlage(stufe) {
+    return kurztestHorizontVorlage({ einzeln: false, stufe: stufe || 'Mittel' });
   }
 
   // Kompakte Fassung: setzt voraus, dass die KI die Skills "2-didaktik-bewertung"
@@ -1173,8 +1213,10 @@ ${DATEN_PLATZHALTER}`;
   function kompaktPromptVorlage() {
     const maxAb = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
     return `═══════════════════════════════════════════════════════
-MOODLE AI COACH – BEWERTUNG (KOMPAKTER PROMPT)
+MOODLE AI FREITEXT GRADER – BEWERTUNG KURZTEST (KOMPAKT)
 ═══════════════════════════════════════════════════════
+
+${bewertungsKopf(RAHMEN)}
 
 Falls du Zugriff auf die Skills „2-didaktik-bewertung“ und „3-moodle-erweiterungen“
 von A. Spielhoff hast: Wende deren Bewertungslogik an — Inhalt strikt getrennt von
@@ -1195,6 +1237,23 @@ ab 5 den vollen Abzug. Punkte NICHT selbst ausrechnen, nur Inhalt-Prozent und
 Fehlerliste angeben — das rechnet die Erweiterung.
 
 ═══════════════════════════════════════════════════════
+MODUSFRAGE – STELLE SIE ZUERST UND WARTE
+═══════════════════════════════════════════════════════
+
+Stelle nach der Begrüßung GENAU DIESE EINE Frage und gib danach nichts weiter aus, bis
+die Lehrkraft geantwortet hat:
+
+„Wie sollen wir vorgehen?
+  1. GEMEINSAM – Ich zeige dir alle Bewertungen als Tabelle, du kannst einzelne ändern,
+     dann gebe ich das JSON aus. (empfohlen)
+  2. AUTOMATISCH – Ich bewerte alles und gebe sofort das JSON aus.
+Antworte mit 1 oder 2."
+
+AUTOMATISCH ist eine bewusste Wahl der Lehrkraft, kein stiller Standard.
+Bei 1 folgst du Schritt 1 und Schritt 2. Bei 2 überspringst du Schritt 1.
+Im JSON steht ganz oben "besprochen": true (Modus 1) oder false (Modus 2).
+
+═══════════════════════════════════════════════════════
 SCHRITT 1 – TABELLE ZUR PRÜFUNG
 ═══════════════════════════════════════════════════════
 
@@ -1212,10 +1271,11 @@ Beispiel: 3 auf 75. Wenn alles stimmt, antworte mit ok.“ Warte auf die Antwort
 SCHRITT 2 – JSON
 ═══════════════════════════════════════════════════════
 
-Erst nach „ok“ ausgeben:
+Erst nach „ok“ (Modus GEMEINSAM) bzw. sofort (Modus AUTOMATISCH) ausgeben:
 
 \`\`\`json
 {
+  "besprochen": true,
   "bewertungen": [
     { "frage": "alkoholischen Gärung (AFB I)", "qubaid": "2433013", "slot": "6",
       "inhalt": 50,
@@ -1271,7 +1331,7 @@ ${DATEN_PLATZHALTER}`;
         + 'höchstens zwei Felder aus (inhalt und höchstens ein weiteres), je EIN kurzer Satz. '
         + 'Bei "Mittel" gilt das Format wie beschrieben.\n\n'
       : '';
-    const block = regel + '```json\n' + JSON.stringify(daten, null, 1) + '\n```';
+    const block = regel + '```json\n' + JSON.stringify(daten, (k, v) => (k === 'bisher' ? undefined : v), 1) + '\n```';
     return vorlage.includes(DATEN_PLATZHALTER)
       ? vorlage.replace(DATEN_PLATZHALTER, block)
       : vorlage + '\n\n' + block;
@@ -1279,12 +1339,14 @@ ${DATEN_PLATZHALTER}`;
 
   function baueHorizontPrompt(fragenListe) {
     const eigen = (optionen.horizontPromptOverride || '').trim();
-    const vorlage = eigen || horizontPromptVorlage();
+    const stufen = new Set(fragenListe.map((f) => f.feedback === 'Kurz' ? 'Kurz' : 'Mittel'));
+    const vorlage = eigen || horizontPromptVorlage(stufen.size > 1 ? 'gemischt' : [...stufen][0]);
     // Bei Fragen, die schon einen Horizont haben, wandert er als horizont_bisher mit:
     // die KI soll wissen, wovon sie abweicht, statt blind neben dem Vorhandenen zu schreiben.
     const block = '```json\n' + JSON.stringify(
       fragenListe.map((f) => {
         const e = { qid: f.qid, frage: f.name, aufgabe: f.aufgabe, max: f.max };
+        if (stufen.size > 1) e.feedback = f.feedback === 'Kurz' ? 'Kurz' : 'Mittel';
         if (f.horizont) e.horizont_bisher = horizontOhneMarker(f.horizont);
         return e;
       }),
@@ -1302,7 +1364,8 @@ ${DATEN_PLATZHALTER}`;
         + wunsch + '\n\n'
       : '';
     const platz = '[MOODLE_AI_COACH_AUFGABEN]';
-    const alles = wunschBlock + block;
+    const mat = materialBlock(fragenListe.map((f) => f.aufgabe), []);
+    const alles = wunschBlock + (mat ? mat + '\n\n' : '') + block;
     return vorlage.includes(platz) ? vorlage.replace(platz, alles) : vorlage + '\n\n' + alles;
   }
 
@@ -1343,6 +1406,10 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="co-body" data-panel="lesen">
+      <details class="co-details co-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="co-hinweis">Hier bewertest du alle Kurztest-Antworten dieses Tests auf einmal. Die Erweiterung sammelt die Antworten aller Versuche und baut daraus mit den Erwartungshorizonten einen Prompt. Diesen in die KI einfügen; deren Antwort kommt in Reiter 2.</p>
+      </details>
       <p class="co-meta"></p>
       <label class="co-check"><input type="checkbox" class="co-bereits">
         Auch schon bewertete Versuche noch einmal vorlegen</label>
@@ -1373,6 +1440,10 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="co-body co-hidden" data-panel="eintrag">
+      <details class="co-details co-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="co-hinweis">Hier fügst du die Bewertung der KI ein. Die Erweiterung rechnet die Punkte aus Inhaltsstufe und Fehlerzahl selbst, zeigt alles zur Kontrolle und trägt Punkte und Rückmeldung je Versuch in Moodle ein.</p>
+      </details>
       <p class="co-hinweis">Hier das Bewertungs-JSON der KI einfügen. Die Punkte rechnet
       die Erweiterung aus Inhalt und Fehlerzahl selbst.</p>
       <textarea class="co-json" rows="6" placeholder='{ "bewertungen": [ … ] }'></textarea>
@@ -1391,6 +1462,10 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="co-body co-hidden" data-panel="horizont">
+      <details class="co-details co-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="co-hinweis">Für Aufgaben, die noch keinen Erwartungshorizont haben: Prompt für mehrere Aufgaben auf einmal erstellen und die Horizonte eintragen. Einzelne Aufgaben gehen bequemer im Frageneditor (Aufgabe bearbeiten → Freitext Grader).</p>
+      </details>
       <p class="co-hinweis">Der Erwartungshorizont gehört in die Frage, nicht in die
       Erweiterung — einmal erstellt, gilt er dauerhaft und wandert beim Export mit.
       Hier wird er angelegt, wo er fehlt — oder für vorhandene neu geschrieben.</p>
@@ -1435,6 +1510,10 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="co-body co-hidden" data-panel="opt">
+      <details class="co-details co-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="co-hinweis">Einstellungen für alle Kurztests, etwa der höchste Abzug für Sprache und eigene Prompt-Fassungen.</p>
+      </details>
       <label class="co-label">Maximaler Abzug für Sprache und Ausdruck (% der Aufgabenpunkte)
         <input type="text" class="co-abzug" value="30">
       </label>
@@ -1961,6 +2040,18 @@ ${DATEN_PLATZHALTER}`;
         + 'Punkte und Abzug wurden aus Inhalt und Fehlerzahl berechnet.'
         + (ohneText ? ` ⚠ ${ohneText} Eintrag/Einträge ohne Rückmeldungstext.` : '');
 
+      // Vergleich mit der bisherigen Bewertung (nur bei schon bewerteten Versuchen)
+      const mitAlt = raus.filter((e) => e.bisher != null);
+      const gleich = mitAlt.filter((e) => Math.abs(e.bisher - e.punkte) < 0.005).length;
+      const hoeher = mitAlt.filter((e) => e.punkte - e.bisher >= 0.005).length;
+      const niedriger = mitAlt.length - gleich - hoeher;
+      if (mitAlt.length) {
+        info.textContent += ` Vergleich mit der bisherigen Bewertung: ${gleich} gleich, `
+          + `${hoeher} höher, ${niedriger} niedriger.`;
+      }
+      const bespr = typeof daten.besprochen === 'boolean' ? daten.besprochen : null;
+      if (bespr === true) info.textContent += ' Mit der KI gemeinsam besprochen.';
+      if (bespr === false) info.textContent += ' Automatisch bewertet – ein Blick in die Liste lohnt sich.';
       const box = el('div', 'co-rechnung');
       raus.forEach((e) => {
         const z = el('a', 'co-logzeile co-vorschauzeile');
@@ -1969,6 +2060,12 @@ ${DATEN_PLATZHALTER}`;
         z.appendChild(el('span', 'co-vfrage', e.frage));
         z.appendChild(el('span', 'co-vans', '„' + e.antwort.slice(0, 60) + '"'));
         z.appendChild(el('span', 'co-vpkt', e.rechnung));
+        if (e.bisher != null) {
+          const anders = Math.abs(e.bisher - e.punkte) >= 0.005;
+          const v = el('span', 'co-vbisher' + (anders ? ' co-vanders' : ''),
+            'bisher ' + komma(e.bisher) + ' → neu ' + komma(e.punkte));
+          z.appendChild(v);
+        }
         box.appendChild(z);
       });
       $('.co-vorschau').appendChild(box);

@@ -29,3 +29,16 @@ export function schreibeEditorfeldLive(name, html) {
   }
   return 'Textfeld';
 }
+
+// Gegenstueck: aktuellen Inhalt aus dem offenen Editor lesen (nicht nur aus der
+// Textarea — TinyMCE/Atto gleichen sie erst beim Speichern ab).
+export function leseEditorfeldLive(name) {
+  const ta = document.querySelector('[name="' + CSS.escape(name) + '"]');
+  if (!ta) return '';
+  const id = ta.id || '';
+  const ifr = id && document.getElementById(id + '_ifr');
+  if (ifr && ifr.contentDocument && ifr.contentDocument.body) return ifr.contentDocument.body.innerHTML;
+  const atto = id && document.getElementById(id + 'editable');
+  if (atto) return atto.innerHTML;
+  return ta.value || '';
+}

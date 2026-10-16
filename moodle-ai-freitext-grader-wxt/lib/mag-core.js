@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 0.2.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 0.7.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -20,9 +20,12 @@
  * (WXT legt public/icon/ als icon/ ab). Sonst zeilengleich mit v3.1.0.
  */
 import { browser } from 'wxt/browser';
-import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_ZEILE_RE_M, MARKER_KLAUSUR, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
+import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_ZEILE_RE_M, MARKER_KLAUSUR, MARKER_KURZTEST, markerWer, modusAus } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
-import { schreibeEditorfeldLive } from './gemeinsam/editor-live.js';
+import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
+import { stufenBlock, materialBlock as materialBaustein, horizontRegeln, HORIZONT_ZWECK } from './gemeinsam/horizont-bausteine.js';
+import { schreibeEditorfeldLive, leseEditorfeldLive } from './gemeinsam/editor-live.js';
+import { gestalteAufgabe, istGestaltet, afbAusText, antwortKasten, zerlegeAufgabentext, nrKey } from './gemeinsam/aufgaben-layout.js';
 import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
 
 export function starteGrader() {
@@ -119,7 +122,9 @@ export function starteGrader() {
 
   // Eine Aufgabengrenze — in der Horizont-Ueberschrift wie in der Kopfzeile der
   // Antwortvorlage. Die eingekreiste Ziffer davor ist optional.
-  const AUFGABE_RE = /^\s*[①-⑳⓪]?\s*Aufgabe\s+(\d+)\b/i;
+  // „Aufgabe 2a" (Horizont, alte Vorlagen) oder „2a · …" (Kopfzeile der neuen Antwortvorlage).
+  const AUFGABE_RE = /^\s*[①-⑳⓪]?\s*(?:Aufgabe\s+(\d{1,2}\s*[a-h]?)(?![a-z])|(\d{1,2}[a-h]?)\s*·)/i;
+  const aufgabeNr = (m) => nrKey(m[1] || m[2]);
 
   // AFB-Farblogik des Projekts. Nur wirksam, wenn die Option eingeschaltet ist —
   // fremde Nutzer bekommen das neutrale Layout.
@@ -148,9 +153,12 @@ export function starteGrader() {
     punkteschritte:  '0.5',
     rechtschreibung: '10',      // Prozent der Gesamtpunktzahl, 0 = kein Abzug
     feedbacklaenge:  'Ausführlich',
-    afbFarben:       false,     // Antwortvorlage in AFB-Farblogik statt neutral
+    afbFarben:       true,      // Antwortvorlage in AFB-Farblogik statt neutral
     vorlagePunkte:   true,
     vorlageAfb:      true,
+    kartePunkte:     true,      // Aufgaben-Layout: Punkte je Teilaufgabe in der Karte
+    layoutAufgabe:   true,      // Layout-Reiter: Aufgabenstellung gestalten
+    layoutAntwort:   true,      // Layout-Reiter: Antwortvorlage gestalten
     kiHinweis:       true,
     entferneQuellen: true,
     promptHorizont:  null,
@@ -428,8 +436,7 @@ export function starteGrader() {
   // Bewertungsseite (dort steht er als div.graderinfo, kein Umweg noetig).
   function leseHorizontRoh() {
     if (KONTEXT === 'bearbeiten') {
-      const ta = $('[name="graderinfo[text]"]');
-      return ta ? ta.value : '';
+      return leseEditorfeldLive('graderinfo[text]');
     }
     const gi = $('.que .graderinfo') || $('.graderinfo');
     return gi ? gi.innerHTML : '';
@@ -439,8 +446,11 @@ export function starteGrader() {
   function zustaendigkeit() {
     const roh = htmlZuText(leseHorizontRoh());
     if (!roh) return { horizont: false, wer: null };
-    const m = ersteZeile(roh).match(MARKER_RE);
-    return { horizont: true, wer: markerWer(m) };
+    // Auf der Bewertungsseite steht vor dem Horizont noch Moodles Ueberschrift
+    // („Informationen für Bewerter/innen") — deshalb die ersten Zeilen durchsuchen.
+    const zeilen = roh.split('\n').map(z => z.trim()).filter(Boolean).slice(0, 5);
+    const treffer = zeilen.map(z => z.match(MARKER_RE)).find(Boolean) || null;
+    return { horizont: true, wer: markerWer(treffer) };
   }
 
   /* --- Horizont in Aufgabenbloecke zerlegen --- */
@@ -456,7 +466,7 @@ export function starteGrader() {
       const zeile = nurText(kind);
       const m = zeile.match(AUFGABE_RE);
       if (m && /^(H[1-6]|P|DIV)$/.test(kind.tagName) && zeile.length < 200) {
-        aktuell = { nr: parseInt(m[1], 10), kopf: zeile, html: '', text: '' };
+        aktuell = { nr: aufgabeNr(m), kopf: zeile, html: '', text: '' };
         bloecke.push(aktuell);
         return;
       }
@@ -470,7 +480,7 @@ export function starteGrader() {
       // ganzen Arbeit. Der Marker muss auch hier raus — er ist Verwaltung, kein Maßstab.
       const ganz = ohneMarker(htmlZuText(html));
       if (!ganz) return [];
-      return [{ nr: 1, kopf: 'Aufgabe 1', html: String(html || ''), text: ganz,
+      return [{ nr: '1', kopf: 'Aufgabe 1', html: String(html || ''), text: ganz,
                 punkte: null, afb: null, ganzeArbeit: true }];
     }
     bloecke.forEach(b => {
@@ -540,7 +550,7 @@ export function starteGrader() {
         if (!t) return;
         const m = t.match(AUFGABE_RE);
         if (m && t.length < 160) {
-          aktuell = { nr: parseInt(m[1], 10), text: '' };
+          aktuell = { nr: aufgabeNr(m), text: '' };
           bloecke.push(aktuell);
         } else if (aktuell) {
           aktuell.text += t + '\n';
@@ -558,7 +568,7 @@ export function starteGrader() {
       bloecke.forEach(b => { b.text = b.text.trim(); });
       return { gegliedert: true, aufgaben: bloecke, leer: bloecke.every(b => !b.text) };
     }
-    return { gegliedert: false, aufgaben: [{ nr: 1, text: String(klartext || '').trim() }] };
+    return { gegliedert: false, aufgaben: [{ nr: '1', text: String(klartext || '').trim() }] };
   }
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -603,12 +613,12 @@ export function starteGrader() {
     // die Punkteverteilung aller uebrigen Aufgaben.
     const nummern = (horizontBloecke && horizontBloecke.length)
       ? horizontBloecke.map(b => b.nr)
-      : (bewertung.aufgaben || []).map(a => Number(a.nr));
+      : (bewertung.aufgaben || []).map(a => nrKey(a.nr));
     const anzahl = Math.max(1, nummern.length);
     const fehlendeAufgaben = [];
 
     const teil = nummern.map(nr => {
-      const a = (bewertung.aufgaben || []).find(x => Number(x.nr) === nr)
+      const a = (bewertung.aufgaben || []).find(x => nrKey(x.nr) === nr)
              || (fehlendeAufgaben.push(nr), { nr: nr, prozent: 0 });
       const block = (horizontBloecke || []).find(b => b.nr === nr);
       let max;
@@ -688,34 +698,164 @@ export function starteGrader() {
     return AFB_FARBEN[stufe] || AFB_FARBEN.neutral;
   }
 
+  // Kopfzeile im HORIZONT (nicht sichtbar fuer Lernende): immer vollstaendig, damit
+  // AFB und Punkte spaeter wieder herausgelesen werden koennen.
   function kopfzeile(a) {
-    const teile = ['Aufgabe ' + a.nr];
-    let s = escapeHtml(teile[0]);
-    if (E.vorlageAfb && a.afb) {
-      s += ' <span style="font-size:13px;font-style:italic;font-weight:normal;color:#6b6b6b;">AFB '
-         + escapeHtml(a.afb) + '</span>';
-    }
+    let s = escapeHtml('Aufgabe ' + a.nr);
+    if (a.afb) s += ' <span style="font-size:13px;font-style:italic;font-weight:normal;color:#6b6b6b;">AFB '
+      + escapeHtml(a.afb) + '</span>';
     if (a.schlagwort) s += ' · ' + escapeHtml(a.schlagwort);
-    if (E.vorlagePunkte && a.punkte != null) {
-      s += ' <span style="font-size:12px;font-weight:600;color:#6b6b6b;">('
-         + escapeHtml(komma(a.punkte)) + (a.punkte === 1 ? ' Punkt' : ' Punkte') + ')</span>';
-    }
+    if (a.punkte != null) s += ' <span style="font-size:12px;font-weight:600;color:#6b6b6b;">('
+      + escapeHtml(komma(a.punkte)) + (Number(a.punkte) === 1 ? ' Punkt' : ' Punkte') + ')</span>';
     return s;
   }
 
-  // Antwortvorlage: je Aufgabe ein div-Block. Kein <table> (TinyMCE blendet sonst eine
-  // Tabellen-Leiste ein), kein display:flex (uebersteht das Tippen nicht), kein
-  // Platzhaltertext. Immer genau ZWEI leere Absaetze — das Feld waechst mit jedem Return.
+  // Antwortvorlage: je Aufgabe ein Kasten mit derselben Marke wie in der Aufgabenstellung.
+  // Kein <table>, kein display:flex (uebersteht das Tippen nicht), zwei leere Absaetze.
+  function kastenOpts() {
+    return { farbig: E.afbFarben !== false, zeigeAfb: !!E.vorlageAfb, zeigePunkte: !!E.vorlagePunkte };
+  }
   function baueAntwortvorlage(aufgaben) {
-    return (aufgaben || []).map(a => {
-      const f = afbFarbe(a.afb);
-      return '<div style="border:1.5px solid #9e9e9e;border-radius:12px;overflow:hidden;margin:10px 0;">'
-        + '<div style="background:' + f.kopf + ';padding:9px 14px;font-size:16px;font-weight:bold;'
-        + 'color:#33404d;border-bottom:1.5px solid #9e9e9e;">' + kopfzeile(a) + '</div>'
-        + '<div style="background:' + f.feld + ';padding:10px 14px;font-size:15px;line-height:1.45;">'
-        + '<p style="margin:0;">&nbsp;</p><p style="margin:0;">&nbsp;</p></div>'
-        + '</div>';
-    }).join('\n');
+    return (aufgaben || []).map(a => antwortKasten(Object.assign({
+      label: String(a.nr), titel: a.schlagwort || 'Deine Antwort', afb: a.afb, punkte: a.punkte
+    }, kastenOpts()))).join('\n');
+  }
+
+  // Kurztest: Punkte je Teil stehen im Horizont unter „Teile:" („a) … – 1 Punkt").
+  function kurztestTeilePunkte(text) {
+    const t = String(text || '').replace(/\r/g, '');
+    const m = t.match(/Teile\s*:\s*\n([\s\S]*?)(?:\n\s*\n|$)/i);
+    const map = {};
+    if (!m) return map;
+    m[1].split('\n').forEach(z => {
+      const x = z.match(/^\s*[-•]?\s*([a-h])\s*[).:]?\s.*?([\d]+(?:[.,]\d+)?)\s*Punkt/i);
+      if (x) map[x[1].toLowerCase()] = zahl(x[2]);
+    });
+    return map;
+  }
+  function kurztestHorizontText() {
+    return horizontKurztest || htmlZuText(leseHorizontRoh() || '');
+  }
+  // Teile a, b … aus dem Fragetext, mit Punkten aus dem Horizont.
+  function kurztestTeile() {
+    const roh = leseEditorfeldLive('questiontext[text]') || '';
+    const seg = zerlegeAufgabentext(istGestaltet(roh) ? '' : roh).segmente.filter(x => x.typ === 'aufgabe');
+    const pkt = kurztestTeilePunkte(kurztestHorizontText());
+    const gesamtAfb = afbAusText(htmlZuText(roh));
+    return seg.filter(x => /^[a-h]$/.test(x.label)).map(x => ({
+      nr: x.label,
+      afb: afbAusText(x.knoten.map(k => k.textContent || '').join(' ')) || gesamtAfb,
+      punkte: pkt[x.label] != null ? pkt[x.label] : null
+    }));
+  }
+  function baueKurztestVorlage() {
+    const teile = kurztestTeile();
+    const o = kastenOpts();
+    if (teile.length >= 2) {
+      return teile.map(t => antwortKasten(Object.assign({ label: t.nr, titel: 'Deine Antwort', afb: t.afb, punkte: t.punkte }, o))).join('\n');
+    }
+    const roh = leseEditorfeldLive('questiontext[text]') || '';
+    return antwortKasten(Object.assign({ label: '', titel: 'Deine Antwort', afb: afbAusText(htmlZuText(roh)),
+      punkte: leseGesamtpunkte() || null }, o));
+  }
+
+  // Teilaufgaben fuers Layout: frisch eingelesen oder aus dem gespeicherten Horizont.
+  function aufgabenFuerLayout() {
+    if (horizontAufgaben) return horizontAufgaben;
+    const b = zerlegeHorizont(leseHorizontRoh());
+    if (!b.length || b[0].ganzeArbeit) return null;
+    return b.map(x => {
+      const sw = (x.kopf.match(/·\s*([^()]+?)\s*(?:\(|$)/) || [])[1] || '';
+      return { nr: x.nr, afb: x.afb, punkte: x.punkte, schlagwort: sw };
+    });
+  }
+  function horizontDa() {
+    return !!(horizontAufgaben || horizontKurztest || htmlZuText(leseHorizontRoh() || '').trim());
+  }
+  // Nur der HTML-Editor zeigt die Vorlage gestaltet; bei „Nur Text" stuenden die Tags im Feld.
+  function vorlageFormatOk() {
+    if (KONTEXT !== 'bearbeiten') return true;
+    const sel = $('[name="responseformat"]');
+    return !sel || /editor/i.test(sel.value || '');
+  }
+  function layoutVorlageHtml() {
+    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') return baueKurztestVorlage();
+    const a = aufgabenFuerLayout();
+    return a ? baueAntwortvorlage(a) : null;
+  }
+  function aufgabeLayout() {
+    const roh = leseEditorfeldLive('questiontext[text]');
+    if (!htmlZuText(roh || '').trim()) return { fehler: 'Die Aufgabenstellung ist noch leer.' };
+    if (istGestaltet(roh)) return { fehler: 'Die Aufgabenstellung ist schon im Kartendesign gestaltet. '
+      + 'Zum Neugestalten erst den ursprünglichen Text wiederherstellen (Moodle-Versionsverlauf der Frage).' };
+    const kurz = MODUS === 'kurztest';
+    const auf = kurz ? kurztestTeile() : (aufgabenFuerLayout() || []);
+    const r = gestalteAufgabe(roh, { aufgaben: auf, punkte: kurz ? true : E.kartePunkte !== false,
+      gesamtAfb: kurz ? afbAusText(htmlZuText(roh)) : '' });
+    if (kurz && auf.length >= 2 && auf.some(t => t.punkte == null)) {
+      r.hinweise.push('Im Horizont fehlen die Punkte je Teil (Abschnitt „Teile:"). Horizont neu erstellen, dann stehen sie dort.');
+    }
+    return r;
+  }
+  // Hat die Aufgabe schon einen Horizont? Dann sagen, was er ist, und die Schritte
+  // so benennen, dass klar ist: hier wird ueberarbeitet und ersetzt, nicht neu angelegt.
+  function horizontStatusAnzeigen() {
+    if (KONTEXT !== 'bearbeiten' || !R('hstatus')) return;
+    const roh = leseHorizontRoh() || '';
+    const text = htmlZuText(roh).trim();
+    const l1 = R('hschritt1');
+    const k1 = panel.querySelector('[data-tu="hprompt"]');
+    const k3 = panel.querySelector('[data-tu="hschreiben"]');
+    const bis = R('hbisher');
+    if (!text) {
+      if (l1) l1.textContent = '1 · Prompt zum Erstellen des Erwartungshorizonts kopieren';
+      if (k1) k1.textContent = '📋 Horizont-Prompt kopieren';
+      if (k3) k3.textContent = '3 · In die Aufgabe eintragen';
+      if (bis) bis.hidden = true;
+      return status('hstatus', 'Noch kein Erwartungshorizont in dieser Aufgabe.'
+        + (einstellungenUnvollstaendig() ? ' Tipp: Fach und Jahrgang im Zahnrad ⚙ eintragen – sie gehen in den Prompt ein.' : ''));
+    }
+    const alt = /moodle[-\s]?ai[-\s]?(coach|grader)/i.test(text);
+    const m = modusAus(text);
+    const fb = feedbackAusHorizont(roh);
+    const art = [m === 'kurztest' ? 'Kurztest' : m === 'klausur' ? 'Klausur' : '', fb ? 'Feedback ' + fb : ''].filter(Boolean).join(', ');
+    status('hstatus', alt
+      ? 'Dieser Horizont stammt noch aus Coach oder Grader. Bitte neu erstellen – der alte geht als Vorlage in den Prompt ein.'
+      : 'Diese Aufgabe hat schon einen Erwartungshorizont' + (art ? ' (' + art + ')' : '')
+        + '. Der Prompt nimmt ihn als Vorlage mit; die KI sagt dir, was sie übernimmt und was sie ändert.');
+    if (l1) l1.textContent = '1 · Prompt zum Überarbeiten des Erwartungshorizonts kopieren';
+    if (k1) k1.textContent = '📋 Horizont-Prompt kopieren';
+    if (k3) k3.textContent = '3 · Vorhandenen Horizont in der Aufgabe ersetzen';
+    if (bis) { bis.hidden = false; const pre = bis.querySelector('pre'); if (pre) pre.textContent = ohneMarker(text); }
+  }
+
+  // Nach dem Eintragen: Beschriftungen auf „ersetzen" umstellen, Statusmeldung des Schreibens stehen lassen.
+  function horizontStatusAnzeigenNachSchreiben() {
+    const st = R('hstatus') ? R('hstatus').textContent : '';
+    horizontStatusAnzeigen();
+    if (st && R('hstatus')) R('hstatus').textContent = st;
+  }
+
+  function layoutAnzeigen() {
+    const vt = panel.querySelector('.mag-tab[data-tab="vorlage"]');
+    if (vt) vt.hidden = !(KONTEXT === 'bearbeiten' && horizontDa());
+    if (!R('lseca')) return;
+    R('lseca').hidden = E.layoutAufgabe === false;
+    R('lsecv').hidden = E.layoutAntwort === false;
+    const kurz = MODUS === 'kurztest';
+    R('lpunktezeile').hidden = kurz; R('lpunktehinweis').hidden = kurz;
+    const knopf = panel.querySelector('[data-tu="lein"]');
+    if (knopf) knopf.disabled = E.layoutAufgabe === false && E.layoutAntwort === false;
+    if (E.layoutAufgabe !== false) {
+      const r = aufgabeLayout();
+      if (r.fehler) {
+        setzeHtml(R('lavorschau'), '<p class="mag-hinweis">' + escapeHtml(r.fehler) + '</p>');
+        R('lahinweise').textContent = '';
+      } else {
+        setzeHtml(R('lavorschau'), r.html);
+        R('lahinweise').textContent = r.hinweise.join(' ');
+      }
+    }
   }
 
   // Erwartungshorizont: Marker, dann je Aufgabe eine Ueberschrift und der Text.
@@ -755,8 +895,25 @@ export function starteGrader() {
     ].join('\n');
   }
 
+  // Horizont-Prompts: keine Feedbacklaenge/Anrede (das ist Bewertungs-Sache).
+  function horizontRahmen() {
+    return [
+      'Fach: '       + (E.fach || '[nicht angegeben]'),
+      'Jahrgang: '   + (E.jahrgang || '[nicht angegeben]'),
+      'Kursniveau: ' + (NIVEAU[E.kursniveau] || E.kursniveau)
+    ].join('\n');
+  }
+
   function horizontPromptVorlage() {
-    return `Du bist erfahrene Lehrkraft und erstellst den Erwartungshorizont für eine Klausur.
+    return `═══════════════════════════════════════════════════════
+MOODLE AI FREITEXT GRADER – ERWARTUNGSHORIZONT (KLAUSUR)
+═══════════════════════════════════════════════════════
+
+Du bist erfahrene Lehrkraft und erstellst den Erwartungshorizont für eine Klausur. Er
+wird in Moodle im Feld „Informationen für Bewerter/innen" gespeichert; Schülerinnen und
+Schüler sehen ihn nicht.
+
+${HORIZONT_ZWECK}
 
 RAHMENDATEN
 [MAG_RAHMENDATEN]
@@ -768,62 +925,55 @@ WAS DU TUST
 1. Zerlege die Aufgabenstellung in ihre Teilaufgaben. Übernimm die Nummerierung der
    Aufgabenstellung. Steht dort eine Punktzahl je Aufgabe, übernimm sie unverändert;
    fehlt sie, verteile die Gesamtpunktzahl begründet und weise darauf hin.
-2. Bestimme je Aufgabe den Operator und die Anforderungsstufe AFB (I, II, III oder eine
-   Spanne wie II-III).
+   Hat eine Aufgabe Teile (a, b …), ist JEDER TEIL eine eigene Aufgabe mit eigener
+   Punktzahl, eigenem Operator und eigenem AFB: "nr": "2a", "2b". Eine übergeordnete
+   Aufgabe 2 ohne eigene Punkte gibt es dann nicht. Die Punkte aller Einträge ergeben
+   zusammen die Gesamtpunktzahl.
+2. Bestimme je Aufgabe den Operator und den Anforderungsbereich AFB (I, II, III oder
+   eine Spanne wie II-III).
 3. Schreibe je Aufgabe einen Erwartungshorizont in dieser Reihenfolge:
    Kernaussage · Muss enthalten · Auch richtig · Inhalt in Stufen · Reicht nicht ·
    Häufiger Fehler.
-   - Nur die Stufen 100 / 75 / 50 / 25 / 0 Prozent. Kein 90.
-   - KEINE Sprachregeln, KEINEN Rechtschreibabzug, KEINE Punktzahlen in den Horizont —
-     das steht global in der Erweiterung und würde sich sonst widersprechen.
-
-   - „AUCH RICHTIG" ist der wichtigste Abschnitt und der am häufigsten misslungene.
-     Gemeint sind NICHT ausformulierte Musterantworten, sondern die rauen, verkürzten
-     Formulierungen, mit denen Lernende dieser Jahrgangsstufe dasselbe sagen — auch
-     umgangssprachlich, auch ohne Fachbegriff.
-     Schlecht: „Von links nach rechts werden die Atome kleiner, weil die Kernladung
-     zunimmt und die Elektronen stärker angezogen werden." So schreibt eine Lehrkraft.
-     Wer so antwortet, liegt ohnehin bei 100 % — der Eintrag hilft beim Bewerten nicht.
-     Gut: „nach rechts wird es kleiner" · „der Kern zieht doller" · „es kommt eine
-     Schale dazu, deshalb wird es dicker" · „mehr Protonen, gleiche Schale".
-     Nenne mindestens vier solcher Fassungen je Aufgabe und schreibe dazu, welche
-     abweichenden Wörter dasselbe meinen (etwa Ring, Bahn oder Ebene statt Schale).
-
-   - JEDE STUFE HÄNGT AN ZÄHLBAREN BEDINGUNGEN, nie an Wörtern wie „überwiegend",
-     „im Wesentlichen", „etwas unvollständig" oder „deutliche Lücken". Solche
-     Formulierungen führen dazu, dass zwei Modelle dieselbe Antwort verschieden
-     einstufen. Zähle stattdessen, was da sein muss: Trends, Aspekte, Teilaussagen.
-     Beispiel: 100 — beide Trends beschrieben UND beide erklärt · 75 — beide
-     beschrieben, einer erklärt · 50 — beide beschrieben, keiner erklärt ODER einer
-     beschrieben und erklärt.
-     Prüfe zum Schluss, dass jede denkbare Antwort genau EINER Stufe zuzuordnen ist:
-     keine Lücke, keine Überschneidung.
-
-   - „REICHT NICHT" enthält nur Antworten, die sachlich RICHTIG, aber zu wenig sind.
-     Sachlich falsche Aussagen gehören nicht dorthin, sondern zu Stufe 0 und unter
-     „Häufiger Fehler" — sonst liest ein Bewertungsmodell sie als fast richtig.
 4. Gib je Aufgabe ein Schlagwort von zwei bis vier Wörtern an, das die Aufgabe benennt.
+
+REGELN
+${horizontRegeln('[MAG_JAHRGANG]')}
+
+BEISPIEL „AUCH RICHTIG"
+Schlecht: „Von links nach rechts werden die Atome kleiner, weil die Kernladung zunimmt
+und die Elektronen stärker angezogen werden." So schreibt eine Lehrkraft – wer so
+antwortet, liegt ohnehin bei 100 %.
+Gut: „nach rechts wird es kleiner" · „der Kern zieht doller" · „es kommt eine Schale
+dazu, deshalb wird es dicker" · „mehr Protonen, gleiche Schale".
+
+BEISPIEL ZÄHLBARE STUFEN
+100 — beide Trends beschrieben UND beide erklärt · 75 — beide beschrieben, einer
+erklärt · 50 — beide beschrieben, keiner erklärt ODER einer beschrieben und erklärt.
+
+[MAG_STUFE]
 
 ARBEITSWEISE
 Zeige mir zuerst je Aufgabe eine lesbare Übersicht (Nummer, Operator, AFB, Punkte,
-Schlagwort, Erwartungshorizont) und frage nach, ob sie passt. Ändere, bis ich zustimme.
-Stelle immer nur EINE Frage auf einmal.
+Schlagwort, Erwartungshorizont) und frage: „Passt das so? Wenn ja, antworte mit ok."
+Ändere, bis ich zustimme. Stelle immer nur EINE Frage auf einmal.
 
-ERST WENN ICH BESTÄTIGE, gib genau EINEN Codeblock aus — nichts davor, nichts danach:
+ERST WENN ICH BESTÄTIGE, gib genau EINEN Codeblock aus – nichts davor, nichts danach:
 
 \`\`\`json
 { "aufgaben": [
-  { "nr": 1,
+  { "nr": "1",
     "schlagwort": "kurzes Stichwort",
-    "afb": "II-III",
-    "punkte": 4,
-    "operator": "Beschreibe / Erkläre",
-    "horizont": "<p><strong>Kernaussage:</strong> …</p><p><strong>Muss enthalten:</strong> …</p>" }
+    "afb": "I",
+    "punkte": 2,
+    "operator": "Nenne",
+    "horizont": "<p><strong>Kernaussage:</strong> …</p><p><strong>Muss enthalten:</strong> …</p>" },
+  { "nr": "2a", "schlagwort": "…", "afb": "II", "punkte": 3, "operator": "Erläutere", "horizont": "…" }
 ] }
 \`\`\`
 
-Das Feld "horizont" ist HTML (erlaubt: p, br, ul, li, strong, em). Keine Überschrift für
-die Aufgabe selbst — die setzt die Erweiterung. Keine Punktzahlen im Fließtext.`;
+Das Feld "horizont" ist HTML (erlaubt: p, br, ul, li, strong, em). Jeder Abschnitt ist
+ein eigenes <p> mit fettem Abschnittsnamen. Keine Überschrift für die Aufgabe selbst –
+die setzt die Erweiterung. Keine Punktzahlen im Fließtext.`;
   }
 
   // Bilder und Dateien in der Aufgabenstellung — die Erweiterung kann nur Text kopieren.
@@ -837,18 +987,8 @@ die Aufgabe selbst — die setzt die Erweiterung. Keine Punktzahlen im Fließtex
     doc.querySelectorAll('a[href*="pluginfile"]').forEach(a => namen.push('Datei: ' + (a.textContent.trim() || decodeURIComponent(a.getAttribute('href').split('/').pop().split('?')[0]))));
     return namen;
   }
-  const MATERIAL_REGEL = `MATERIAL
-Enthält die Aufgabe Material (M1, M2 …), werte es JETZT aus. Beim späteren Bewerten liegt das
-Material NICHT mehr vor. Schreibe deshalb alle Werte und Aussagen aus dem Material, die eine
-Antwort braucht, mit Quelle direkt in die Erwartungen (z. B. „M2, Tabelle: Siedetemperatur 78 °C"),
-nicht nur „siehe M2". Nimm wörtliche Übernahmen aus dem Material ohne eigene Erklärung als
-„Reicht nicht"-Fall auf, wo die Aufgabe eine Erklärung verlangt.`;
   function materialBlock() {
-    const d = materialDateien();
-    return MATERIAL_REGEL + (d.length
-      ? '\n\nIn der Aufgabe stehen Bilder/Dateien, die hier nur als Name ankommen:\n- ' + d.join('\n- ')
-        + '\nDie Lehrkraft lädt sie zusätzlich in den Chat hoch. Fehlen sie, frage danach, bevor du den Horizont schreibst.'
-      : '');
+    return materialBaustein([leseAufgabenstellung()], materialDateien());
   }
 
   function baueHorizontPrompt() {
@@ -857,17 +997,24 @@ nicht nur „siehe M2". Nimm wörtliche Übernahmen aus dem Material ohne eigene
       const e = { qid: 'diese-frage', frage: name, aufgabe: leseAufgabenstellung(), max: leseGesamtpunkte() };
       const bisher = htmlZuText(leseHorizontRoh());
       if (bisher) e.horizont_bisher = ohneMarker(bisher);
-      const block = 'Rahmendaten:\n' + rahmendaten() + '\n\n' + materialBlock() + '\n\n```json\n' + JSON.stringify([e], null, 1) + '\n```';
-      return kurztestHorizontVorlage().replace('[MOODLE_AI_COACH_AUFGABEN]', block);
+      const mat = materialBlock();
+      const block = 'Rahmendaten:\n' + horizontRahmen() + '\n\n' + (mat ? mat + '\n\n' : '') + '```json\n' + JSON.stringify([e], null, 1) + '\n```';
+      return kurztestHorizontVorlage({ einzeln: true, jahrgang: E.jahrgang, stufe: fbLaenge() }).replace('[MOODLE_AI_COACH_AUFGABEN]', block);
     }
     const eigen = (E.promptHorizont || '').trim();
-    return (eigen || horizontPromptVorlage())
-      .replace('[MAG_RAHMENDATEN]', rahmendaten())
+    let v = eigen || horizontPromptVorlage();
+    const stufe = stufenBlock('klausur', fbLaenge());
+    v = v.includes('[MAG_STUFE]') ? v.replace('[MAG_STUFE]', stufe) : v + '\n\n' + stufe;
+    const mat = materialBlock();
+    return v
+      .replace('Lernende der Jahrgangsstufe [MAG_JAHRGANG]', E.jahrgang ? 'Lernende der Jahrgangsstufe ' + E.jahrgang : 'Lernende dieser Jahrgangsstufe')
+      .replace('[MAG_RAHMENDATEN]', horizontRahmen())
       .replace('[MAG_GESAMTPUNKTE]', komma(leseGesamtpunkte() || '?'))
       .replace('[MAG_AUFGABEN]', (leseAufgabenstellung() || '[keine Aufgabenstellung gefunden]')
-        + '\n\n' + materialBlock()
+        + (mat ? '\n\n' + mat : '')
         + (htmlZuText(leseHorizontRoh()) ? '\n\nBISHERIGER HORIZONT (Ausgangspunkt, keine Vorlage zum Abschreiben – '
-          + 'übernimm, was gut ist, und erstelle ihn im aktuellen Format neu):\n' + ohneMarker(htmlZuText(leseHorizontRoh())) : ''));
+          + 'übernimm, was gut ist, und erstelle ihn im aktuellen Format neu. Sag mir ZUERST in zwei, drei Sätzen, '
+          + 'dass ein bisheriger Horizont vorliegt, was du übernimmst und was du änderst):\n' + ohneMarker(htmlZuText(leseHorizontRoh())) : ''));
   }
 
   const FB_LAENGE = {
@@ -880,11 +1027,15 @@ nicht nur „siehe M2". Nimm wörtliche Übernahmen aus dem Material ohne eigene
   function korrekturPromptVorlage() {
     return `Du bewertest Klausurantworten nach einem vorgegebenen Erwartungshorizont.
 
+[MAG_KOPF]
+
 RAHMENDATEN
 [MAG_RAHMENDATEN]
 
 ERWARTUNGSHORIZONT (gilt für alle Abgaben)
 [MAG_HORIZONT]
+
+[MAG_MODUS]
 
 WICHTIG — WAS DU NICHT TUST
 Du vergibst KEINE Punkte und rechnest NICHT. Die Erweiterung rechnet Punkte, Rundung,
@@ -914,11 +1065,12 @@ Jede Aufgabe bekommt eine Begründung — auch eine vollständig richtige.
 ABGABEN
 [MAG_ABGABEN]
 
-AUSGABE — genau EIN Codeblock, nichts davor, nichts danach:
+AUSGABE — am Ende genau EIN Codeblock (im Modus AUTOMATISCH nichts davor, nichts danach):
 
 \`\`\`json
 { "bewertungen": [
   { "nr": 1,
+    "besprochen": true,
     "staerken": "was gut gelungen ist",
     "aufgaben": [ { "nr": 1, "prozent": 75, "begruendung": "…", "operator": "erfüllt" } ],
     "fehler": [ { "wort": "Atomradiuse", "korrektur": "Atomradien",
@@ -929,8 +1081,40 @@ AUSGABE — genau EIN Codeblock, nichts davor, nichts danach:
 \`\`\`
 
 "nr" ist die Nummer der Abgabe aus dem Datenblock, nicht die des Schülers.
+In "aufgaben" ist "nr" die Aufgabennummer wie im Datenblock (z. B. "1", "2a").
+"besprochen": true nur für Arbeiten, die du im Modus GEMEINSAM mit der Lehrkraft durchgegangen
+bist und die sie mit OK bestätigt hat; sonst false.
 Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 (dort alle Prozentwerte 0 und ein Hinweis in der Zusammenfassung).`;
+  }
+
+  // Modusfrage NUR in Teil 1 (mit Stop-Regel); Teil 2/3 setzen nur fort.
+  function modusBlock(teil, gesamtTeile) {
+    if ((teil || 1) > 1) {
+      return `MODUS
+Der Modus wurde in Teil 1 gewählt und gilt weiter. Frage NICHT erneut. Im Modus GEMEINSAM gehst
+du diese Arbeiten wieder einzeln mit mir durch, im Modus AUTOMATISCH gibst du sofort das JSON aus.`;
+    }
+    return `MODUSFRAGE — STELLE SIE ZUERST UND WARTE
+Bevor du irgendetwas bewertest, stelle GENAU DIESE EINE Frage und gib danach nichts weiter aus,
+bis ich geantwortet habe:
+
+„Wie sollen wir vorgehen?
+  1. GEMEINSAM – Ich zeige dir jede Arbeit einzeln, du bestätigst oder änderst, dann kommt die
+     nächste. (empfohlen)
+  2. AUTOMATISCH – Ich bewerte alle Arbeiten und gebe sofort das JSON aus.
+Antworte mit 1 oder 2."
+
+AUTOMATISCH ist eine bewusste Wahl, kein stiller Standard. Triff keine Annahme.
+
+MODUS GEMEINSAM — je Arbeit dieses Schema, dann warten:
+  ABGABE [nr]
+  Je Aufgabe: Antwort (gekürzt) · Stufe in % · Begründung (ein Satz, Bezug auf den Horizont)
+  Sprachfehler: Wort → Korrektur (Kategorie)
+  Rückmeldung an die Schülerin / den Schüler (so, wie sie eingetragen würde)
+  Grobe Punkteschätzung (nur zur Orientierung – genau rechnet die Erweiterung)
+  „1 OK – weiter · 2 Stufe ändern · 3 Rückmeldung ändern · 4 neu bewerten"
+Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1 ? ' dieses Teils' : ''} das JSON.`;
   }
 
   function baueKorrekturPrompt(abgaben, horizontHtml, teil, gesamtTeile) {
@@ -949,12 +1133,15 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     }).join('\n\n');
 
     const eigen = (E.promptKorrektur || '').trim();
-    let p = (eigen || korrekturPromptVorlage())
+    const kopf = bewertungsKopf({ fach: E.fach, jahrgang: E.jahrgang, niveau: NIVEAU[E.kursniveau] || E.kursniveau });
+    let p = eigen || korrekturPromptVorlage();
+    p = (p.includes('[MAG_KOPF]') ? p.replace('[MAG_KOPF]', kopf) : kopf + '\n\n' + p)
       .replace('[MAG_RAHMENDATEN]', rahmendaten())
       .replace('[MAG_HORIZONT]', horizontText || '[kein Horizont hinterlegt]')
       .replace('[MAG_FBLAENGE]', FB_LAENGE[fbLaenge()] || FB_LAENGE['Ausführlich'])
       .replace('[MAG_ANREDE]', anrede())
-      .replace('[MAG_ABGABEN]', daten);
+      .replace('[MAG_ABGABEN]', daten)
+      .replace('[MAG_MODUS]', modusBlock(teil, gesamtTeile));
 
     if (gesamtTeile > 1) {
       p = 'TEIL ' + teil + ' VON ' + gesamtTeile + ' — bewerte NUR die unten stehenden Abgaben '
@@ -1179,8 +1366,8 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   // Auf der Bewertungsseite steht die Korrektur vorn; Horizont und Einstellungen
   // sind dort Nacharbeit und bekommen keine Nummer.
   const REITER = KONTEXT === 'bearbeiten'
-    ? [['horizont', '1 · Horizont'], ['vorlage', '2 · Vorlage'], ['einst', '⚙']]
-    : [['korrektur', '1 · Korrektur'], ['horizont', '2 · Horizont'], ['einst', '⚙']];
+    ? [['horizont', '1 · Horizont'], ['vorlage', '2 · Layout-Vorlage'], ['einst', '⚙']]
+    : [['korrektur', '1 · Bewerten'], ['horizont', '2 · Horizont'], ['einst', '⚙']];
 
   const panel = el('div', 'mag-panel');
   panel.innerHTML = `
@@ -1198,7 +1385,15 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     </div>
 
     <div class="mag-inhalt" data-panel="horizont">
+      <details class="mag-details mag-hilfe mag-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="mag-hinweis">Hier entsteht der Erwartungshorizont dieser Aufgabe – der Maßstab, nach dem die KI später alle Antworten bewertet. Du kopierst einen Prompt, lässt die KI den Horizont schreiben und trägst ihn in die Aufgabe ein. Das geschieht einmal je Aufgabe; danach bleibt er in der Aufgabe gespeichert, auch beim Export.</p>
+      </details>
       <div class="mag-status" data-rolle="hstatus"></div>
+      <details class="mag-details" data-rolle="hbisher" hidden>
+        <summary>Gespeicherten Horizont ansehen</summary>
+        <pre class="mag-hinweis" style="white-space:pre-wrap;max-height:220px;overflow:auto;"></pre>
+      </details>
       <div class="mag-modus" data-rolle="hmodus" hidden>
         <div class="mag-rahmen-titel">Diese Aufgabe</div>
         <label>Modus</label>
@@ -1220,23 +1415,27 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         <summary>So funktioniert's</summary>
         <p class="mag-hinweis">Der Erwartungshorizont sagt der KI später beim Bewerten, was eine
         richtige Antwort ist. So entsteht er:</p>
-        <p class="mag-hinweis"><strong>1 · Auftrag kopieren:</strong> Die Erweiterung nimmt
-        Aufgabenstellung, Punkte und Einstellungen und baut daraus einen Auftrag (Prompt) für die KI.</p>
-        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT), den
-        Horizont lesen und prüfen. Nach deinem „ok" gibt die KI einen Codeblock aus – diesen hier einfügen.</p>
+        <p class="mag-hinweis"><strong>1 · Horizont-Prompt kopieren:</strong> Die Erweiterung nimmt
+        Aufgabenstellung, Punkte und Einstellungen und baut daraus einen Prompt, mit dem die KI den
+        Erwartungshorizont schreibt. Mit den Antworten der Lernenden hat er nichts zu tun – die
+        kommen erst beim Bewerten.</p>
+        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Verweist die
+        Aufgabe auf Material, fragt die KI danach. Sie zeigt den Horizont zuerst als lesbaren Text –
+        prüfen, ggf. ändern lassen, dann mit „ok" antworten. Erst dann kommt ein Codeblock: diesen hier einfügen.</p>
         <p class="mag-hinweis"><strong>3 · Eintragen:</strong> Der Horizont wird im Feld
         „Informationen für Bewerter/innen" dieser Aufgabe gespeichert. Schülerinnen und Schüler sehen ihn nicht.</p>
       </details>
-      <label>1 · Auftrag für die KI kopieren</label>
+      <label data-rolle="hschritt1">1 · Prompt zum Erstellen des Erwartungshorizonts kopieren</label>
       <div class="mag-reihe">
-        <button class="mag-btn mag-btn-primary" data-tu="hprompt">📋 Auftrag kopieren</button>
-        <button class="mag-btn mag-btn-rand" data-tu="hedit" title="Auftrag (Prompt) anpassen">✏️</button>
+        <button class="mag-btn mag-btn-primary" data-tu="hprompt">📋 Horizont-Prompt kopieren</button>
+        <button class="mag-btn mag-btn-rand" data-tu="hedit" title="Prompt anpassen">✏️</button>
       </div>
       <div class="mag-hinweis" data-rolle="hmaterial" hidden></div>
       <label>2 · Erwartungshorizont der KI einfügen</label>
       <div class="mag-hinweis">Die Erweiterung hat bewusst keinen eigenen KI-Zugang: Du wählst die KI,
       und Aufgaben gehen nur dorthin, wo du sie einfügst. Den Codeblock der KI vollständig hier
-      einfügen – er wird sofort geprüft und angezeigt. Gespeichert wird erst in Schritt 3.</div>
+      einfügen – er wird sofort geprüft und angezeigt. Gespeichert wird erst in Schritt 3.
+      Den lesbaren Text vor dem „ok" brauchst du hier nicht, nur den Codeblock danach.</div>
       <textarea data-rolle="hjson" rows="5" placeholder='{ "aufgaben": [ … ] }'></textarea>
       <button class="mag-btn mag-btn-primary" data-tu="hpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
@@ -1252,34 +1451,83 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     </div>
 
     <div class="mag-inhalt" data-panel="vorlage" hidden>
-      <div class="mag-status" data-rolle="vstatus"></div>
-      <p class="mag-hinweis">Die Antwortvorlage wird den Lernenden beim Öffnen der Frage in
-      das Eingabefeld geladen. Sie entsteht aus demselben Durchgang wie der Horizont.</p>
-      <label>Aussehen</label>
-      <label class="mag-haken"><input type="checkbox" data-opt="afbFarben"> Farben nach AFB statt neutral</label>
-      <label class="mag-haken"><input type="checkbox" data-opt="vorlagePunkte"> Punkte in der Kopfzeile</label>
-      <label class="mag-haken"><input type="checkbox" data-opt="vorlageAfb"> AFB in der Kopfzeile</label>
-      <label>So sieht das Eingabefeld für die Lernenden aus</label>
-      <div class="mag-vorschau" data-rolle="vvorschau"></div>
-      <details class="mag-details">
-        <summary>Und das steht dann im Erwartungshorizont der Frage</summary>
-        <div class="mag-vorschau" data-rolle="vhorizont"></div>
+      <details class="mag-details mag-hilfe mag-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="mag-hinweis">Hier gestaltest du das Aussehen der Aufgabe für die Lernenden – ein
+        Zusatz nach Geschmack, für die Bewertung nicht nötig. Er erscheint, sobald die Aufgabe einen
+        Erwartungshorizont hat, weil Teilaufgaben, Anforderungsbereiche und Punkte von dort kommen.
+        Du kannst die Aufgabenstellung, die Antwortvorlage oder beides gestalten.</p>
+        <p class="mag-hinweis"><strong>Aufgabenstellung gestalten:</strong> Der Fragetext kommt in
+        farbige Karten – eine Karte je Teilaufgabe, vorn eine Marke (1, 2a, 2b; im Kurztest a, b),
+        hinten die Punkte. Eine Kurztest-Aufgabe ohne Teile bekommt eine Karte. Links steht der Anforderungsbereich, der Operator wird fett in der AFB-Farbe
+        hervorgehoben (AFB I grün, II orange, III rot). Der Wortlaut bleibt gleich.</p>
+        <p class="mag-hinweis"><strong>Antwortvorlage gestalten:</strong> Statt eines leeren weißen
+        Eingabefelds sehen die Lernenden einen Antwortkasten mit Kopfzeile – einen je Teilaufgabe, mit
+        derselben Marke wie in der Aufgabenstellung. So schreiben sie jede Antwort an die richtige Stelle, und die Erweiterung kann sie
+        beim Bewerten sicher zuordnen. Die Kopfzeile zählt beim Bewerten nicht als Schülertext.</p>
+        <p class="mag-hinweis"><strong>Nichts wird automatisch gespeichert.</strong> Die Erweiterung
+        fügt das Layout nur in das geöffnete Formular ein. Gefällt es dir, speicherst du mit
+        „Änderungen speichern". Sonst „Abbrechen" – dann bleibt die Aufgabe, wie sie war.</p>
       </details>
-      <div class="mag-protokoll" data-rolle="vlog" hidden></div>
-      <div class="mag-reihe">
-        <button class="mag-btn mag-btn-ok" data-tu="beides">Beides eintragen</button>
+      <div class="mag-status" data-rolle="vstatus"></div>
+      <label>Was möchtest du gestalten?</label>
+      <label class="mag-haken"><input type="checkbox" data-opt="layoutAufgabe"> Aufgabenstellung</label>
+      <label class="mag-haken"><input type="checkbox" data-opt="layoutAntwort"> Antwortvorlage</label>
+      <div class="mag-hinweis">Beides zusammen ist der Normalfall: Aufgabe und Antwortkasten tragen dann
+      dieselbe Marke (1, 2a, 2b …), dieselbe AFB-Farbe und dieselben Punkte.</div>
+
+      <div data-rolle="lseca" hidden>
+        <div class="mag-hinweis">Der Fragetext kommt ins AFB-Kartendesign. Text und Bilder bleiben
+        erhalten, nur die Gestaltung ändert sich. Material (M1, M2 …) bleibt außerhalb der Karten.</div>
+        <label class="mag-haken" data-rolle="lpunktezeile"><input type="checkbox" data-opt="kartePunkte"> Punkte je Teilaufgabe anzeigen</label>
+        <div class="mag-hinweis" data-rolle="lpunktehinweis">Moodle zeigt nur die Gesamtpunktzahl der Aufgabe. Bei mehreren
+        Teilaufgaben sehen die Lernenden so, wie viel jede einzelne bringt.</div>
+        <div class="mag-hinweis" data-rolle="lahinweise"></div>
+        <label>Vorschau – so sieht die Aufgabe aus</label>
+        <div class="mag-vorschau" data-rolle="lavorschau"></div>
       </div>
-      <p class="mag-hinweis">Erwartungshorizont und Antwortvorlage gehen in <strong>einem</strong>
-      Speichervorgang in die Frage. Getrennt einzutragen wäre riskant: Nach dem ersten
-      Speichern zeigt diese Seite eine veraltete Fassung, und der zweite Schreibvorgang
-      würde den ersten wieder überschreiben.</p>
-      <div class="mag-reihe">
-        <button class="mag-btn mag-btn-klein mag-btn-grau" data-tu="kopierh">📋 nur Horizont</button>
-        <button class="mag-btn mag-btn-klein mag-btn-grau" data-tu="kopierv">📋 nur Antwortvorlage</button>
+
+      <div data-rolle="lsecv" hidden>
+        <label class="mag-haken"><input type="checkbox" data-opt="afbFarben"> Farben nach Anforderungsbereich</label>
+        <div class="mag-hinweis">AFB I grün, AFB II orange, AFB III rot. Ohne Häkchen: neutrales Grau.</div>
+        <label class="mag-haken"><input type="checkbox" data-opt="vorlagePunkte"> Punkte anzeigen</label>
+        <div class="mag-hinweis">z. B. „(2 Punkte)" – die Lernenden sehen, wie ausführlich sie antworten sollten.</div>
+        <label class="mag-haken"><input type="checkbox" data-opt="vorlageAfb"> Anforderungsbereich anzeigen</label>
+        <div class="mag-hinweis">z. B. „AFB II" – nur, wenn er bekannt ist (Klausur: aus dem Horizont;
+        Kurztest: wenn „AFB …" in der Aufgabenstellung steht).</div>
+        <div class="mag-hinweis" data-rolle="vformat" hidden></div>
+        <label>Vorschau – so sieht das Eingabefeld aus</label>
+        <div class="mag-vorschau" data-rolle="vvorschau"></div>
       </div>
+      <div class="mag-reihe">
+        <button class="mag-btn mag-btn-ok" data-tu="lein">Ins Formular einfügen</button>
+      </div>
+      <p class="mag-hinweis">Eingefügt wird nur ins Formular. Speichern mit „Änderungen speichern" –
+      oder „Abbrechen", wenn es dir nicht gefällt.</p>
     </div>
 
     <div class="mag-inhalt" data-panel="korrektur" hidden>
+      <details class="mag-details mag-hilfe mag-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="mag-hinweis">Hier werden alle Antworten zu dieser Aufgabe mit KI-Hilfe bewertet und
+        danach mit Punkten und Rückmeldung in Moodle eingetragen. Maßstab ist der Erwartungshorizont
+        der Aufgabe (Reiter „Horizont").</p>
+      </details>
+      <details class="mag-details mag-hilfe" data-rolle="khilfe">
+        <summary>So funktioniert's</summary>
+        <p class="mag-hinweis"><strong>1 · Bewertungsprompt kopieren:</strong> Die Erweiterung packt
+        Erwartungshorizont, Einstellungen und alle Antworten in einen Prompt. Namen gehen nicht mit –
+        die Antworten sind nur nummeriert.</p>
+        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Die KI fragt
+        zuerst: <em>gemeinsam durchgehen</em> (Arbeit für Arbeit, du kannst jede ändern – empfohlen) oder
+        <em>automatisch</em>. Die KI beurteilt nur: Stufe je Aufgabe, Sprachfehler, Begründung,
+        Rückmeldung. Sie rechnet keine Punkte.</p>
+        <p class="mag-hinweis"><strong>3 · Antwort der KI hier einfügen.</strong> Die Erweiterung rechnet
+        Punkte und Rechtschreibabzug und zeigt jede Bewertung zur Kontrolle („bisher → neu").</p>
+        <p class="mag-hinweis"><strong>4 · Eintragen.</strong> Gemeinsam besprochene Arbeiten lassen sich
+        direkt eintragen. Automatisch bewertete musst du einmal ansehen – überspringen geht nur mit
+        ausdrücklicher Bestätigung.</p>
+      </details>
       <div class="mag-status" data-rolle="kstatus"></div>
       <div class="mag-rahmen">
         <div class="mag-rahmen-titel">Diese Angaben gehen in den Prompt und in die Rechnung</div>
@@ -1289,13 +1537,22 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       <label>Abgaben je Durchgang</label>
       <select data-rolle="kgroesse"></select>
       <div class="mag-hinweis" data-rolle="kgroessehinweis"></div>
-      <label>1 · Prompt für die KI</label>
+      <div class="mag-hinweis">Eine KI kann pro Antwort nur begrenzt viel Text schreiben. Bei vielen oder
+      langen Arbeiten bricht sie sonst mitten im Ergebnis ab oder wird ungenau. Deshalb teilt die
+      Erweiterung die Lerngruppe in Portionen – den Vorschlag rechnet sie aus der Textlänge. Geteilt
+      wird immer nach Personen, nie nach Aufgaben: Jede Arbeit wird als Ganzes bewertet.</div>
+      <label>1 · Bewertungsprompt mit allen Antworten kopieren</label>
       <div class="mag-reihe" data-rolle="kknoepfe"></div>
       <div class="mag-reihe">
         <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="kedit">✏️ Prompt anpassen</button>
         <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="krohdaten">📋 Rohdaten</button>
       </div>
-      <label>2 · Antworten der KI einfügen</label>
+      <label>2 · Ergebnis der KI einfügen</label>
+      <div class="mag-hinweis">Hier den Codeblock einfügen, den die KI am Ende ausgibt – nicht den Text
+      davor. <strong>Bei mehreren Teilen:</strong> Teil 1 kopieren → in die KI → Ergebnis hier einfügen.
+      Dann Teil 2 im <em>selben</em> KI-Chat einfügen und sein Ergebnis <em>unter</em> das erste in dieses
+      Feld setzen – alle Teile untereinander. Die Erweiterung setzt sie zusammen und meldet, welche
+      Arbeiten noch fehlen.</div>
       <textarea data-rolle="kjson" rows="5" placeholder='{ "bewertungen": [ … ] }'></textarea>
       <button class="mag-btn mag-btn-primary" data-tu="kpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-hinweis" data-rolle="rsabgleich" hidden></div>
@@ -1307,6 +1564,10 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     </div>
 
     <div class="mag-inhalt" data-panel="einst" hidden>
+      <details class="mag-details mag-hilfe mag-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p class="mag-hinweis">Grundangaben für alle Aufgaben: Fach, Jahrgang, Kursniveau, Anrede, Rechtschreibung. Sie stehen als Rahmendaten im Prompt und steuern die Rechnung. Was nur für eine Aufgabe gilt (Modus, Feedbacklänge), stellst du im Reiter „Horizont" der Aufgabe ein.</p>
+      </details>
       <div class="mag-status" data-rolle="estatus"></div>
       <p class="mag-hinweis">Diese Angaben stehen später als Rahmendaten im Prompt und
       steuern, wie die Erweiterung rechnet. Bitte einmal durchsehen, bevor du den Prompt
@@ -1374,9 +1635,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     return b;
   }
   const hknoepfeContainer = panel.querySelector('[data-rolle="hknoepfe"]');
-  if (KONTEXT === 'bearbeiten') {
-    hknoepfeContainer.appendChild(knoepfchen('Weiter zur Antwortvorlage →', 'mag-btn mag-btn-ok', 'weiter'));
-  } else {
+  if (KONTEXT !== 'bearbeiten') {
     hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
   }
 
@@ -1398,6 +1657,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   let bewertungen      = null;   // geprüfte Bewertungen
   let eintragungen     = null;   // fertig gerechnete Einträge
   let letzterReiter    = REITER[0][0];
+  let kurztestSeite    = false;  // Einzelseite einer Kurztest-Frage -> auf die Uebersicht verweisen
   let mehrereFragen    = false;  // Zufallsfrage ohne qid-Filter -> Korrektur gesperrt
   let reviewTrotzdem   = false;  // zweiter Klick auf „Alle eintragen" trotz ungesehener Karten
 
@@ -1430,7 +1690,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   let MODUS = KONTEXT === 'bearbeiten' ? modusVorschlag() : 'klausur';
   // Feedbacklaenge je Aufgabe (steht als Meta-Zeile im Horizont). Auswahl haengt vom Modus ab.
   const FB_STUFEN = {
-    kurztest: [['Kurz', 'Kurz – 1–2 Sätze'], ['Mittel', 'Mittel – 3–5 Sätze (Standard, wie bisher im Coach)']],
+    kurztest: [['Kurz', 'Kurz – 1–2 Sätze'], ['Mittel', 'Mittel – 3–5 Sätze (Standard)']],
     klausur:  [['Mittel', 'Mittel – 3–4 Sätze je Teilaufgabe'], ['Ausführlich', 'Ausführlich – ein Absatz je Teilaufgabe (Standard)'],
                ['Umfangreich', 'Umfangreich – dazu Abschnitt Operatorerfüllung']]
   };
@@ -1461,17 +1721,14 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     R('hmodussel').value = MODUS;
     R('hmodushinweis').textContent = MODUS === 'kurztest'
       ? 'Kurztest: kurze Antworten, Horizont mit Kernaussage und „Auch richtig". Bewertet wird auf '
-        + 'der Übersicht, alle Kurztest-Aufgaben eines Tests zusammen.'
-      : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und AFB, dazu eine Antwortvorlage. '
+        + 'der Übersicht, alle Kurztest-Aufgaben eines Tests zusammen. Layout-Vorlage: ein Kasten „Deine Antwort".'
+      : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und AFB, dazu eine Layout-Vorlage mit einem Kasten je Teilaufgabe. '
         + 'Bewertet wird auf der Einzelseite der Aufgabe, in Portionen, mit Review vor dem Eintragen.';
     feedbackAnzeigen();
-    const vt = panel.querySelector('.mag-tab[data-tab="vorlage"]');
-    if (vt) vt.hidden = MODUS === 'kurztest';
+    layoutAnzeigen();
     if (KONTEXT === 'bearbeiten') {
-      const w = hknoepfeContainer.querySelector('[data-tu="weiter"]');
       const h = hknoepfeContainer.querySelector('[data-tu="hschreiben"]');
-      if (w) w.hidden = MODUS === 'kurztest';
-      if (h) h.hidden = MODUS !== 'kurztest';
+      if (h) h.hidden = false;
     }
   }
   if (KONTEXT === 'bearbeiten') {
@@ -1606,10 +1863,20 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       }
     }
     const v = R('vvorschau');
-    if (v) setzeHtml(v, horizontAufgaben ? baueAntwortvorlage(horizontAufgaben)
-      : '<p class="mag-hinweis">Erst im Reiter „Horizont" die Antwort der KI einlesen.</p>');
+    const lv = layoutVorlageHtml();
+    if (v) setzeHtml(v, lv || '<p class="mag-hinweis">Im Horizont sind keine Teilaufgaben erkennbar – '
+      + 'daraus entstehen die Kästen.</p>');
+    const vf = R('vformat');
+    if (vf) {
+      vf.hidden = vorlageFormatOk();
+      vf.textContent = 'Hinweis: Das Antwortformat dieser Aufgabe ist nicht „HTML-Editor". '
+        + 'Beim Einfügen stellt die Erweiterung es auf „HTML-Editor" um – „Nur Text" kann kein Layout darstellen.';
+    }
+    layoutAnzeigen();
     const vh = R('vhorizont');
-    if (vh) setzeHtml(vh, horizontAufgaben ? baueHorizont(horizontAufgaben)
+    if (vh) setzeHtml(vh, (MODUS === 'kurztest' && KONTEXT === 'bearbeiten')
+      ? (horizontKurztest ? kurztestHorizontHtml(horizontKurztest) : '<p class="mag-hinweis">Noch kein Horizont eingelesen.</p>')
+      : horizontAufgaben ? baueHorizont(horizontAufgaben)
       : '<p class="mag-hinweis">Noch kein Horizont eingelesen.</p>');
   }
 
@@ -1661,12 +1928,12 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     try {
       const liste = leseJson(roh, 'aufgaben')
         .map(a => ({
-          nr: Number(a.nr), schlagwort: a.schlagwort || '', afb: a.afb || '',
+          nr: nrKey(a.nr), schlagwort: a.schlagwort || '', afb: a.afb || '',
           punkte: a.punkte == null ? null : zahl(a.punkte),
           operator: a.operator || '', horizont: a.horizont || a.text || ''
         }))
-        .filter(a => !isNaN(a.nr))
-        .sort((a, b) => a.nr - b.nr);
+        .filter(a => /^\d{1,2}[a-h]?$/.test(a.nr))
+        .sort((a, b) => (parseInt(a.nr, 10) - parseInt(b.nr, 10)) || a.nr.localeCompare(b.nr));
       if (!liste.length) throw new Error('Keine Aufgaben im JSON.');
 
       const { doppelt } = pruefeVollstaendig(liste, liste.map(a => a.nr));
@@ -1697,7 +1964,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
                  + komma(gesamt) + ' ab — die Erweiterung rechnet sie beim Bewerten um.';
       }
       if (KONTEXT === 'bearbeiten') {
-        meldung += '  Weiter zu „3 · Vorlage" — dort siehst du beides und trägst es ein.';
+        meldung += '  Dann „3 · In die Aufgabe eintragen".';
       }
       status('hstatus', meldung);
       R('hknoepfe').hidden = false;
@@ -1734,16 +2001,18 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
       if (!horizontKurztest) return status('hstatus', 'Es liegt noch kein geprüfter Horizont vor.', true);
       const f = { 'graderinfo[text]': kurztestHorizontHtml(horizontKurztest) };
-      if (istNeueFrage()) return liveEintragen(f, 'hstatus');
-      return schreibenAusfuehren(f, trocken, protokoll('hlog'), 'hstatus');
+      if (istNeueFrage()) { liveEintragen(f, 'hstatus'); return layoutAnzeigen(); }
+      await schreibenAusfuehren(f, trocken, protokoll('hlog'), 'hstatus');
+      if (!trocken) offenesFormularAngleichen(f);
+      layoutAnzeigen();
+      return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
     }
     if (istNeueFrage() && horizontAufgaben) {
       const f = { 'graderinfo[text]': baueHorizont(horizontAufgaben) };
-      if (P('vorlage')) f['responsetemplate[text]'] = baueAntwortvorlage(horizontAufgaben);
-      return liveEintragen(f, 'vstatus');
+      liveEintragen(f, 'hstatus');
+      return layoutAnzeigen();
     }
-    const imVorlagenReiter = KONTEXT === 'bearbeiten';
-    const sRolle = imVorlagenReiter ? 'vstatus' : 'hstatus';
+    const sRolle = 'hstatus';
     if (!horizontAufgaben) {
       return status(sRolle, 'Es liegt noch kein geprüfter Horizont vor — '
         + 'bitte erst im Reiter „Horizont" die Antwort der KI einlesen und prüfen.', true);
@@ -1751,14 +2020,52 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     const ziel = frageBearbeitenUrl();
     if (!ziel) return status(sRolle, 'Die Adresse der Frage lässt sich hier nicht bestimmen — '
       + 'bitte die Frage zum Bearbeiten öffnen.', true);
-    const log = protokoll(imVorlagenReiter ? 'vlog' : 'hlog');
+    const log = protokoll('hlog');
     const felder = { 'graderinfo[text]': baueHorizont(horizontAufgaben) };
-    // Auf der Bearbeiten-Seite geht die Antwortvorlage im selben Absenden mit.
-    if (KONTEXT === 'bearbeiten' && P('vorlage')) {
-      felder['responsetemplate[text]'] = baueAntwortvorlage(horizontAufgaben);
-    }
     await schreibenAusfuehren(felder, trocken, log, sRolle);
+    if (!trocken && KONTEXT === 'bearbeiten') offenesFormularAngleichen(felder);
+    layoutAnzeigen();
+    setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
   }
+
+  // Nach dem Speichern im Hintergrund zeigt das offene Formular noch den alten Stand.
+  // Speichert die Lehrkraft danach selbst (etwa nach dem Layout), wuerde sie den neuen
+  // Horizont ueberschreiben. Deshalb dasselbe auch ins offene Formular setzen.
+  function offenesFormularAngleichen(felder) {
+    try { Object.keys(felder).forEach(n => schreibeEditorfeldLive(n, felder[n])); } catch (e) { /* Feld fehlt */ }
+  }
+
+  function layoutEinfuegen() {
+    try {
+      const teile = [];
+      let extra = '';
+      if (E.layoutAufgabe !== false) {
+        const r = aufgabeLayout();
+        if (r.fehler) return status('vstatus', r.fehler, true);
+        schreibeEditorfeldLive('questiontext[text]', r.html);
+        teile.push('Aufgabenstellung');
+      }
+      if (E.layoutAntwort !== false) {
+        const v = layoutVorlageHtml();
+        if (!v) return status('vstatus', 'Für die Antwortvorlage fehlen die Teilaufgaben aus dem Horizont.', true);
+        if (!vorlageFormatOk()) {
+          const sel = $('[name="responseformat"]');
+          sel.value = 'editor';
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          extra = ' Das Antwortformat wurde auf „HTML-Editor" umgestellt – nur so wird das Layout dargestellt.';
+        }
+        schreibeEditorfeldLive('responsetemplate[text]', v);
+        teile.push('Antwortvorlage');
+      }
+      if (!teile.length) return status('vstatus', 'Bitte oben auswählen, was gestaltet werden soll.', true);
+      status('vstatus', teile.join(' und ') + ' ins Formular eingefügt.' + extra
+        + ' Gefällt es dir, „Änderungen speichern" – sonst „Abbrechen".');
+      hinweiseAktualisieren();
+    } catch (e) {
+      status('vstatus', 'Fehler: ' + e.message, true);
+    }
+  }
+
 
   async function schreibenAusfuehren(felder, trocken, log, statusRolle) {
     const namen = Object.keys(felder);
@@ -1854,7 +2161,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     for (let t = 0; t < teile; t++) {
       const von = t * groesse, bis = Math.min(von + groesse, abgaben.length);
       const b = el('button', 'mag-btn mag-btn-primary',
-        teile === 1 ? '📋 Prompt kopieren' : '📋 Teil ' + (t + 1) + ' (Abgabe ' + (von + 1) + '–' + bis + ')');
+        teile === 1 ? '📋 Bewertungsprompt kopieren' : '📋 Teil ' + (t + 1) + ' kopieren (Arbeit ' + (von + 1) + '–' + bis + ')');
       b.addEventListener('click', () => {
         if (!horizont) return status('kstatus',
           'Kein Erwartungshorizont — bitte erst den Reiter „Horizont" verwenden.', true);
@@ -1871,8 +2178,9 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
   // Der Link „Trotzdem nur diese pruefen" setzt teilErlaubt fuer genau diesen Text.
   let teilErlaubt = false;
   function korrekturPruefen() {
-    if (mehrereFragen) return status('kstatus', 'Gesperrt: Antworten zu mehreren Fragen auf dieser Seite. '
-      + 'Bitte jede Frage einzeln über die Übersicht öffnen.', true);
+    if (mehrereFragen) return status('kstatus', kurztestSeite
+      ? 'Kurztest – bitte auf der Übersicht bewerten (Link oben).'
+      : 'Gesperrt: Antworten zu mehreren Fragen auf dieser Seite. Bitte jede Frage einzeln über die Übersicht öffnen.', true);
     const roh = R('kjson').value.trim();
     if (!roh) return status('kstatus', 'Bitte erst die Antworten der KI einfügen.', true);
     try {
@@ -1949,8 +2257,9 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
           punkte: rechnung.gesamt, feedbackHtml: feedbackAlsHtml(text), text: text
         });
         const k = el('div', 'mag-karte');
+        if (b.besprochen === true) { k.dataset.gesehen = '1'; k.dataset.besprochen = '1'; }
         k.appendChild(el('div', 'mag-kartenkopf',
-          'Abgabe ' + abgabe.nr + ':  ' + komma(abgabe.ist) + ' → ' + komma(rechnung.gesamt)
+          (b.besprochen === true ? '✓ besprochen · ' : '') + 'Arbeit ' + abgabe.nr + ':  bisher ' + komma(abgabe.ist) + ' → neu ' + komma(rechnung.gesamt)
           + ' von ' + komma(rechnung.max) + ' P.'
           + (rechnung.abzug > 0.004 ? '   (−' + komma(rechnung.abzug) + ' P. Sprache)' : '')));
         k.appendChild(el('div', 'mag-kartenzeile', rechnung.teil
@@ -1969,7 +2278,11 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         box.appendChild(k);
       });
 
-      let meldung = eintragungen.length + ' Abgaben vorbereitet.';
+      const nBespr = liste.filter(b => b.besprochen === true).length;
+      let meldung = eintragungen.length + ' Arbeiten vorbereitet.'
+        + (nBespr === liste.length ? ' Alle gemeinsam besprochen – du kannst direkt eintragen.'
+          : nBespr ? ' ' + nBespr + ' besprochen, ' + (liste.length - nBespr) + ' automatisch bewertet – diese bitte ansehen.'
+          : ' Automatisch bewertet – bitte jede Arbeit einmal ansehen.');
       if (ohneAenderung) meldung += '  ' + ohneAenderung + ' ohne Änderung übersprungen.';
       if (fehlend.length) meldung += '  ⚠ Es fehlen die Abgaben ' + fehlend.join(', ')
         + ' — bitte den fehlenden Teil nachreichen.';
@@ -2053,14 +2366,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       stapelAufbauen();
     },
 
-    weiter:  () => zeige('vorlage'),
-    beides:  () => horizontSchreiben(false),
-    kopierh: () => horizontAufgaben
-      ? kopiere(baueHorizont(horizontAufgaben), 'vstatus', 'Horizont-HTML kopiert.')
-      : status('vstatus', 'Erst im Reiter „Horizont" die KI-Antwort einlesen.', true),
-    kopierv: () => horizontAufgaben
-      ? kopiere(baueAntwortvorlage(horizontAufgaben), 'vstatus', 'Antwortvorlage kopiert.')
-      : status('vstatus', 'Erst im Reiter „Horizont" die KI-Antwort einlesen.', true),
+    lein:   () => layoutEinfuegen(),
 
     kedit:    () => oeffnePromptEditor('korrektur'),
     kpruefen: korrekturPruefen,
@@ -2068,12 +2374,15 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       // Review-Pflicht im Klausur-Weg: jede Karte muss einmal sichtbar gewesen sein.
       const karten = $$('.mag-karte', R('kliste'));
       const offen = karten.filter(k => k.dataset.gesehen !== '1').length;
+      const knopfE = panel.querySelector('[data-tu="kschreiben"]');
       if (offen && !reviewTrotzdem) {
         reviewTrotzdem = true;
-        return status('kstatus', '⚠ ' + offen + ' von ' + karten.length + ' Bewertungen noch nicht angesehen. '
-          + 'Bitte durchblättern — oder „Alle eintragen" noch einmal drücken, um trotzdem einzutragen.', true);
+        if (knopfE) knopfE.textContent = '⚠ Ja, ' + offen + ' ungeprüft eintragen';
+        return status('kstatus', '⚠ ' + offen + ' automatisch bewertete Arbeit(en) noch nicht angesehen. '
+          + 'Bitte durchblättern. Willst du sie ungeprüft eintragen, bestätige das mit dem Knopf unten.', true);
       }
       reviewTrotzdem = false;
+      if (knopfE) knopfE.textContent = 'Alle eintragen';
       korrekturEintragen(false);
     },
     krohdaten: () => kopiere(JSON.stringify({
@@ -2203,7 +2512,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     const f = ev.target.closest('[data-opt]');
     if (!f) return;
     // Die Aussehen-Häkchen der Antwortvorlage wirken sofort auf die Vorschau.
-    if (['afbFarben', 'vorlagePunkte', 'vorlageAfb'].includes(f.dataset.opt)) {
+    if (['afbFarben', 'vorlagePunkte', 'vorlageAfb', 'kartePunkte', 'layoutAufgabe', 'layoutAntwort'].includes(f.dataset.opt)) {
       E[f.dataset.opt] = f.checked;
       sichereEinstellungen();
       hinweiseAktualisieren();
@@ -2242,10 +2551,23 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       R('kstatus') && status('kstatus', 'Gesperrt: mehrere Fragen auf einer Seite (siehe oben).', true);
       const ks = panel.querySelector('[data-tu="kschreiben"]');
       if (ks) ks.disabled = true;
-    } else if (z.wer === 'coach') {
+    } else if (z.wer === 'coach' && KONTEXT === 'bewertung') {
+      // Kurztests werden auf der Uebersicht bewertet (alle Kurztest-Fragen in einem Prompt).
+      // Hier im Klausur-Weg passte weder Prompt noch Horizont-Format — deshalb sperren und verweisen.
+      mehrereFragen = true; kurztestSeite = true;
       banner.hidden = false;
-      banner.textContent = 'Diese Frage ist als Kurztest angelegt. '
-        + 'Sie lässt sich hier trotzdem im Klausur-Weg bewerten.';
+      banner.textContent = 'Diese Frage ist ein Kurztest. Kurztests werden auf der Übersicht des Tests '
+        + 'bewertet – alle Kurztest-Fragen zusammen in einem Prompt. ';
+      const cmid = new URLSearchParams(location.search).get('id');
+      if (cmid) {
+        const a = document.createElement('a');
+        a.href = uebersichtUrl(cmid); a.textContent = 'Zur Übersicht →';
+        a.className = 'mag-btn mag-btn-ok mag-btn-klein';
+        banner.appendChild(a);
+      }
+      R('kstatus') && status('kstatus', 'Kurztest – bitte auf der Übersicht bewerten (Link oben).', true);
+      const ks = panel.querySelector('[data-tu="kschreiben"]');
+      if (ks) ks.disabled = true;
     } else if (!z.horizont && KONTEXT === 'bewertung' && !E.horizontLokal) {
       banner.hidden = false;
       banner.textContent = 'Diese Frage hat noch keinen Erwartungshorizont. '
@@ -2255,7 +2577,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     // Reihenfolge der Selbstauswahl: fehlende Einstellungen zuerst — ohne Fach und
     // Jahrgang taugt der Prompt nicht. Danach der fehlende Horizont.
     const ut = panel.querySelector('.mag-untertitel');
-    if (ut) ut.textContent = KONTEXT === 'bearbeiten' ? 'Erwartungshorizont für diese Aufgabe' : 'Freitextaufgaben bewerten';
+    if (ut) ut.textContent = KONTEXT === 'bearbeiten' ? 'Aufgabe vorbereiten' : 'Antworten bewerten';
     let start;
     if (einstellungenUnvollstaendig() && KONTEXT !== 'bearbeiten') {
       start = 'einst';
@@ -2271,15 +2593,14 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
     if (KONTEXT === 'bewertung') {
       const n = leseAbgaben().length;
-      status('kstatus', n ? n + ' Abgaben auf dieser Seite.' : 'Keine Abgaben gefunden.');
+      if (!mehrereFragen) status('kstatus', n ? n + ' Arbeiten auf dieser Seite.' : 'Keine Arbeiten gefunden.');
+      const kh = R('khilfe');
+      if (kh) {
+        kh.open = !E.khilfeGesehen;
+        kh.addEventListener('toggle', () => { if (!kh.open && !E.khilfeGesehen) { E.khilfeGesehen = true; sichereEinstellungen(); } });
+      }
     } else {
-      const alt = /moodle[-\s]?ai[-\s]?(coach|grader)/i.test(htmlZuText(leseHorizontRoh()));
-      status('hstatus', alt
-        ? 'Dieser Horizont stammt noch aus Coach oder Grader. Bitte neu erstellen – der alte geht als Vorlage in den Auftrag ein.'
-        : z.horizont
-          ? 'Diese Aufgabe hat bereits einen Erwartungshorizont — ein neuer ersetzt ihn.'
-          : 'Noch kein Erwartungshorizont in dieser Aufgabe.'
-          + (einstellungenUnvollstaendig() ? ' Tipp: Fach und Jahrgang im Zahnrad ⚙ eintragen – sie gehen in den Auftrag ein.' : ''));
+      horizontStatusAnzeigen();
       const md = materialDateien();
       if (md.length) {
         R('hmaterial').hidden = false;

@@ -1,41 +1,43 @@
 /* Moodle AI Freitext Grader — Horizont-Prompt fuer den Kurztest-Modus.
- * Unveraendert aus Moodle AI Coach 1.9.1 uebernommen, damit Frageneditor
- * (Klausur-Weg-Panel) und Uebersicht (Kurztest-Weg) denselben Text benutzen.
+ * Ein Grundprompt fuer Frageneditor (eine Aufgabe) und Uebersicht (mehrere).
  * Platzhalter [MOODLE_AI_COACH_AUFGABEN] wird von den Aufrufern ersetzt.
+ * opts: { einzeln: bool, jahrgang: string, stufe: 'Kurz'|'Mittel'|'gemischt' }
  * A. Spielhoff · CC BY-SA 4.0
  */
-export function kurztestHorizontVorlage() {
+import { stufenBlock, stufenBlockGemischt, horizontRegeln, HORIZONT_ZWECK } from './horizont-bausteine.js';
+
+export function kurztestHorizontVorlage(opts = {}) {
+  const ein = !!opts.einzeln;
+  const stufe = opts.stufe === 'gemischt' ? stufenBlockGemischt() : stufenBlock('kurztest', opts.stufe);
   return `═══════════════════════════════════════════════════════
-MOODLE AI COACH – ERWARTUNGSHORIZONT ERSTELLEN
+MOODLE AI FREITEXT GRADER – ERWARTUNGSHORIZONT (KURZTEST)
 ═══════════════════════════════════════════════════════
 
-Für die unten stehenden Aufgaben brauchst du einen Erwartungshorizont – einen je
-Aufgabe, in genau dem Format unten. Er wird anschließend in das Moodle-Feld
-„Bewerterinformation" der Frage geschrieben und dort dauerhaft benutzt.
+Für ${ein ? 'die Aufgabe unten brauchst du einen Erwartungshorizont' : 'die Aufgaben unten brauchst du je einen Erwartungshorizont'}
+in genau dem Format unten. Er wird in Moodle im Feld „Informationen für Bewerter/innen"
+der Aufgabe gespeichert und bei jeder Bewertung benutzt.
 
-Steht bei einer Aufgabe „horizont_bisher", gibt es dort schon einen. Er ist der
-**Ausgangspunkt, keine Vorlage zum Abschreiben**: Er wird ersetzt, weil an ihm etwas
-nicht stimmt. Übernimm, was gut ist, und weiche dort ab, wo die Änderungswünsche der
-Lehrkraft es verlangen – auch dann, wenn der bisherige Horizont das Gegenteil sagt.
+${HORIZONT_ZWECK}
+
+BISHERIGER HORIZONT
+Steht ${ein ? 'bei der Aufgabe' : 'bei einer Aufgabe'} „horizont_bisher", ist das ein älterer Horizont. Er ist
+Ausgangspunkt, keine Vorlage zum Abschreiben: Übernimm, was fachlich gut ist, und
+schreibe ihn im Format unten neu. Sag der Lehrkraft ZUERST in zwei, drei Sätzen, dass
+ein bisheriger Horizont vorliegt, was du übernimmst und was du änderst.${ein ? '' : ' Stehen unten Änderungswünsche der Lehrkraft, haben sie\nVorrang – auch wenn der bisherige Horizont das Gegenteil sagt.'}
 Steht kein „horizont_bisher" dabei, schreibst du neu.
 
-Die Kernaussage bekommen die Schülerinnen und Schüler zu sehen: Die Erweiterung setzt
-sie bei unvollständigen Antworten als „So hättest du es schreiben können" unter die
-Rückmeldung. Schreib sie deshalb als vollständige Musterantwort in einfacher Sprache –
-Name und Funktion, ein bis zwei kurze Sätze.
+KERNAUSSAGE = MUSTERANTWORT
+Die Kernaussage sehen die Schülerinnen und Schüler: Bei unvollständigen Antworten setzt
+die Erweiterung sie als „So hättest du es schreiben können" unter die Rückmeldung.
+Schreibe sie als vollständige Musterantwort in einfacher Sprache – ein bis zwei kurze
+Sätze, so wie eine gute Schülerin oder ein guter Schüler sie schreiben würde.
 
-WICHTIG – was NICHT hineingehört:
-Keine Sprachregeln, kein Rechtschreibabzug, kein Feedback-Stil, keine Rolle, keine
-Punktzahl. Das steht global in der Erweiterung. Im Horizont steht ausschließlich,
-was für DIESE eine Aufgabe gilt. Sonst entstehen so viele Kopien der Regeln, wie es
-Fragen gibt, und sie laufen auseinander.
-
-FORMAT je Aufgabe:
+FORMAT${ein ? '' : ' je Aufgabe'}
 
 Erwartungshorizont
 
 Kernaussage:
-<der eine Satz, der die volle Inhaltspunktzahl trägt>
+<Musterantwort, ein bis zwei kurze Sätze>
 
 Muss enthalten:
 - <Teilaspekt 1>
@@ -46,38 +48,40 @@ Auch richtig:
 
 Inhalt:
 100 % – <Bedingung>
- 75 % – <Bedingung>            (nur wenn die Aufgabe eine solche Stufe hergibt)
+ 75 % – <Bedingung>
  50 % – <Bedingung>
  25 % – <Bedingung>
   0 % – <Bedingung>
 
 Reicht nicht:
-<typische halbe Antwort und warum sie nicht reicht>
+<sachlich richtige, aber zu knappe Antwort und warum sie nicht reicht>
 
 Häufiger Fehler:
-<typischer Denkfehler – hilft später beim Feedback>
+<typischer Denkfehler und was stattdessen richtig ist>
 
-REGELN:
-• Benutze nur die Stufen 100 / 75 / 50 / 25 / 0. Kein 90 – das ist im Projekt die
-  Rechtschreibstufe und hat mit Inhalt nichts zu tun.
-• Lass Stufen weg, die die Aufgabe nicht hergibt. Bei einer Aufzählung von drei
-  Dingen sind 100 / 75 / 50 / 0 natürlicher als fünf Stufen.
-• Die Antwort soll ein bis drei Sätze lang sein. Halte den Horizont entsprechend
+Teile:                          (nur wenn die Aufgabe Teile a, b … hat)
+a) <Teil in zwei, drei Wörtern> – <Punkte> Punkt(e)
+b) <Teil in zwei, drei Wörtern> – <Punkte> Punkt(e)
+
+REGELN
+${horizontRegeln(opts.jahrgang)}
+• TEILE: Hat die Aufgabe Teile (a, b …), gehört der Abschnitt „Teile:" dazu. Die Punkte
+  aller Teile ergeben zusammen genau „max". Die Stufen unter „Inhalt" gelten für die
+  ganze Aufgabe und nennen, welche Teile erfüllt sein müssen.
+• Die Schülerantworten sind ein bis drei Sätze lang. Halte den Horizont entsprechend
   knapp – er ist kein Lehrbuchtext.
-• „Auch richtig" ist der wichtigste Abschnitt. Denk daran, wie Vierzehnjährige
-  formulieren, und nimm diese Varianten ausdrücklich auf.
-• Der Operator der Aufgabe zählt: Bei „Nenne" reicht die Nennung, bei „Erkläre"
-  muss ein Zusammenhang dastehen, bei „Vergleiche" beide Seiten.
 
-AUSGABE:
-Gib zuerst alle Horizonte als lesbaren Text aus, damit die Lehrkraft sie prüfen kann.
-Frage dann: „Passt das so?"
-Erst nach „ok" gibst du sie als JSON aus:
+${stufe}
+
+AUSGABE
+Gib zuerst ${ein ? 'den Horizont' : 'alle Horizonte'} als lesbaren Text aus, damit die Lehrkraft prüfen kann.
+Frage dann: „Passt das so? Wenn ja, antworte mit ok." Ändere, bis die Lehrkraft
+zustimmt. Erst nach „ok" gibst du genau EINEN Codeblock aus:
 
 \`\`\`json
 {
   "horizonte": [
-    { "qid": "115576570", "frage": "alkoholischen Gärung (AFB I)",
+    { "qid": "115576570", "frage": "Edelgasregel",
       "text": "Erwartungshorizont\\n\\nKernaussage:\\n…" }
   ]
 }
@@ -86,7 +90,7 @@ Erst nach „ok" gibst du sie als JSON aus:
 „qid" übernimmst du unverändert aus den Daten unten.
 
 ═══════════════════════════════════════════════════════
-AUFGABEN OHNE ERWARTUNGSHORIZONT
+${ein ? 'DIESE AUFGABE' : 'AUFGABEN'}
 ═══════════════════════════════════════════════════════
 
 [MOODLE_AI_COACH_AUFGABEN]`;
