@@ -254,6 +254,11 @@ export function starteCoach() {
     if (i > -1 && PROZENT_ZEILE_RE.test(zeilen[i].trim())) {
       zeilen.splice(i, 1);
     }
+    // Feedback-Meta-Zeile (Freitext Grader) ist Verwaltung, kein Massstab.
+    const j = zeilen.findIndex((z) => z.trim());
+    if (j > -1 && /^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel|ausführlich|umfangreich)\s*\]?\s*$/i.test(zeilen[j])) {
+      zeilen.splice(j, 1);
+    }
     return zeilen.join('\n').trim();
   }
 
@@ -275,7 +280,7 @@ export function starteCoach() {
   const OPT_STANDARD = {
     // Sprache wird ABGEZOGEN, nicht als zweiter Topf addiert: sonst bekäme eine
     // inhaltsleere Antwort allein für sauberes Deutsch schon 30 %.
-    maxSprachabzug: 30,
+    maxSprachabzug: 10,   // Freitext Grader: wie im Klausur-Weg; der Wert im Horizont hat Vorrang
     kiHinweisText: KI_HINWEIS_STANDARD,
     promptOverride: '',
     horizontPromptOverride: '',
@@ -448,6 +453,7 @@ export function starteCoach() {
       aufgabe: txt(erste.querySelector('.qtext')),
       zustaendig: zustaendigkeit(horizontRoh),
       horizontProzent: prozentAusHorizont(horizontRoh),
+      feedback: (horizontRoh.match(/^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel)\s*\]?\s*$/im) || [])[1] || 'Mittel',
       horizont: horizontBereinigt(horizontRoh),
       max: num((erste.querySelector('input[name$="-maxmark"]') || {}).value) ?? 1,
       ...(nachgeladen ? { horizont_aus_fassung: nachgeladen } : {})
@@ -1259,7 +1265,13 @@ ${DATEN_PLATZHALTER}`;
   function bauePrompt(daten) {
     const eigen = (optionen.promptOverride || '').trim();
     const vorlage = eigen || (optionen.kompaktPrompt ? kompaktPromptVorlage() : bewertungsPromptVorlage());
-    const block = '```json\n' + JSON.stringify(daten, null, 1) + '\n```';
+    const kurz = Object.values((daten && daten.fragen) || {}).some((f) => f && f.feedback === 'Kurz');
+    const regel = kurz
+      ? 'FEEDBACKLÄNGE JE AUFGABE: Steht bei einer Aufgabe "feedback": "Kurz", gib für diese Aufgabe '
+        + 'höchstens zwei Felder aus (inhalt und höchstens ein weiteres), je EIN kurzer Satz. '
+        + 'Bei "Mittel" gilt das Format wie beschrieben.\n\n'
+      : '';
+    const block = regel + '```json\n' + JSON.stringify(daten, null, 1) + '\n```';
     return vorlage.includes(DATEN_PLATZHALTER)
       ? vorlage.replace(DATEN_PLATZHALTER, block)
       : vorlage + '\n\n' + block;

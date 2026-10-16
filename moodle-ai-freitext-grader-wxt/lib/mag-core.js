@@ -1,4 +1,4 @@
-/* Moodle AI Grader v3.1.0 — content.js
+/* Moodle AI Freitext Grader 0.2.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -106,6 +106,7 @@ export function starteGrader() {
     return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : null;
   }
   function fbLaenge() {
+    if (KONTEXT === 'bearbeiten' && typeof FEEDBACK !== 'undefined') return FEEDBACK;
     let roh = '';
     try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* Seite ohne Horizont */ }
     return feedbackAusHorizont(roh) || E.feedbacklaenge;
@@ -727,7 +728,7 @@ export function starteGrader() {
     // trotzdem in den ersten Block geschrieben, nicht doppelt setzen — wie im Coach.
     const schonDa = (aufgaben || []).some(a => MARKER_RE.test(ersteZeile(htmlZuText(a.horizont))));
     const kopf = schonDa ? ''
-      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(E.rechtschreibung, E.punkteschritte, E.feedbacklaenge);
+      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(E.rechtschreibung, E.punkteschritte, KONTEXT === 'bearbeiten' ? FEEDBACK : fbLaenge());
     const bloecke = (aufgaben || []).map(a => {
       let inhalt = String(a.horizont || '').trim();
       if (!/<[a-z][\s\S]*>/i.test(inhalt)) {
@@ -825,20 +826,48 @@ Das Feld "horizont" ist HTML (erlaubt: p, br, ul, li, strong, em). Keine Übersc
 die Aufgabe selbst — die setzt die Erweiterung. Keine Punktzahlen im Fließtext.`;
   }
 
+  // Bilder und Dateien in der Aufgabenstellung — die Erweiterung kann nur Text kopieren.
+  function materialDateien() {
+    const ta = $('[name="questiontext[text]"]');
+    const html = ta ? ta.value : (($('.que .qtext') || {}).innerHTML || '');
+    if (!html) return [];
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const namen = [];
+    doc.querySelectorAll('img').forEach(i => namen.push('Bild: ' + (i.getAttribute('alt') || decodeURIComponent((i.getAttribute('src') || '').split('/').pop().split('?')[0]) || 'ohne Namen')));
+    doc.querySelectorAll('a[href*="pluginfile"]').forEach(a => namen.push('Datei: ' + (a.textContent.trim() || decodeURIComponent(a.getAttribute('href').split('/').pop().split('?')[0]))));
+    return namen;
+  }
+  const MATERIAL_REGEL = `MATERIAL
+Enthält die Aufgabe Material (M1, M2 …), werte es JETZT aus. Beim späteren Bewerten liegt das
+Material NICHT mehr vor. Schreibe deshalb alle Werte und Aussagen aus dem Material, die eine
+Antwort braucht, mit Quelle direkt in die Erwartungen (z. B. „M2, Tabelle: Siedetemperatur 78 °C"),
+nicht nur „siehe M2". Nimm wörtliche Übernahmen aus dem Material ohne eigene Erklärung als
+„Reicht nicht"-Fall auf, wo die Aufgabe eine Erklärung verlangt.`;
+  function materialBlock() {
+    const d = materialDateien();
+    return MATERIAL_REGEL + (d.length
+      ? '\n\nIn der Aufgabe stehen Bilder/Dateien, die hier nur als Name ankommen:\n- ' + d.join('\n- ')
+        + '\nDie Lehrkraft lädt sie zusätzlich in den Chat hoch. Fehlen sie, frage danach, bevor du den Horizont schreibst.'
+      : '');
+  }
+
   function baueHorizontPrompt() {
     if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
       const name = ($('[name="name"]') || {}).value || 'Diese Frage';
       const e = { qid: 'diese-frage', frage: name, aufgabe: leseAufgabenstellung(), max: leseGesamtpunkte() };
       const bisher = htmlZuText(leseHorizontRoh());
       if (bisher) e.horizont_bisher = ohneMarker(bisher);
-      const block = 'Rahmendaten:\n' + rahmendaten() + '\n\n```json\n' + JSON.stringify([e], null, 1) + '\n```';
+      const block = 'Rahmendaten:\n' + rahmendaten() + '\n\n' + materialBlock() + '\n\n```json\n' + JSON.stringify([e], null, 1) + '\n```';
       return kurztestHorizontVorlage().replace('[MOODLE_AI_COACH_AUFGABEN]', block);
     }
     const eigen = (E.promptHorizont || '').trim();
     return (eigen || horizontPromptVorlage())
       .replace('[MAG_RAHMENDATEN]', rahmendaten())
       .replace('[MAG_GESAMTPUNKTE]', komma(leseGesamtpunkte() || '?'))
-      .replace('[MAG_AUFGABEN]', leseAufgabenstellung() || '[keine Aufgabenstellung gefunden]');
+      .replace('[MAG_AUFGABEN]', (leseAufgabenstellung() || '[keine Aufgabenstellung gefunden]')
+        + '\n\n' + materialBlock()
+        + (htmlZuText(leseHorizontRoh()) ? '\n\nBISHERIGER HORIZONT (Ausgangspunkt, keine Vorlage zum Abschreiben – '
+          + 'übernimm, was gut ist, und erstelle ihn im aktuellen Format neu):\n' + ohneMarker(htmlZuText(leseHorizontRoh())) : ''));
   }
 
   const FB_LAENGE = {
@@ -1159,7 +1188,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       <img class="mag-kopfbild" alt="">
       <div class="mag-titelblock">
         <span class="mag-titel">Freitext Grader <span class="mag-version"></span></span>
-        <span class="mag-untertitel">Klausuren bewerten mit Feedback</span>
+        <span class="mag-untertitel"></span>
       </div>
       <button class="mag-ikon" data-tu="zu" title="Schließen">✕</button>
     </div>
@@ -1171,24 +1200,43 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     <div class="mag-inhalt" data-panel="horizont">
       <div class="mag-status" data-rolle="hstatus"></div>
       <div class="mag-modus" data-rolle="hmodus" hidden>
-        <label>Modus dieser Frage</label>
+        <div class="mag-rahmen-titel">Diese Aufgabe</div>
+        <label>Modus</label>
         <select data-rolle="hmodussel">
           <option value="kurztest">Kurztest – kurze Antworten, schnelle Bewertung</option>
           <option value="klausur">Klausur – Teilaufgaben, Portionen, Review</option>
         </select>
         <div class="mag-hinweis" data-rolle="hmodushinweis"></div>
+        <label>Feedbacklänge</label>
+        <select data-rolle="hfeedbacksel"></select>
+        <div class="mag-hinweis" data-rolle="hfeedbackhinweis"></div>
       </div>
       <div class="mag-rahmen">
         <div class="mag-rahmen-titel">Diese Angaben gehen in den Prompt</div>
         <div data-rolle="hrahmen"></div>
         <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zueinst">ändern</button>
       </div>
-      <label>1 · Prompt für die KI</label>
+      <details class="mag-details mag-hilfe" data-rolle="hhilfe">
+        <summary>So funktioniert's</summary>
+        <p class="mag-hinweis">Der Erwartungshorizont sagt der KI später beim Bewerten, was eine
+        richtige Antwort ist. So entsteht er:</p>
+        <p class="mag-hinweis"><strong>1 · Auftrag kopieren:</strong> Die Erweiterung nimmt
+        Aufgabenstellung, Punkte und Einstellungen und baut daraus einen Auftrag (Prompt) für die KI.</p>
+        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT), den
+        Horizont lesen und prüfen. Nach deinem „ok" gibt die KI einen Codeblock aus – diesen hier einfügen.</p>
+        <p class="mag-hinweis"><strong>3 · Eintragen:</strong> Der Horizont wird im Feld
+        „Informationen für Bewerter/innen" dieser Aufgabe gespeichert. Schülerinnen und Schüler sehen ihn nicht.</p>
+      </details>
+      <label>1 · Auftrag für die KI kopieren</label>
       <div class="mag-reihe">
-        <button class="mag-btn mag-btn-primary" data-tu="hprompt">📋 Prompt kopieren</button>
-        <button class="mag-btn mag-btn-rand" data-tu="hedit" title="Prompt anpassen">✏️</button>
+        <button class="mag-btn mag-btn-primary" data-tu="hprompt">📋 Auftrag kopieren</button>
+        <button class="mag-btn mag-btn-rand" data-tu="hedit" title="Auftrag (Prompt) anpassen">✏️</button>
       </div>
-      <label>2 · Antwort der KI einfügen</label>
+      <div class="mag-hinweis" data-rolle="hmaterial" hidden></div>
+      <label>2 · Erwartungshorizont der KI einfügen</label>
+      <div class="mag-hinweis">Die Erweiterung hat bewusst keinen eigenen KI-Zugang: Du wählst die KI,
+      und Aufgaben gehen nur dorthin, wo du sie einfügst. Den Codeblock der KI vollständig hier
+      einfügen – er wird sofort geprüft und angezeigt. Gespeichert wird erst in Schritt 3.</div>
       <textarea data-rolle="hjson" rows="5" placeholder='{ "aufgaben": [ … ] }'></textarea>
       <button class="mag-btn mag-btn-primary" data-tu="hpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
@@ -1285,12 +1333,6 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
         <option value="30">30 %</option>
       </select>
       <div class="mag-hinweis" data-rolle="rshinweis"></div>
-      <label>Feedbacklänge</label>
-      <select data-opt="feedbacklaenge">
-        <option value="Kurz">Kurz</option><option value="Mittel">Mittel</option>
-        <option value="Ausführlich">Ausführlich (Standard)</option>
-        <option value="Umfangreich">Umfangreich — mit Operatorerfüllung</option>
-      </select>
       <label class="mag-haken"><input type="checkbox" data-opt="kiHinweis"> KI-Transparenzhinweis unter das Feedback</label>
       <label class="mag-haken"><input type="checkbox" data-opt="entferneQuellen"> Quellenangaben entfernen</label>
       <div class="mag-reihe">
@@ -1386,10 +1428,31 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     return (!teilaufgaben && (leseGesamtpunkte() || 0) <= 3) ? 'kurztest' : 'klausur';
   }
   let MODUS = KONTEXT === 'bearbeiten' ? modusVorschlag() : 'klausur';
+  // Feedbacklaenge je Aufgabe (steht als Meta-Zeile im Horizont). Auswahl haengt vom Modus ab.
+  const FB_STUFEN = {
+    kurztest: [['Kurz', 'Kurz – 1–2 Sätze'], ['Mittel', 'Mittel – 3–5 Sätze (Standard, wie bisher im Coach)']],
+    klausur:  [['Mittel', 'Mittel – 3–4 Sätze je Teilaufgabe'], ['Ausführlich', 'Ausführlich – ein Absatz je Teilaufgabe (Standard)'],
+               ['Umfangreich', 'Umfangreich – dazu Abschnitt Operatorerfüllung']]
+  };
+  const FB_STANDARD = { kurztest: 'Mittel', klausur: 'Ausführlich' };
+  let FEEDBACK = (() => {
+    const h = KONTEXT === 'bearbeiten' ? feedbackAusHorizont(leseHorizontRoh()) : null;
+    return (h && FB_STUFEN[MODUS].some(o => o[0] === h)) ? h : FB_STANDARD[MODUS];
+  })();
+  function feedbackAnzeigen() {
+    const sel = R('hfeedbacksel'); if (!sel) return;
+    sel.innerHTML = '';
+    FB_STUFEN[MODUS].forEach(([w, t]) => { const o = document.createElement('option'); o.value = w; o.textContent = t; sel.appendChild(o); });
+    if (!FB_STUFEN[MODUS].some(o => o[0] === FEEDBACK)) FEEDBACK = FB_STANDARD[MODUS];
+    sel.value = FEEDBACK;
+    R('hfeedbackhinweis').textContent = MODUS === 'kurztest'
+      ? 'Bei „Kurz" und „Mittel" passt die ganze Klasse meist in einen Durchgang.'
+      : 'Klausuren werden in Portionen bewertet; längeres Feedback heißt kleinere Portionen.';
+  }
   let horizontKurztest = null;   // Kurztest-Horizont als Text, noch nicht geschrieben
 
   if (KONTEXT === 'bearbeiten') {
-    hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
+    hknoepfeContainer.appendChild(knoepfchen('3 · In die Aufgabe eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
   }
   function modusAnzeigen() {
     const box = R('hmodus');
@@ -1397,10 +1460,11 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     box.hidden = KONTEXT !== 'bearbeiten';
     R('hmodussel').value = MODUS;
     R('hmodushinweis').textContent = MODUS === 'kurztest'
-      ? 'Kurztest: Horizont mit Kernaussage, „Auch richtig" und Prozentstufen. Bewertet wird auf '
-        + 'der Übersicht, alle Kurztest-Fragen eines Tests zusammen. Feedback kurz.'
+      ? 'Kurztest: kurze Antworten, Horizont mit Kernaussage und „Auch richtig". Bewertet wird auf '
+        + 'der Übersicht, alle Kurztest-Aufgaben eines Tests zusammen.'
       : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und AFB, dazu eine Antwortvorlage. '
-        + 'Bewertet wird auf der Einzelseite der Frage, in Portionen, mit Review vor dem Eintragen.';
+        + 'Bewertet wird auf der Einzelseite der Aufgabe, in Portionen, mit Review vor dem Eintragen.';
+    feedbackAnzeigen();
     const vt = panel.querySelector('.mag-tab[data-tab="vorlage"]');
     if (vt) vt.hidden = MODUS === 'kurztest';
     if (KONTEXT === 'bearbeiten') {
@@ -1411,8 +1475,10 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     }
   }
   if (KONTEXT === 'bearbeiten') {
+    R('hfeedbacksel').addEventListener('change', () => { FEEDBACK = R('hfeedbacksel').value; });
     R('hmodussel').addEventListener('change', () => {
       MODUS = R('hmodussel').value;
+      FEEDBACK = FB_STANDARD[MODUS];
       horizontAufgaben = null; horizontKurztest = null;
       R('hliste').innerHTML = ''; R('hknoepfe').hidden = true;
       status('hstatus', 'Modus: ' + (MODUS === 'kurztest' ? 'Kurztest' : 'Klausur')
@@ -1428,7 +1494,7 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
     const absaetze = ohne.split(/\n\s*\n/).filter(a => a.trim())
       .map(a => '<p>' + escapeHtml(a.trim()).replace(/\n/g, '<br>') + '</p>').join('');
     return '<p>' + MARKER_KURZTEST + '</p><p>[Rechtschreibung: '
-      + komma(E.sprachabzugKurztest || 30) + '%]</p>' + absaetze;
+      + komma(E.rechtschreibung) + '%]</p><p>[Feedback: ' + FEEDBACK + ']</p>' + absaetze;
   }
 
   // Neue Frage: direkt ins offene Formular, Moodle speichert mit der Frage.
@@ -2188,8 +2254,10 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 
     // Reihenfolge der Selbstauswahl: fehlende Einstellungen zuerst — ohne Fach und
     // Jahrgang taugt der Prompt nicht. Danach der fehlende Horizont.
+    const ut = panel.querySelector('.mag-untertitel');
+    if (ut) ut.textContent = KONTEXT === 'bearbeiten' ? 'Erwartungshorizont für diese Aufgabe' : 'Freitextaufgaben bewerten';
     let start;
-    if (einstellungenUnvollstaendig()) {
+    if (einstellungenUnvollstaendig() && KONTEXT !== 'bearbeiten') {
       start = 'einst';
       status('estatus', 'Bitte einmal ausfüllen: Fach und Jahrgang fehlen. '
         + 'Beides geht als Rahmendatum in den Prompt.', true);
@@ -2205,9 +2273,28 @@ Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
       const n = leseAbgaben().length;
       status('kstatus', n ? n + ' Abgaben auf dieser Seite.' : 'Keine Abgaben gefunden.');
     } else {
-      status('hstatus', z.horizont
-        ? 'Diese Frage hat bereits einen Erwartungshorizont — ein neuer ersetzt ihn.'
-        : 'Noch kein Erwartungshorizont in dieser Frage.');
+      const alt = /moodle[-\s]?ai[-\s]?(coach|grader)/i.test(htmlZuText(leseHorizontRoh()));
+      status('hstatus', alt
+        ? 'Dieser Horizont stammt noch aus Coach oder Grader. Bitte neu erstellen – der alte geht als Vorlage in den Auftrag ein.'
+        : z.horizont
+          ? 'Diese Aufgabe hat bereits einen Erwartungshorizont — ein neuer ersetzt ihn.'
+          : 'Noch kein Erwartungshorizont in dieser Aufgabe.'
+          + (einstellungenUnvollstaendig() ? ' Tipp: Fach und Jahrgang im Zahnrad ⚙ eintragen – sie gehen in den Auftrag ein.' : ''));
+      const md = materialDateien();
+      if (md.length) {
+        R('hmaterial').hidden = false;
+        R('hmaterial').textContent = 'In der Aufgabe stehen ' + md.length + ' Bild(er)/Datei(en): '
+          + md.join(' · ') + ' – bitte zusätzlich in den KI-Chat hochladen.';
+      }
+      // Hilfe beim ersten Mal offen, danach eingeklappt.
+      const hilfe = R('hhilfe');
+      if (hilfe) {
+        hilfe.open = !E.hilfeGesehen;
+        hilfe.addEventListener('toggle', () => { if (!hilfe.open && !E.hilfeGesehen) { E.hilfeGesehen = true; sichereEinstellungen(); } });
+      }
+      // Im Frageneditor gleich geoeffnet.
+      panel.classList.add('offen');
+      knopf.classList.add('versteckt');
     }
   });
 

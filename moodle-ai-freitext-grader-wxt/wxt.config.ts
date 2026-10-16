@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Freitext Grader',
-    version: '0.1.0',
+    version: '0.2.0',
     description:
       'Bewertet alle Freitextaufgaben in Moodle-Tests – Kurztests mit Zufallsfragen wie Klausuren mit Teilaufgaben. Hilft beim Anlegen der Frage, den Erwartungshorizont zu schreiben, und trägt Punkte samt Feedback ein.',
     permissions: ['storage'],
