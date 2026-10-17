@@ -1,8 +1,13 @@
 # Moodle-Erweiterungen für Chrome, Firefox und Edge
 
-Sieben kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen —
-Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen. Alle sieben sind
+Kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen —
+Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen. Alle sind
 mit **WXT** aus **einer** Codebasis für Chrome, Firefox und Edge gebaut.
+
+> **Neu: Moodle AI Freitext Grader.** Er vereint **Moodle AI Coach** (Kurztests) und
+> **Moodle AI Grader** (Klausuren) in einer Erweiterung und löst beide ab. Coach und Grader
+> bleiben nur noch so lange zum Download, bis der Freitext Grader im Schulbetrieb fertig
+> erprobt ist. Bitte nicht beide Generationen gleichzeitig aktivieren.
 
 Alle laufen **ausschließlich im Browser**. Keine Erweiterung schickt Daten an einen
 Server, keine hat einen eigenen KI-Zugang und keine braucht einen API-Schlüssel.
@@ -13,7 +18,7 @@ liest die **Antwort als JSON** wieder ein — welchen Chat du benutzt, entscheid
 
 ## Was ist das hier eigentlich?
 
-Diese sieben Programme sind **Browser-Erweiterungen** — kleine Zusatzprogramme,
+Diese Programme sind **Browser-Erweiterungen** — kleine Zusatzprogramme,
 die man einmalig im Browser installiert (nicht auf dem Computer) und die dann
 automatisch auf bestimmten Seiten mitlaufen. Du kennst das Prinzip vielleicht
 von einem Werbeblocker oder einem Passwort-Manager: einmal eingerichtet,
@@ -59,13 +64,14 @@ werden".
 
 ---
 
-## Die sieben Erweiterungen
+## Die Erweiterungen
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Grader** · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip)** | **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 0.7.1 (Erprobung) | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
+| ~~Moodle AI Grader~~ · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
 | **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.7.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| **Moodle AI Coach** · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip)** | **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
+| ~~Moodle AI Coach~~ · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.10.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
@@ -73,7 +79,13 @@ werden".
 
 ### Was du nach der Installation konkret siehst
 
-- **Moodle AI Grader** — auf der Bewerten-Seite einer Klausurfrage erscheint
+- **Moodle AI Freitext Grader** — beim Anlegen oder Bearbeiten einer Freitextfrage öffnet
+  sich ein Panel: Modus wählen (Kurztest oder Klausur), Erwartungshorizont mit der KI
+  erstellen und in die Frage eintragen, auf Wunsch Aufgabenstellung und Antwortfeld
+  gestalten. Auf der Bewerten-Seite eines Tests bewertet er Kurztests gesammelt auf der
+  Übersicht und Klausuren auf ihrer Einzelseite – gemeinsam mit der KI Arbeit für Arbeit
+  oder automatisch –, rechnet die Punkte und trägt Punkte und Feedback ein.
+- **Moodle AI Grader** *(abgelöst)* — auf der Bewerten-Seite einer Klausurfrage erscheint
   ein Panel. Es legt zuerst Erwartungshorizont und Antwortvorlage in der
   Frage an (einmalig, mit Vorschau), danach erzeugt es pro Person einen
   Bewertungs-Prompt, rechnet aus der KI-Antwort die Punkte und schreibt
@@ -82,7 +94,7 @@ werden".
   ausgewerteten Fragen (Cloze, Kurzantwort, Numerisch): findet frei
   eingetippte Antworten, die Moodle nicht erkannt hat, und traegt fehlende
   Punkte und Kommentare nach.
-- **Moodle AI Coach** — auf der Bewerten-Uebersicht eines Kurztests: liest
+- **Moodle AI Coach** *(abgelöst)* — auf der Bewerten-Uebersicht eines Kurztests: liest
   den in der Frage hinterlegten Erwartungshorizont aus, bewertet kurze
   Freitextantworten (2–3 Saetze) und gibt zusaetzlich Sprachfeedback.
 - **Moodle AI Aufgaben-Grader** — auf der Bewerten-Uebersicht einer Aufgabe
@@ -111,8 +123,9 @@ der Tabelle oben).
 Jeder Ordner hat eine eigene, ausführliche `README.md` — dort stehen Bedienung,
 Bewertungsmaßstab, Grenzen und die Änderungsgeschichte.
 
-> **Der Coach ist jung (seit 1.8).** Der Bewertungsweg ist mehrfach mit echten Daten
-> gelaufen; beim ersten Einsatz in einem neuen Kurs trotzdem mit **einer** Frage anfangen.
+> **Der Freitext Grader ist in Erprobung (0.x).** Horizont und Layout sind im echten Moodle
+> getestet, der vollständige Bewertungsweg noch nicht in jeder Variante. Beim ersten Einsatz
+> mit **einer** Frage anfangen und das Ergebnis in Moodle nachsehen.
 
 ---
 
@@ -182,11 +195,13 @@ https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verberg
 
 ## Vor dem ersten Einsatz
 
-**Coach und Grader teilen sich die Freitextfragen.** Kommen in einem Test kurze und
-lange Freitextaufgaben nebeneinander vor, sagt ein Marker in der ersten Zeile des
-Erwartungshorizonts, wer zuständig ist — `[moodle-ai-coach]` oder `[moodle-ai-grader]`.
-Der Coach überspringt fremde Fragen, der Grader weist nur darauf hin. Ausführlich steht
-das im Abschnitt „Wer ist zuständig" in beiden READMEs.
+**Kurztest oder Klausur steht in der Frage.** Ein Marker in der ersten Zeile des
+Erwartungshorizonts sagt, wie eine Freitextfrage bewertet wird —
+`[moodle-ai-freitext: kurztest]` oder `[moodle-ai-freitext: klausur]`. Der Freitext Grader
+liest auch die alten Marker `[moodle-ai-coach]` und `[moodle-ai-grader]`; alte Horizonte
+sollten aber neu erstellt werden (der alte geht dabei als Vorlage mit).
+**Nicht parallel betreiben:** Wer auf den Freitext Grader umsteigt, schaltet Coach und Grader
+in der Erweiterungsverwaltung aus.
 
 **Fang mit einer Frage an.** Alle Erweiterungen, die schreiben, zeigen
 vor dem Eintragen eine Prüfung. Nutze sie beim ersten Mal — und sieh in Moodle nach,
@@ -228,7 +243,7 @@ benutzen. Näheres in der README des Autofill.
 
 ## Versionsnummern
 
-Alle sieben Erweiterungen benutzen dieselbe dreistellige Form **`x.y.z`** — auch
+Alle Erweiterungen benutzen dieselbe dreistellige Form **`x.y.z`** — auch
 dann, wenn die letzte Stelle 0 ist.
 
 | Stelle | Bedeutet | Beispiel |
@@ -248,7 +263,7 @@ Erweiterungsverwaltung sichtbar, welche Fassung wirklich läuft.
 
 ## Womit diese Erweiterungen gebaut werden
 
-Alle sieben entstehen aus je einem eigenen **WXT**-Projekt (`*-wxt/`): eine
+Alle entstehen aus je einem eigenen **WXT**-Projekt (`*-wxt/`): eine
 JavaScript/CSS-Codebasis, aus der `npm run build-all` die drei Browserfassungen baut
 und `npm run paket` sie zusammen mit der README zu `dist/<name>.zip` packt — dieselbe
 ZIP, auf die die Download-Links oben zeigen. Der Ordner **im** Zip heißt nach der
@@ -257,7 +272,7 @@ beim Entpacken mehrerer ZIPs nacheinander „Erweiterung", „Erweiterung (1)",
 „Erweiterung (2)" … entstehen.
 
 **Die ZIPs bauen sich beim Commit von selbst neu.** Ein Git-Hook
-(`.githooks/pre-commit`) prüft bei jedem `git commit`, ob Quelltext einer der sieben
+(`.githooks/pre-commit`) prüft bei jedem `git commit`, ob Quelltext eines der
 `*-wxt`-Projekte mit eingecheckt wird, baut in dem Fall automatisch `npm run paket`
 für genau dieses Projekt und nimmt die frische `dist/<name>.zip` gleich mit in denselben
 Commit auf. Damit ist ausgeschlossen, dass eine ZIP im Download hinter dem
@@ -270,7 +285,7 @@ dauerhaft in `.git/config`):
 git config core.hooksPath .githooks
 ```
 
-Fehlt in einem der sieben Projekte `node_modules/` (z. B. nach einem frischen Klonen
+Fehlt in einem der Projekte `node_modules/` (z. B. nach einem frischen Klonen
 ohne `npm install`), überspringt der Hook diese Erweiterung mit einer Warnung, statt
 den Commit zu blockieren — dann `npm install` in dem Ordner nachholen und den Commit
 notfalls wiederholen.
@@ -296,5 +311,5 @@ dem Bildschirm passiert ist (oder eben nicht).
 denselben Bedingungen. Siehe [LICENSE](LICENSE).
 
 Entwickelt von **A. Spielhoff** für den eigenen Unterricht — den **Moodle AI Grader**
-zusammen mit **T. Henken**. Bei ihm müssen beide Namen genannt bleiben, wer ihn
-weiterverbreitet oder bearbeitet.
+und den daraus hervorgegangenen **Moodle AI Freitext Grader** zusammen mit **T. Henken**.
+Bei beiden müssen beide Namen genannt bleiben, wer sie weiterverbreitet oder bearbeitet.
