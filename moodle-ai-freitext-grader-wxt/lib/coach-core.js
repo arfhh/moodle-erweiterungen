@@ -25,7 +25,7 @@ import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
 import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
-import { metaAusText, istMetaZeile, stufeVon, anredeFuer } from './gemeinsam/horizont-meta.js';
+import { metaAusText, istMetaZeile, stufeVon, anredeFuer, NIVEAU_WORT } from './gemeinsam/horizont-meta.js';
 import { materialBlock } from './gemeinsam/horizont-bausteine.js';
 import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
 import { KI_HINWEIS_STANDARD, GEMEINSAME_OPTIONEN, GEMEINSAM_STANDARD, ohneQuellenTief } from './gemeinsam/feedback-optionen.js';
@@ -40,7 +40,7 @@ export function starteCoach() {
   const VERSION = (browser.runtime.getManifest ? browser.runtime.getManifest().version : '');
   // Rahmendaten (Fach, Jahrgang, Kursniveau) teilen sich beide Wege: sie stehen in den
   // Grundeinstellungen (⚙) und gehen in die Rolle des Bewertungsprompts.
-  const NIVEAU_TEXT = { G: 'G — gymnasial', M: 'M — mittel', E: 'E — einfach' };
+  const NIVEAU_TEXT = NIVEAU_WORT;
   let RAHMEN = {};
   try {
     browser.storage.local.get(['magSettings']).then((r) => {

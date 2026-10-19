@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.0.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.0.1 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -27,7 +27,7 @@ import { stufenBlock, materialBlock as materialBaustein, horizontRegeln, HORIZON
 import { schreibeEditorfeldLive, leseEditorfeldLive } from './gemeinsam/editor-live.js';
 import { gestalteAufgabe, istGestaltet, afbAusText, antwortKasten, zerlegeAufgabentext, nrKey } from './gemeinsam/aufgaben-layout.js';
 import { fassungAusAbzeichen, neuesteFassungHorizont } from './gemeinsam/fassung.js';
-import { metaAusText, metaZeilenHtml, istMetaZeile, stufeVon, anredeFuer } from './gemeinsam/horizont-meta.js';
+import { metaAusText, metaZeilenHtml, istMetaZeile, stufeVon, anredeFuer, NIVEAU_WORT } from './gemeinsam/horizont-meta.js';
 import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
 import { KI_HINWEIS_STANDARD, ohneQuellen, KLAUSUR_KOMPAKT } from './gemeinsam/feedback-optionen.js';
 import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
@@ -923,7 +923,7 @@ export function starteGrader() {
      8 · PROMPTS
      ═══════════════════════════════════════════════════════════════════ */
 
-  const NIVEAU = { G: 'G — gymnasial', M: 'M — mittel', E: 'E — einfach' };
+  const NIVEAU = NIVEAU_WORT;
 
   function rahmendaten() {
     const r = rahmenBew();
@@ -1462,7 +1462,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
           <div><label>Fach</label><input type="text" data-rolle="hfach" placeholder="z. B. Chemie"></div>
           <div><label>Jahrgang</label><select data-rolle="hjahrgang"></select></div>
           <div><label>Niveau</label><select data-rolle="hniveau">
-            <option value="G">G – gymnasial</option><option value="M">M – mittel</option><option value="E">E – einfach</option>
+            <option value="G">gymnasial</option><option value="M">mittel</option><option value="E">einfach</option>
           </select></div>
         </div>
         <div class="mag-hinweis" data-rolle="hrahmenhinweis"></div>
@@ -1969,7 +1969,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     return [
       (r.fach || '⚠ Fach fehlt'),
       'Jahrgang ' + (r.jahrgang || '⚠ fehlt'),
-      'Niveau ' + (r.niveau || 'G'),
+      'Niveau ' + (NIVEAU[r.niveau || 'G'] || r.niveau),
       'Feedback ' + fbBew()
     ].join(' · ');
   }

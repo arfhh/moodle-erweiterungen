@@ -1,7 +1,7 @@
 /* Moodle AI Freitext Grader — Verwaltungszeilen im Erwartungshorizont.
  *
  * Ab 0.9 stehen im Horizont nur Angaben, die zur AUFGABE gehoeren:
- *   [Fach: Chemie] [Jahrgang: 9] [Niveau: G] [Feedback: Mittel]
+ *   [Fach: Chemie] [Jahrgang: 9] [Niveau: gymnasial] [Feedback: Mittel]
  * Rechtschreibung, Punkteschritte und Anrede gehoeren zur BEWERTUNG und werden dort
  * eingestellt. Alte Zeilen [Rechtschreibung: …] / [Punkteschritte: …] werden nur noch
  * erkannt und ausgeblendet, aber nicht mehr verwendet (keine zweite Quelle).
@@ -12,7 +12,7 @@
 const ZEILEN = {
   fach:     /^\s*\[?\s*fach\s*:\s*([^\]\n]+?)\s*\]?\s*$/im,
   jahrgang: /^\s*\[?\s*jahrgang\s*:\s*(\d{1,2})\s*\]?\s*$/im,
-  niveau:   /^\s*\[?\s*(?:kurs)?niveau\s*:\s*([GME])\b[^\]\n]*\]?\s*$/im,
+  niveau:   /^\s*\[?\s*(?:kurs)?niveau\s*:\s*(gymnasial|mittel|einfach|[GME])\b[^\]\n]*\]?\s*$/im,
   feedback: /^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel|ausführlich|umfangreich)\s*\]?\s*$/im
 };
 const ALT = /^\s*\[?\s*(?:rechtschreibung\s*[:\-]?\s*\d{1,3}(?:[.,]\d+)?\s*%|punkteschritte\s*[:\-]?\s*[\d.,]+)\s*\]?\s*$/i;
@@ -30,15 +30,18 @@ export function metaAusText(text) {
   const m = {};
   const f = kopf.match(ZEILEN.fach);     if (f) m.fach = f[1].trim();
   const j = kopf.match(ZEILEN.jahrgang); if (j) m.jahrgang = j[1];
-  const n = kopf.match(ZEILEN.niveau);   if (n) m.niveau = n[1].toUpperCase();
+  const n = kopf.match(ZEILEN.niveau);   if (n) m.niveau = n[1].charAt(0).toUpperCase();
   const b = kopf.match(ZEILEN.feedback); if (b) m.feedback = b[1].charAt(0).toUpperCase() + b[1].slice(1).toLowerCase();
   return m;
 }
 
+// Niveau intern als Kuerzel (G/M/E), angezeigt und gespeichert als Wort (seit 1.0.1).
+export const NIVEAU_WORT = { G: 'gymnasial', M: 'mittel', E: 'einfach' };
+
 export function metaZeilenHtml({ fach, jahrgang, niveau, feedback } = {}) {
   return (fach ? '<p>[Fach: ' + esc(fach) + ']</p>' : '')
     + (jahrgang ? '<p>[Jahrgang: ' + esc(jahrgang) + ']</p>' : '')
-    + (niveau ? '<p>[Niveau: ' + esc(niveau) + ']</p>' : '')
+    + (niveau ? '<p>[Niveau: ' + esc(NIVEAU_WORT[niveau] || niveau) + ']</p>' : '')
     + (feedback ? '<p>[Feedback: ' + esc(feedback) + ']</p>' : '');
 }
 

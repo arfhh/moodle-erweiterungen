@@ -1,7 +1,7 @@
 {
   "name": "moodle-ai-freitext-grader",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "node node_modules/wxt/bin/wxt.mjs -b chrom",
