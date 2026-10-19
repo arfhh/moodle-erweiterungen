@@ -2,7 +2,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.10.1 · Lizenz: CC BY-SA 4.0
+Version 1.11.0 · Lizenz: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Grader, Reviewer, Coach — alle für
 > Testfragen) bewertet der Abgabengrader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -72,18 +72,25 @@ die Klasse veränderte).
 
 ## Ablauf
 
-0. Einmalig im Reiter **Einstellungen**: Name der eigenen Bewertungs-Skill eintragen,
-   Duplikatprüfung und Lösungs-Bewertungshorizont an- oder abwählen. Diese Angaben
-   gehen danach in jeden erzeugten Prompt ein.
+Jeder Reiter hat oben zwei aufklappbare Kästen: „Wozu dieser Reiter?" und
+„So funktioniert's" (dieser ist beim ersten Öffnen offen).
+
+0. Einmalig im Reiter **⚙ Einstellungen**: Arbeitsordner und ggf. Name der eigenen
+   Bewertungs-Skill eintragen, Duplikatprüfung und Musterlösungen an- oder abwählen.
+   Diese Angaben gehen danach in jeden erzeugten Prompt ein.
 1. Bewerten-Übersichtsseite einer Aufgabe öffnen (`action=grading`).
-2. Feedback-Stufe wählen (Zwischen- oder Abschlussfeedback) und herunterladen —
-   ZIP, CSV-Vorlage und Auftrags-Prompt entstehen in einem Zug.
-3. ZIP entpacken, Ordner in den Import-Ordner legen, Prompt in Cowork einfügen; die KI
-   füllt `bewertung.csv` (`Kuerzel-ID;Note;Feedback`).
-4. Zurück in Moodle: Schnellbewertung einschalten (der Reiter „Einfügen" bietet dafür
-   einen Knopf an) und alle Personen anzeigen lassen.
-5. Ausgefüllte CSV im Reiter „Einfügen" wählen und „In die Tabelle eintragen" klicken.
-   Die gefüllten Kommentarfelder werden rot umrandet.
+2. Reiter **1 · Gewichtung** (einmal je Aufgabe): Gewichtungs-Prompt kopieren, mit den
+   Aufgabenblättern in die KI geben, Antwort einfügen, prüfen, speichern. Ohne Gewichtung
+   gibt es nur Prozentwerte, keine Punkte und keine Note.
+3. Reiter **2 · Abgaben laden**: Art der Rückmeldung wählen (Zwischen- oder
+   Abschlussfeedback) und herunterladen — ZIP, `bewertung.csv` und Auftrags-Prompt
+   entstehen in einem Zug.
+4. ZIP entpacken, Ordner in den Import-Ordner legen, Auftrags-Prompt in Cowork einfügen;
+   die KI füllt `bewertung.csv` (`Kuerzel-ID;Note;Feedback`).
+5. Reiter **3 · Eintragen**: ggf. Schnellbewertung einschalten (Knopf im Reiter), dann die
+   ausgefüllte `bewertung.csv` wählen, den Regler „Wie stark zählen fachliche Fehler?"
+   einstellen und „In die Tabelle eintragen" klicken. Die gefüllten Kommentarfelder
+   werden rot umrandet.
 6. Einträge prüfen und Moodles Knopf „Speichern" unter der Tabelle drücken.
 
 ### Was im ZIP liegt

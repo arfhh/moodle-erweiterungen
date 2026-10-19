@@ -329,3 +329,33 @@
 
 /* hidden-Attribut muss gegen display:block der Knopfregeln gewinnen */
 #abg-panel [hidden] { display: none !important; }
+
+/* 1.11.0: Erklaerkaesten wie im Freitext Grader — „Wozu dieser Reiter?" und
+   „So funktioniert's" oben in jedem Reiter, ein Satz zum Ablauf ueber den Reitern. */
+#abg-panel .abg-ablauf {
+  font-size: 11.5px; line-height: 1.45; color: #475569;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 6px 8px; margin-bottom: 8px;
+}
+#abg-panel details.abg-hilfe {
+  margin: 0 0 8px; border: 1px solid #e2e8f0; border-radius: 6px;
+  background: #f8fafc; padding: 5px 9px;
+}
+#abg-panel details.abg-hilfe summary {
+  cursor: pointer; font-size: 12px; font-weight: 600; color: #334155;
+}
+#abg-panel details.abg-hilfe p {
+  margin: 6px 0; font-size: 12px; line-height: 1.45; color: #334155;
+}
+#abg-panel details.abg-wozu { border-left: 3px solid #991b1b; }
+#abg-panel .abg-skala {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: #64748b; margin: -2px 0 4px;
+}
+#abg-panel .abg-strenge-box {
+  border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 9px;
+  font-size: 12px; line-height: 1.45; color: #1f2933; margin-bottom: 6px;
+}
+#abg-panel .abg-strenge-titel { font-weight: 700; margin-bottom: 2px; }
+#abg-panel .abg-strenge-stufen { margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 4px; }
+#abg-panel .abg-strenge-stufen > div { display: flex; justify-content: space-between; font-size: 11.5px; color: #475569; }

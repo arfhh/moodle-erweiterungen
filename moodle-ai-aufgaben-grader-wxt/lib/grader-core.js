@@ -457,12 +457,26 @@ export function starteGrader() {
   // aendert ein Zug am Regler alle Feedbacks, ohne neuen Durchlauf im Chat
   // (Arne, 17.09.2026).
   const STRENGE = {
-    nur_v:  { text: 'Nur Vollständigkeit — fachliche Mängel ziehen nichts ab', f: [1, 1, 1, 1] },
-    mild:   { text: 'Mild — 0 / −5 / −15 / −30 Prozent',                        f: [1, 0.95, 0.85, 0.70] },
-    normal: { text: 'Normal — 0 / −10 / −25 / −50 Prozent',                     f: [1, 0.90, 0.75, 0.50] },
-    streng: { text: 'Streng — 0 / −15 / −35 / −60 Prozent',                     f: [1, 0.85, 0.65, 0.40] },
-    fachlich: { text: 'Fachlich entscheidet — 0 / −20 / −50 / −100 Prozent', f: [1, 0.80, 0.50, 0] },
+    nur_v: { text: 'Nur Vollständigkeit (kein Abzug)', titel: 'Nur Vollständigkeit',
+      erkl: 'Bewertet wird nur, wie viel bearbeitet wurde. Fachliche Fehler ziehen nichts ab — auch ein überwiegend falsches, aber vollständig bearbeitetes Blatt zählt voll.',
+      f: [1, 1, 1, 1] },
+    mild: { text: 'Mild (0 / −5 / −15 / −25 %)', titel: 'Milder Abzug',
+      erkl: 'Fehler kosten wenig. Ein überwiegend falsches Blatt verliert ein Viertel seiner Punkte. Beispiel bei 20 Punkten: einzelne Fehler → 19, viele Fehler → 17, überwiegend falsch → 15.',
+      f: [1, 0.95, 0.85, 0.75] },
+    normal: { text: 'Normal (0 / −10 / −30 / −50 %)', titel: 'Normaler Abzug (Voreinstellung)',
+      erkl: 'Vollständigkeit und Richtigkeit zählen etwa gleich. Ein überwiegend falsches Blatt verliert die Hälfte seiner Punkte. Beispiel bei 20 Punkten: einzelne Fehler → 18, viele Fehler → 14, überwiegend falsch → 10.',
+      f: [1, 0.90, 0.70, 0.50] },
+    streng: { text: 'Streng (0 / −15 / −45 / −75 %)', titel: 'Strenger Abzug',
+      erkl: 'Richtigkeit zählt mehr als Vollständigkeit. Ein überwiegend falsches Blatt verliert drei Viertel seiner Punkte. Beispiel bei 20 Punkten: einzelne Fehler → 17, viele Fehler → 11, überwiegend falsch → 5.',
+      f: [1, 0.85, 0.55, 0.25] },
+    fachlich: { text: 'Fachlichkeit entscheidet (0 / −20 / −60 / −100 %)', titel: 'Fachlichkeit entscheidet',
+      erkl: 'Ein überwiegend falsches Blatt wird nicht gewertet (100 % Abzug) — es zählt 0 Punkte, wie ein nicht bearbeitetes Blatt. Beispiel bei 20 Punkten: einzelne Fehler → 16, viele Fehler → 8, überwiegend falsch → 0.',
+      f: [1, 0.80, 0.40, 0] },
   };
+  // Die vier Fehlerstufen, die die KI je Blatt vergibt (0 bis 3) — Wortlaut wie im Auftrags-Prompt.
+  const FEHLERSTUFEN = ['ohne Fehler', 'einzelne Fehler (bis ca. 10 %)', 'viele Fehler (ca. ¼ bis ½)', 'überwiegend falsch'];
+  // Abstufung seit 1.11.0 (Arne, 18.10.2026): Hoechstabzug je Reglerstufe gleichmaessig
+  // 0 / 25 / 50 / 75 / 100 %, die kleineren Fehlerstufen immer 1/5 und 3/5 davon.
   // Reihenfolge des Reglers: von links (nachsichtig) nach rechts (streng).
   const STRENGE_FOLGE = ['nur_v', 'mild', 'normal', 'streng', 'fachlich'];
 
@@ -704,7 +718,7 @@ export function starteGrader() {
       <div class="abg-head">
         <div class="abg-titelblock">
           <span><strong>Moodle AI Aufgaben-Grader</strong> <span class="abg-version"></span></span>
-          <span class="abg-untertitel">PDF-Abgaben anonym bewerten</span>
+          <span class="abg-untertitel">PDF-Abgaben anonym mit KI bewerten</span>
         </div>
         <span class="abg-close" title="Schließen">✕</span>
       </div>
@@ -775,23 +789,43 @@ export function starteGrader() {
     const reiter = document.createElement('div');
     reiter.className = 'abg-reiter';
     reiter.innerHTML = `
-      <button class="abg-tab" data-tab="massstab">1 · Maßstab</button>
-      <button class="abg-tab abg-aktiv" data-tab="download">2 · Download</button>
-      <button class="abg-tab" data-tab="einfuegen">3 · Eintragen</button>
+      <button class="abg-tab" data-tab="massstab" title="Festlegen, wie viel jedes Arbeitsblatt zählt — einmal je Aufgabe">1 · Gewichtung</button>
+      <button class="abg-tab abg-aktiv" data-tab="download" title="Abgaben anonym als ZIP holen und den Auftrag für die KI erzeugen">2 · Abgaben laden</button>
+      <button class="abg-tab" data-tab="einfuegen" title="Die von der KI ausgefüllte bewertung.csv in Moodle eintragen">3 · Eintragen</button>
       <button class="abg-tab" data-tab="einstellungen" title="Einstellungen">⚙</button>
     `;
+    // Ein Satz zum Gesamtablauf ueber den Reitern (1.11.0): wer die Erweiterung
+    // zum ersten Mal sieht, soll wissen, in welcher Reihenfolge die Reiter dran sind.
+    const ablauf = document.createElement('div');
+    ablauf.className = 'abg-ablauf';
+    ablauf.innerHTML = `<strong>Ablauf:</strong> 1 · festlegen, wie viel jedes Blatt zählt → 2 · Abgaben anonym laden und von der KI bewerten lassen → 3 · Ergebnis in Moodle eintragen und selbst speichern.`;
+    body.appendChild(ablauf);
     body.appendChild(reiter);
 
     const panelDownload = document.createElement('div');
     panelDownload.className = 'abg-inhalt';
     panelDownload.dataset.panel = 'download';
     panelDownload.innerHTML = `
-      <label for="abg-art">Feedback-Stufe</label>
+      <details class="abg-hilfe abg-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p>Hier holst du die Abgaben aus Moodle — anonym. Die Erweiterung packt alle Abgabedateien in ein ZIP, ersetzt die Namen durch Kürzel-IDs (z. B. „KM-42") und legt eine Tabelle <strong>bewertung.csv</strong> dazu, in die die KI später ihre Bewertung schreibt. Klarnamen verlassen Moodle nicht.</p>
+        <p>Nach dem Download erscheint unten der <strong>Auftrags-Prompt</strong>: die Arbeitsanweisung an die KI — wo die Abgaben liegen, wonach sie bewerten soll und wie sie bewertung.csv ausfüllt.</p>
+      </details>
+      <details class="abg-hilfe" data-hilfe="download">
+        <summary>So funktioniert's</summary>
+        <p><strong>1 · Art der Rückmeldung wählen</strong> und „Abgaben als ZIP herunterladen" klicken.</p>
+        <p><strong>2 · ZIP entpacken</strong> und den entstandenen Ordner in den Unterordner <em>Import</em> deines Arbeitsordners legen (Pfad unter ⚙ hinterlegbar).</p>
+        <p><strong>3 · Auftrags-Prompt kopieren</strong> und in eine KI einfügen, die auf deine Ordner zugreifen kann (z. B. Claude mit Cowork). Sie liest die Abgaben und füllt bewertung.csv aus.</p>
+        <p><strong>4 · Weiter im Reiter „3 · Eintragen"</strong> — dort lädst du die ausgefüllte bewertung.csv hoch.</p>
+        <p>Ab dem zweiten Durchgang lädt die Erweiterung nur neue und geänderte Abgaben (einstellbar unter ⚙ „Umfang des Downloads").</p>
+      </details>
+      <label for="abg-art">Welche Rückmeldung soll entstehen?</label>
       <select id="abg-art">
-        <option value="zwischen">Zwischenfeedback (ohne Note)</option>
-        <option value="abschluss">Abschlussfeedback (mit Note)</option>
+        <option value="zwischen">Zwischenfeedback — Rückmeldung je Blatt, noch ohne Note</option>
+        <option value="abschluss">Abschlussfeedback — Rückmeldung mit Note und Punktsumme</option>
       </select>
-      <button id="abg-download">ZIP (Abgaben + CSV) erzeugen</button>
+      <div class="abg-hinweis">Zwischenfeedback, solange die Serie läuft — beliebig oft. Abschlussfeedback einmal am Ende: Dann vergibt die KI eine Note, und die Erweiterung hängt die Gesamtpunktzahl an.</div>
+      <button id="abg-download">Abgaben als ZIP herunterladen (mit bewertung.csv)</button>
       <div class="abg-hinweis">Baut das ZIP selbst aus der Tabelle — kein Umweg über Moodles eigenen Bulk-Export. Nur Kürzel-IDs in Dateinamen, Klarnamen bleiben in Moodle. Liest immer alle Seiten der Übersichtstabelle, unabhängig von der eingestellten Seitengröße.</div>
     `;
     body.appendChild(panelDownload);
@@ -809,16 +843,44 @@ export function starteGrader() {
     // — das ist kein von der Pruefung beobachteter HTML-Sink.
     const einfuegenAn = document.createElement('div');
     einfuegenAn.innerHTML = `
-      <label for="abg-csv">Ausgefüllte CSV (Kürzel-ID;Note;Feedback)</label>
+      <details class="abg-hilfe abg-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p>Hier kommt das Ergebnis der KI zurück nach Moodle. Du lädst die von der KI ausgefüllte <strong>bewertung.csv</strong> hoch. Die Erweiterung ordnet jede Kürzel-ID wieder der richtigen Person zu, rechnet aus den Angaben der KI Prozente bzw. Punkte und schreibt Note und Feedback in die Bewertungstabelle dieser Seite.</p>
+        <p>Gespeichert wird nichts automatisch: Du prüfst die Einträge und drückst selbst Moodles Knopf „Speichern".</p>
+      </details>
+      <details class="abg-hilfe" data-hilfe="einfuegen">
+        <summary>So funktioniert's</summary>
+        <p><strong>1 · bewertung.csv wählen</strong> — die Datei aus dem Ordner dieser Aufgabe, nachdem die KI sie ausgefüllt hat.</p>
+        <p><strong>2 · Regler einstellen:</strong> wie stark fachliche Fehler die Punkte senken. Die KI hat je Blatt nur festgehalten, <em>wie viel</em> bearbeitet wurde und <em>wie schwer</em> die Fehler sind — gerechnet wird erst hier. Deshalb kannst du den Regler jederzeit ändern und neu eintragen, ohne die KI noch einmal zu fragen.</p>
+        <p><strong>3 · „In die Tabelle eintragen"</strong> — die ausgefüllten Kommentarfelder werden rot umrandet.</p>
+        <p><strong>4 · Prüfen und speichern:</strong> Einträge in der Tabelle ansehen, dann ganz unten Moodles Knopf „Speichern" drücken.</p>
+      </details>
+      <label for="abg-csv">1 · Ausgefüllte bewertung.csv wählen</label>
       <input type="file" id="abg-csv" accept=".csv,text/csv">
-      <label for="abg-strenge">Gewichtung der Fachlichkeit</label>
+      <div class="abg-hinweis">In der Regel die Datei <strong>bewertung.csv</strong> aus dem heruntergeladenen Aufgabenordner — nachdem die KI sie ausgefüllt hat. Spalten: Kürzel-ID;Note;Feedback.</div>
+      <label for="abg-strenge">2 · Wie stark zählen fachliche Fehler?</label>
       <input type="range" id="abg-strenge" class="abg-regler" min="0" max="4" step="1">
-      <div class="abg-hinweis" id="abg-strenge-text"></div>
-      <button id="abg-start" disabled>In die Tabelle eintragen</button>
+      <div class="abg-skala"><span>nur Vollständigkeit</span><span>Fachlichkeit entscheidet</span></div>
+      <div class="abg-strenge-box" id="abg-strenge-text"></div>
+      <details class="abg-hilfe">
+        <summary>Was bedeuten Vollständigkeit und Fehlerstufe?</summary>
+        <p>Die KI gibt je Arbeitsblatt zwei Werte an:</p>
+        <p><strong>Vollständigkeit</strong> (0, 25, 50, 75 oder 100 %) — wie viel vom Blatt bearbeitet wurde, egal ob richtig.</p>
+        <p><strong>Fehlerstufe</strong> — eine Stufe für das <em>ganze Blatt</em>, nicht je Einzelantwort. Maßgeblich ist der Anteil falscher Antworten:</p>
+        <p>0 · <em>ohne Fehler</em><br>1 · <em>einzelne Fehler</em> — bis etwa 10 % falsch<br>2 · <em>viele Fehler</em> — etwa ein Viertel bis die Hälfte falsch<br>3 · <em>überwiegend falsch</em> — mehr als die Hälfte falsch</p>
+        <p>Beispiel: 20 Laborgeräte beschriften, eines falsch → Stufe 1. Bei „Normal" bleiben 18 von 20 Punkten.</p>
+        <p>Der Regler legt fest, wie viel Prozent jede Fehlerstufe abzieht. Ergebnis des Blatts = Vollständigkeit × (100 % − Abzug). Mit Gewichtung (Reiter 1) wird daraus der Punktanteil des Blatts.</p>
+      </details>
+      <button id="abg-start" disabled>3 · In die Tabelle eintragen</button>
       <div class="abg-hinweis">Trägt Note und Feedback in die Schnellbewertungs-Tabelle dieser Seite ein. Gespeichert wird nichts — du prüfst die Einträge und drückst danach selbst Moodles Knopf „Speichern".</div>
     `;
     const einfuegenAus = document.createElement('div');
     einfuegenAus.innerHTML = `
+      <details class="abg-hilfe abg-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p>Hier kommt das Ergebnis der KI zurück nach Moodle. Du lädst die von der KI ausgefüllte <strong>bewertung.csv</strong> hoch. Die Erweiterung ordnet jede Kürzel-ID wieder der richtigen Person zu, rechnet aus den Angaben der KI Prozente bzw. Punkte und schreibt Note und Feedback in die Bewertungstabelle dieser Seite.</p>
+        <p>Gespeichert wird nichts automatisch: Du prüfst die Einträge und drückst selbst Moodles Knopf „Speichern".</p>
+      </details>
       <div class="abg-hinweis abg-schritt">Die <strong>Schnellbewertung</strong> ist auf dieser Seite nicht eingeschaltet. Nur mit ihr stehen Noten- und Kommentarfeld aller Personen untereinander auf einer Seite — darüber trägt die Erweiterung ein.</div>
       <button id="abg-schnell-an">Schnellbewertung einschalten</button>
       <div class="abg-hinweis">Lädt die Seite mit Schnellbewertung und allen Personen neu. Danach hier weitermachen.</div>
@@ -836,9 +898,28 @@ export function starteGrader() {
     const regler = panelEinfuegen.querySelector('#abg-strenge');
     if (regler) {
       const reglerText = panelEinfuegen.querySelector('#abg-strenge-text');
+      // 1.11.0: statt einer Zahlenreihe ein Titel, ein Satz in Klartext und
+      // die Abzuege je Fehlerstufe als kleine Tabelle. Per DOM gebaut, nicht
+      // per innerHTML (AMO-Pruefung).
       const reglerZeigen = () => {
         const k = STRENGE_FOLGE[Number(regler.value)] || 'normal';
-        reglerText.textContent = STRENGE[k].text;
+        const st = STRENGE[k];
+        reglerText.textContent = '';
+        const kopf = document.createElement('div');
+        kopf.className = 'abg-strenge-titel';
+        kopf.textContent = st.titel;
+        const erkl = document.createElement('div');
+        erkl.textContent = st.erkl;
+        const tab = document.createElement('div');
+        tab.className = 'abg-strenge-stufen';
+        st.f.forEach((f, i) => {
+          const zeile = document.createElement('div');
+          const ab = Math.round((1 - f) * 100);
+          const n = document.createElement('span'); n.textContent = FEHLERSTUFEN[i];
+          const w = document.createElement('span'); w.textContent = ab ? `−${ab} %` : 'kein Abzug';
+          zeile.appendChild(n); zeile.appendChild(w); tab.appendChild(zeile);
+        });
+        reglerText.appendChild(kopf); reglerText.appendChild(erkl); reglerText.appendChild(tab);
       };
       const i = STRENGE_FOLGE.indexOf(einst.strenge);
       regler.value = String(i >= 0 ? i : STRENGE_FOLGE.indexOf('normal'));
@@ -861,15 +942,28 @@ export function starteGrader() {
     panelMassstab.dataset.panel = 'massstab';
     panelMassstab.hidden = true;
     panelMassstab.innerHTML = `
+      <details class="abg-hilfe abg-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p>Hier legst du fest, <strong>wie viel jedes Arbeitsblatt der Serie zählt</strong> — ein ausführliches Versuchsprotokoll z. B. mehr als ein kurzes Lückenblatt. Daraus rechnet die Erweiterung beim Eintragen die Punkte je Blatt und im Abschlussfeedback die Gesamtpunktzahl (von 100).</p>
+        <p>Nötig einmal je Moodle-Aufgabe; die Gewichtung bleibt danach gespeichert. Ohne Gewichtung bekommt jedes Blatt nur einen Prozentwert — dann gibt es keine Punkte und keine Gesamtnote.</p>
+      </details>
+      <details class="abg-hilfe" data-hilfe="massstab">
+        <summary>So funktioniert's</summary>
+        <p><strong>1 · Gewichtungs-Prompt kopieren:</strong> Die Erweiterung baut einen Auftrag an die KI: „Sieh dir die Aufgabenblätter an und gib jedem ein Gewicht von 1 bis 20 — nach Aufwand und Anspruch, nicht nach Seitenzahl." Die Blattnamen, die schon in den Abgaben vorkommen, stehen zur Orientierung dabei. Schülerabgaben gehen nicht mit.</p>
+        <p><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT) und die <em>Aufgabenblätter</em> der Serie dazugeben (Datei oder Text). Die KI antwortet mit einem Codeblock.</p>
+        <p><strong>3 · Codeblock hier einfügen</strong> — er wird sofort eingelesen und als Tabelle gezeigt. Gewichte, Namen und Notizen kannst du von Hand ändern, dann „Speichern".</p>
+        <p>Schon eine Gewichtung als Datei (massstab.json, über „Als Datei sichern")? Dann einfach unten laden — die KI wird nicht gebraucht.</p>
+      </details>
       <div class="abg-hinweis abg-schritt" id="abg-m-stand"></div>
-      <button class="abg-sekundaer" id="abg-m-prompt">Prompt erzeugen und kopieren</button>
+      <label for="abg-m-prompt">1 · Prompt für die KI kopieren — sie schlägt die Gewichtung der Blätter vor</label>
+      <button class="abg-sekundaer" id="abg-m-prompt">📋 Gewichtungs-Prompt kopieren</button>
       <textarea id="abg-m-prompt-text" rows="4" readonly placeholder="Hier steht nach dem Klick der Prompt — er liegt dann schon in der Zwischenablage."></textarea>
-      <div class="abg-hinweis">Der Prompt fragt die KI nach allen Aufgaben dieser Serie und lässt sie gewichten. Die Antwort unten einfügen.</div>
-      <label for="abg-m-text">Antwort der KI einfügen (oder fertigen Maßstab)</label>
+      <div class="abg-hinweis">In die KI einfügen und die Aufgabenblätter der Serie mitgeben. Die Antwort (Codeblock) unten einfügen.</div>
+      <label for="abg-m-text">2 · Antwort der KI hier einfügen</label>
       <textarea id="abg-m-text" rows="4" placeholder='{"aufgaben":[{"name":"...","gewicht":10,"notiz":"..."}]}'></textarea>
       <button id="abg-m-lesen" hidden>Einlesen</button>
+      <label for="abg-m-datei">… oder gespeicherte Gewichtung laden (massstab.json)</label>
       <input type="file" id="abg-m-datei" accept=".json,application/json">
-      <div class="abg-hinweis">Eine gespeicherte Maßstab-Datei lässt sich hier direkt laden — dann muss die KI nichts neu erstellen.</div>
       <div id="abg-m-tabelle"></div>
     `;
     body.appendChild(panelMassstab);
@@ -880,11 +974,11 @@ export function starteGrader() {
       const stand = panelMassstab.querySelector('#abg-m-stand');
       const ziel = panelMassstab.querySelector('#abg-m-tabelle');
       if (!massstab) {
-        stand.textContent = 'Für diese Aufgabe ist noch kein Maßstab gespeichert. Ohne ihn gibt es Prozentwerte je Aufgabe, aber keine Note.';
+        stand.textContent = 'Für diese Aufgabe ist noch keine Gewichtung gespeichert. Ohne sie bekommt jedes Blatt nur einen Prozentwert — keine Punkte, keine Gesamtnote.';
         ziel.textContent = '';
         return;
       }
-      stand.textContent = `Maßstab für diese Aufgabe — ${massstab.aufgaben.length} Aufgaben, gespeichert am ${massstab.erstellt}.`;
+      stand.textContent = `Gewichtung gespeichert — ${massstab.aufgaben.length} Arbeitsblätter, Stand ${massstab.erstellt}. Hier ändern und „Speichern", oder weiter mit „2 · Abgaben laden".`;
       // Die Prozentspalte und die Summe haengen am Gewicht und muessen sich
       // beim Tippen mitbewegen. Frueher wurde dafuer die ganze Tabelle neu
       // gebaut — dabei verschwand das Eingabefeld unter dem Cursor und nach
@@ -938,6 +1032,10 @@ export function starteGrader() {
       tab.appendChild(fuss);
       ziel.textContent = '';
       ziel.appendChild(tab);
+      const tabHinweis = document.createElement('div');
+      tabHinweis.className = 'abg-hinweis';
+      tabHinweis.textContent = 'Gewicht ist relativ: doppeltes Gewicht = doppelter Anteil. Der Anteil ist zugleich die Punktzahl des Blatts von insgesamt 100 Punkten. Wahlaufgaben erkennt die Erweiterung am Wort „Wahlaufgabe" in der Notiz.';
+      ziel.appendChild(tabHinweis);
 
       const leiste = document.createElement('div'); leiste.className = 'abg-mleiste';
       const knopf = (text, klasse, tun) => {
@@ -950,19 +1048,19 @@ export function starteGrader() {
       knopf('Speichern', '', async () => {
         massstab.aufgaben = massstab.aufgaben.filter((a) => a.name.trim());
         await massstabSpeichern(massstab);
-        logZeile(body, `Maßstab gespeichert (${massstab.aufgaben.length} Aufgaben). Er bleibt für diese Aufgabe stehen.`, 'ok');
+        logZeile(body, `Gewichtung gespeichert (${massstab.aufgaben.length} Blätter). Sie bleibt für diese Aufgabe stehen.`, 'ok');
         massstabZeichnen();
         // Nach dem Speichern ist der naechste Schritt der Download — also dorthin
         // springen, statt den Reiter von Hand suchen zu lassen (Arne, 17.09.2026).
         zeige('download');
       });
-      knopf('Exportieren', 'abg-sekundaer', () => {
+      knopf('Als Datei sichern', 'abg-sekundaer', () => {
         const txt = JSON.stringify(massstab, null, 2);
         download(new Blob([txt], { type: 'application/json' }), 'massstab.json');
       });
       knopf('Löschen', 'abg-sekundaer', async () => {
         await massstabLoeschen(); massstab = null;
-        logZeile(body, 'Maßstab gelöscht. Für andere Aufgaben kannst du jetzt einen neuen einlesen.', 'ok');
+        logZeile(body, 'Gewichtung gelöscht. Du kannst jetzt eine neue einlesen.', 'ok');
         massstabZeichnen();
       });
       ziel.appendChild(leiste);
@@ -977,8 +1075,8 @@ export function starteGrader() {
         const pruef = document.createElement('div');
         pruef.className = 'abg-hinweis';
         pruef.textContent = fehlt.length
-          ? `Gegenprobe: In den Abgaben tauchen ${fehlt.length} Blätter auf, die der Maßstab nicht kennt — ${fehlt.slice(0, 4).join(', ')}${fehlt.length > 4 ? ' …' : ''}`
-          : `Gegenprobe: Alle ${ausAbgaben.length} in den Abgaben gefundenen Blätter stehen im Maßstab.`;
+          ? `Gegenprobe: In den Abgaben tauchen ${fehlt.length} Blätter auf, die in der Gewichtung fehlen — ${fehlt.slice(0, 4).join(', ')}${fehlt.length > 4 ? ' …' : ''}`
+          : `Gegenprobe: Alle ${ausAbgaben.length} in den Abgaben gefundenen Blätter stehen in der Gewichtung.`;
         ziel.appendChild(pruef);
       }
     }
@@ -988,12 +1086,12 @@ export function starteGrader() {
       const feld = panelMassstab.querySelector('#abg-m-prompt-text');
       feld.value = massstabPromptErzeugen(einst);
       const quittieren = (wort) => {
-        const alt = 'Prompt erzeugen und kopieren';
+        const alt = '📋 Gewichtungs-Prompt kopieren';
         knopf.textContent = wort;
         setTimeout(() => { knopf.textContent = alt; }, 1500);
       };
       navigator.clipboard.writeText(feld.value)
-        .then(() => weiterNach(knopf, 'Prompt erzeugen und kopieren', () => {
+        .then(() => weiterNach(knopf, '📋 Gewichtungs-Prompt kopieren', () => {
           const antwort = panelMassstab.querySelector('#abg-m-text');
           antwort.focus(); antwort.scrollIntoView({ block: 'nearest' });
         }))
@@ -1008,7 +1106,7 @@ export function starteGrader() {
         const gekappt = [];
         massstab = massstabLesen(panelMassstab.querySelector('#abg-m-text').value, gekappt);
         panelMassstab.querySelector('#abg-m-text').value = '';
-        logZeile(body, `Maßstab eingelesen: ${massstab.aufgaben.length} Aufgaben. Prüfen und dann speichern.`, 'ok');
+        logZeile(body, `Gewichtung eingelesen: ${massstab.aufgaben.length} Aufgaben. Prüfen und dann speichern.`, 'ok');
         meldeGekappt(body, gekappt);
         massstabZeichnen();
       } catch (e) { logZeile(body, 'Einlesen nicht möglich: ' + e.message, 'fehler'); }
@@ -1021,7 +1119,7 @@ export function starteGrader() {
         try {
           const gekappt = [];
           massstab = massstabLesen(leser.result, gekappt);
-          logZeile(body, `Maßstab aus Datei geladen: ${massstab.aufgaben.length} Aufgaben.`, 'ok');
+          logZeile(body, `Gewichtung aus Datei geladen: ${massstab.aufgaben.length} Aufgaben.`, 'ok');
           meldeGekappt(body, gekappt);
           massstabZeichnen();
         } catch (e) { logZeile(body, 'Datei nicht lesbar: ' + e.message, 'fehler'); }
@@ -1035,35 +1133,45 @@ export function starteGrader() {
     panelEinstellungen.dataset.panel = 'einstellungen';
     panelEinstellungen.hidden = true;
     panelEinstellungen.innerHTML = `
+      <details class="abg-hilfe abg-wozu">
+        <summary>Wozu dieser Reiter?</summary>
+        <p>Grundeinstellungen, die für alle Aufgaben gelten. Die meisten Angaben stehen nur als Text im Auftrags-Prompt und sagen der KI, wie sie arbeiten soll — die Erweiterung selbst bewertet nichts. Nach Änderungen unten „Einstellungen speichern" drücken.</p>
+      </details>
       <label for="abg-ordner">Arbeitsordner auf deinem Rechner (optional)</label>
       <input type="text" id="abg-ordner" placeholder="z. B. Moodle/Aufgaben">
-      <div class="abg-hinweis">Steht hier ein Pfad, schreiben ihn beide Prompts mit hinein — dann fragt die KI nicht mehr, wo die Ordner liegen. Leer lassen ist in Ordnung.</div>
-      <label for="abg-skill">Bewertungs-Skill / Regelwerk (Name)</label>
+      <div class="abg-hinweis">Der Ordner mit den Unterordnern <em>Import</em> (neue Abgaben), <em>Output</em> (Archiv aller bewerteten Abgaben) und <em>Lösungen</em>. Steht hier ein Pfad, schreibt ihn die Erweiterung in beide Prompts — dann fragt die KI nicht mehr danach. Leer lassen ist in Ordnung.</div>
+      <label for="abg-skill">Bewertungsregeln für die KI (Name eines Skills, optional)</label>
       <input type="text" id="abg-skill" placeholder="z. B. 3-chemie-arbeitshefte">
-      <div class="abg-hinweis">Die beiden Haken schalten nichts in der Erweiterung ein — sie bestimmen nur, welche Arbeitsschritte im erzeugten Prompt stehen, also was die KI tun soll.</div>
-      <label class="abg-check"><input type="checkbox" id="abg-dupl"> Die KI soll auf abgeschriebene Abgaben prüfen</label>
-      <label class="abg-check"><input type="checkbox" id="abg-loes"> Die KI soll vorhandene Lösungen als Maßstab nehmen</label>
+      <div class="abg-hinweis">Wer mit Claude und eigenen Skills arbeitet, trägt hier den Namen des Skills ein, nach dem bewertet werden soll. Ohne Skill leer lassen — im Prompt steht dann ein Platzhalter, den du vor dem Einfügen durch eigene Regeln ersetzen kannst.</div>
+      <label>Was soll die KI zusätzlich tun?</label>
+      <div class="abg-hinweis">Die Haken schalten nichts in der Erweiterung ein — sie bestimmen nur, welche Arbeitsschritte im Auftrags-Prompt stehen.</div>
+      <label class="abg-check"><input type="checkbox" id="abg-dupl"> Auf abgeschriebene Abgaben prüfen</label>
+      <div class="abg-hinweis">Die KI vergleicht neue Abgaben mit allen bisherigen im Output-Ordner und meldet auffällige Übereinstimmungen. Wie du damit umgehst, entscheidest du.</div>
+      <label class="abg-check"><input type="checkbox" id="abg-loes"> Musterlösungen als Maßstab nehmen</label>
+      <div class="abg-hinweis">Liegt im Ordner <em>Lösungen</em> eine Musterlösung oder ein Erwartungshorizont, bewertet die KI danach — sonst allein nach der Aufgabenstellung.</div>
       <label for="abg-modus">Umfang des Downloads</label>
       <select id="abg-modus">
         <option value="schnell">Schnell — nur neue und geänderte Abgaben laden</option>
         <option value="backup">Vollständig — alle Abgaben laden (erster Lauf, neuer Rechner)</option>
       </select>
-      <label for="abg-noten">Bewertungsübersicht und -struktur mitspeichern</label>
+      <div class="abg-hinweis"><strong>Schnell:</strong> nur, was seit dem letzten Download neu ist oder geändert wurde — die älteren Abgaben liegen schon im Output-Ordner. <strong>Vollständig:</strong> beim ersten Durchgang eines Themas, auf einem neuen Rechner oder wenn der Output-Ordner fehlt.</div>
+      <label for="abg-noten">Bewertungsübersicht des Kurses mit ins ZIP legen</label>
       <select id="abg-noten">
         <option value="nein">Nein</option>
         <option value="ja">Ja</option>
       </select>
-      <div class="abg-hinweis">Bei „Ja“ liegen im ZIP zusätzlich Bewertungsuebersicht.csv (Rohpunkte aller Tests, H5P und Aufgaben des Kurses je Kürzel), Bewertungsstruktur.csv (Kategorien und Gewichte) und Notenstufen.csv — Grundlage für eine Zwischennote. Nur Kürzel, keine Namen. Wird nur gelesen, in Moodle ändert sich nichts.</div>
+      <div class="abg-hinweis">Bei „Ja" liegen im ZIP zusätzlich Bewertungsuebersicht.csv (Rohpunkte aller Tests, H5P und Aufgaben des Kurses je Kürzel), Bewertungsstruktur.csv (Kategorien und Gewichte) und Notenstufen.csv — Grundlage für eine Zwischennote. Nur Kürzel, keine Namen. Wird nur gelesen, in Moodle ändert sich nichts.</div>
       <label class="abg-check"><input type="checkbox" id="abg-ki"> KI-Hinweis unter jedes Feedback setzen</label>
+      <div class="abg-hinweis">Ein kurzer Satz unter jeder Rückmeldung, dass sie mit KI-Hilfe entstanden ist — Transparenz gegenüber den Lernenden.</div>
       <label for="abg-ki-text">Wortlaut des KI-Hinweises</label>
       <textarea id="abg-ki-text" rows="2"></textarea>
-      <div class="abg-hinweis">Wird beim Eintragen angehängt, nicht von der KI geschrieben. Leeres Feld stellt den Standardsatz wieder her. Ist das Feedback als HTML geschrieben, wird der Hinweis klein und grau angehängt, sonst als Klartext.</div>
+      <div class="abg-hinweis">Wird von der Erweiterung beim Eintragen angehängt, nicht von der KI geschrieben. Leeres Feld stellt den Standardsatz wieder her.</div>
       <label>Kürzel-IDs</label>
-      <div class="abg-hinweis">Werden automatisch aus den Klarnamen gebildet: Vorname- und Nachname-Initiale plus eine aus dem vollen Namen berechnete Zahl (z. B. „KM-42“) — immer, auch wenn die Initialen gerade eindeutig sind. So ändert sich das Kürzel nicht mehr nachträglich, wenn später ein zweiter KM in die Klasse kommt. Rein aus dem Namen berechnet — es gibt nichts zu sichern oder einzulesen.</div>
+      <div class="abg-hinweis">Werden automatisch aus den Klarnamen gebildet: Vorname- und Nachname-Initiale plus eine aus dem vollen Namen berechnete Zahl (z. B. „KM-42") — immer, auch wenn die Initialen gerade eindeutig sind. So ändert sich das Kürzel nicht mehr nachträglich, wenn später ein zweiter KM in die Klasse kommt. Rein aus dem Namen berechnet — es gibt nichts zu sichern oder einzulesen.</div>
       <button class="abg-sekundaer" id="abg-reset">Stand dieser Aufgabe zurücksetzen</button>
-      <div class="abg-hinweis">Zurücksetzen vergisst, was beim letzten Lauf schon geladen war — der nächste Durchlauf holt dann wieder alles. Nötig, wenn der Output-Ordner verloren gegangen ist.</div>
+      <div class="abg-hinweis">Vergisst, was beim letzten Download schon geladen war — der nächste Durchgang holt dann wieder alle Abgaben. Nötig, wenn der Output-Ordner verloren gegangen ist.</div>
       <button class="abg-sekundaer" id="abg-einst-speichern">Einstellungen speichern</button>
-      <div class="abg-hinweis">Diese Angaben landen im Auftrags-Prompt. Die Erweiterung selbst bewertet nichts — sie sagt der KI nur, nach welchem Regelwerk sie arbeiten soll.</div>
+      <div class="abg-hinweis">Speichert alle Angaben dieses Reiters. Sie gelten ab dem nächsten Download bzw. Prompt.</div>
     `;
     body.appendChild(panelEinstellungen);
     panelEinstellungen.querySelector('#abg-skill').value = einst.skill || '';
@@ -1090,6 +1198,21 @@ export function starteGrader() {
       einst.kiHinweisText = panelEinstellungen.querySelector('#abg-ki-text').value.trim() || KI_HINWEIS_STANDARD;
       await einstellungenSpeichern(einst);
       logZeile(body, 'Einstellungen gespeichert.', 'ok');
+    });
+
+    // Hilfe wie im Freitext Grader (1.11.0): „So funktioniert's" ist beim ersten
+    // Oeffnen offen und bleibt nach dem ersten Zuklappen dauerhaft zu.
+    // „Wozu dieser Reiter?" ist immer eingeklappt.
+    einst.hilfeGesehen = einst.hilfeGesehen || {};
+    body.querySelectorAll('details[data-hilfe]').forEach((d) => {
+      const k = d.dataset.hilfe;
+      d.open = !einst.hilfeGesehen[k];
+      d.addEventListener('toggle', async () => {
+        if (!d.open && !einst.hilfeGesehen[k]) {
+          einst.hilfeGesehen[k] = true;
+          await einstellungenSpeichern(einst);
+        }
+      });
     });
 
     // Einheitlicher Ablauf aller Erweiterungen (24.09.2026): Kopieren quittiert,
@@ -1886,7 +2009,12 @@ export function starteGrader() {
     z.push(`${n++}. Das Feedbackfeld NICHT als fertigen Text schreiben, sondern als Rohwerte — eine Zeile je Arbeitsblatt, fünf Felder mit senkrechtem Strich getrennt:`);
     z.push('   Aufgabenname|Vollstaendigkeit|Fachlichkeit|Datum|Text');
     z.push('   Vollstaendigkeit: 0, 25, 50, 75 oder 100 — wie viel von der Aufgabe bearbeitet wurde, ohne Rücksicht auf Richtigkeit.');
-    z.push('   Fachlichkeit: 0 ohne Beanstandung, 1 kleine Ungenauigkeit, 2 deutlicher Mangel, 3 schwerer Fehler.');
+    z.push('   Fachlichkeit: EINE Stufe für das ganze Arbeitsblatt, nicht je Einzelantwort. Maßgeblich ist der Anteil falscher Antworten am Bearbeiteten:');
+    z.push('     0 = ohne Fehler');
+    z.push('     1 = einzelne Fehler, bis etwa 10 % falsch (z. B. 1 von 20 Beschriftungen falsch)');
+    z.push('     2 = viele Fehler, etwa ein Viertel bis die Hälfte falsch');
+    z.push('     3 = überwiegend falsch, mehr als die Hälfte falsch');
+    z.push('   Ein einzelner Fehler ist auch dann Stufe 1, wenn er inhaltlich grob ist — sprich ihn im Text an. Bei Blättern mit wenigen, ungleich schweren Teilaufgaben nach dem Gewicht der falschen Teile schätzen.');
     z.push(`   Datum: der Tag, an dem das Blatt abgegeben wurde — heute ist ${lauf.datum}, ältere Blätter behalten ihr altes Datum aus "_status.json".`);
     z.push('   Text: ein bis drei Sätze, ohne Prozentangabe und ohne Punktzahl — die rechnet die Erweiterung selbst aus.');
     z.push(`${n++}. Erste Zeile des Feedbackfelds ist immer @${lauf.datum} (das Datum dieses Durchgangs). Ein Hinweis auf den Arbeitsstand kommt als eigene Zeile mit Ausrufezeichen davor: !Kopfzeile|Fließtext — er wird rot und ganz oben ausgegeben.`);
@@ -1920,10 +2048,11 @@ export function starteGrader() {
       const box = document.createElement('div');
       box.className = 'abg-karte';
       box.innerHTML = `
-        <h4>Auftrags-Prompt</h4>
-        <div class="abg-hinweis abg-schritt">Zuerst das heruntergeladene ZIP entpacken und den entstandenen Ordner in den <strong>Import-Ordner</strong> legen. Danach diesen Prompt in die KI einfügen.</div>
+        <h4>Auftrags-Prompt für die KI</h4>
+        <div class="abg-hinweis">Die Arbeitsanweisung an die KI: wo die Abgaben liegen, wonach sie bewerten soll und wie sie bewertung.csv ausfüllt. Lesen musst du ihn nicht — nur kopieren.</div>
+        <div class="abg-hinweis abg-schritt"><strong>Erst</strong> das heruntergeladene ZIP entpacken und den Ordner in den <strong>Import-Ordner</strong> legen. <strong>Dann</strong> den Prompt kopieren und in die KI einfügen. Die ausgefüllte bewertung.csv danach im Reiter „3 · Eintragen" hochladen.</div>
         <textarea id="abg-prompt" readonly></textarea>
-        <button id="abg-prompt-kopieren">Prompt in die Zwischenablage kopieren</button>
+        <button id="abg-prompt-kopieren">📋 Auftrags-Prompt kopieren</button>
       `;
       ziel.appendChild(box);
       feld = box.querySelector('#abg-prompt');
@@ -1932,7 +2061,7 @@ export function starteGrader() {
         navigator.clipboard.writeText(feld.value)
           .then(() => {
             // Danach arbeitet die KI; weiter geht es hier in „3 · Eintragen".
-            if (weiterNachGlobal) return weiterNachGlobal(kopf, 'Prompt in die Zwischenablage kopieren');
+            if (weiterNachGlobal) return weiterNachGlobal(kopf, '📋 Auftrags-Prompt kopieren');
             const alt = kopf.textContent;
             kopf.textContent = 'Kopiert';
             setTimeout(() => { kopf.textContent = alt; }, 1500);
@@ -2042,7 +2171,7 @@ export function starteGrader() {
     if (!getroffen) { logZeile(body, 'Keine einzige Zeile konnte zugeordnet werden.', 'fehler'); return; }
     if (gebaut) {
       logZeile(body, `${gebaut} Feedback(s) aus Rohwerten gebaut — Strenge: ${(STRENGE[einst.strenge] || STRENGE.normal).text}.`, 'ok');
-      if (!mass) logZeile(body, 'Kein Maßstab gespeichert — im Feedback stehen Prozentwerte statt Punkten.', 'fehler');
+      if (!mass) logZeile(body, 'Keine Gewichtung gespeichert (Reiter „1 · Gewichtung") — im Feedback stehen Prozentwerte statt Punkten.', 'fehler');
     }
 
     logZeile(body, `${getroffen} Person(en) ausgefüllt: ${kommentare} Feedback, ${noten} Note(n). NICHT gespeichert.`
