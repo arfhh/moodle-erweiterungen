@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 0.7.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.0.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -26,6 +26,10 @@ import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
 import { stufenBlock, materialBlock as materialBaustein, horizontRegeln, HORIZONT_ZWECK } from './gemeinsam/horizont-bausteine.js';
 import { schreibeEditorfeldLive, leseEditorfeldLive } from './gemeinsam/editor-live.js';
 import { gestalteAufgabe, istGestaltet, afbAusText, antwortKasten, zerlegeAufgabentext, nrKey } from './gemeinsam/aufgaben-layout.js';
+import { fassungAusAbzeichen, neuesteFassungHorizont } from './gemeinsam/fassung.js';
+import { metaAusText, metaZeilenHtml, istMetaZeile, stufeVon, anredeFuer } from './gemeinsam/horizont-meta.js';
+import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
+import { KI_HINWEIS_STANDARD, ohneQuellen, KLAUSUR_KOMPAKT } from './gemeinsam/feedback-optionen.js';
 import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
 
 export function starteGrader() {
@@ -77,10 +81,11 @@ export function starteGrader() {
   const RS_ZEILE_RE = /rechtschreibung\s*[:\-]?\s*(\d{1,3}(?:[.,]\d+)?)\s*%/i;
   const SCHRITTE_ZEILE_RE = /punkteschritte\s*[:\-]?\s*([\d.,]+)/i;
 
-  function metaZeilen(prozent, punkteschritte, feedback) {
-    return '<p>[Rechtschreibung: ' + komma(prozent) + '%]</p>'
-         + '<p>[Punkteschritte: ' + komma(punkteschritte) + ']</p>'
-         + (feedback ? '<p>[Feedback: ' + feedback + ']</p>' : '');
+  // Ab 0.9: nur Angaben zur AUFGABE (Fach, Jahrgang, Niveau, Feedbacklaenge).
+  // Rechtschreibung, Punkteschritte und Anrede gehoeren zur Bewertung.
+  function metaZeilen(feedback) {
+    const r = rahmenAktuell();
+    return metaZeilenHtml({ fach: r.fach, jahrgang: r.jahrgang, niveau: r.niveau, feedback });
   }
 
   // Die Meta-Zeilen stehen ganz oben im Horizont, vor der ersten "Aufgabe N"-Zeile.
@@ -108,11 +113,17 @@ export function starteGrader() {
     const m = metaKopf(horizontRoh).match(FEEDBACK_ZEILE_RE);
     return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : null;
   }
+  // Feedbacklaenge gehoert zur Aufgabe: Auswahl im Reiter Horizont, gespeichert im Horizont.
   function fbLaenge() {
-    if (KONTEXT === 'bearbeiten' && typeof FEEDBACK !== 'undefined') return FEEDBACK;
+    if (typeof FEEDBACK !== 'undefined' && FEEDBACK) return FEEDBACK;
     let roh = '';
     try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* Seite ohne Horizont */ }
-    return feedbackAusHorizont(roh) || E.feedbacklaenge;
+    return feedbackAusHorizont(roh) || 'Ausführlich';
+  }
+  function fbAusHorizontDa() {
+    let roh = '';
+    try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* egal */ }
+    return !!feedbackAusHorizont(roh);
   }
 
   function punkteschritteAusHorizont(horizontRoh) {
@@ -135,23 +146,17 @@ export function starteGrader() {
     'neutral': { kopf: '#eceff3', feld: '#f8f9fb' }
   };
 
-  // Rechtschreibabzug: Stufen nach Fehlern je 100 Woertern. Anteil vom Hoechstabzug.
-  // Seit 3.1.0 fest im Code statt als Voreinstellung waehlbar (keine/mild/normal/streng
-  // entfielen) — die drei Stufen waren nur eine Kalibrierungs-Reserve ohne eigenstaendige
-  // didaktische Bedeutung, und mehr Prozent wirkt ueber den Hoechstabzug ohnehin schon
-  // 'strenger'. Einzige verbleibende Einstellung ist der Prozentwert (`rechtschreibung`).
-  // Unter MINDESTWOERTER greift die Dichte nicht — dort wird nach absoluter Fehlerzahl
-  // gestaffelt (wie im Coach).
-  const RS_LEITER = [ [1.0, 0], [2.0, 1/3], [3.5, 2/3], [Infinity, 1] ];
-  const RS_ABSOLUT   = [0, 1/3, 1/2, 2/3, 5/6, 1]; // 0,1,2,3,4,5+ Fehler
-  const MINDESTWOERTER = 40;
+  // Rechtschreibabzug: Rechnung in gemeinsam/rechtschreibung.js (gleich fuer beide Wege).
 
   const STANDARD = {
     fach:            '',
     jahrgang:        '',
     kursniveau:      'G',
     punkteschritte:  '0.5',
-    rechtschreibung: '10',      // Prozent der Gesamtpunktzahl, 0 = kein Abzug
+    rechtschreibung: '10',      // alt (bis 0.8); dient nur noch als Startwert fuer rsSek1
+    rsSek1:          '',        // Rechtschreibung Jahrgang 5–10 (leer = aus 'rechtschreibung')
+    rsSek2:          '25',      // Rechtschreibung ab Jahrgang 11
+    anredeWahl:      'auto',    // 'auto' (nach Jahrgang) | 'du' | 'sie'
     feedbacklaenge:  'Ausführlich',
     afbFarben:       true,      // Antwortvorlage in AFB-Farblogik statt neutral
     vorlagePunkte:   true,
@@ -160,7 +165,9 @@ export function starteGrader() {
     layoutAufgabe:   true,      // Layout-Reiter: Aufgabenstellung gestalten
     layoutAntwort:   true,      // Layout-Reiter: Antwortvorlage gestalten
     kiHinweis:       true,
+    kiHinweisText:   KI_HINWEIS_STANDARD,
     entferneQuellen: true,
+    kompaktPrompt:   false,
     promptHorizont:  null,
     promptKorrektur: null,
     horizontLokal:   '',        // Rueckfallebene: Horizont im Plugin statt in der Frage
@@ -168,9 +175,6 @@ export function starteGrader() {
   };
 
   let E = JSON.parse(JSON.stringify(STANDARD));   // aktive Einstellungen
-  // Gilt nur fuer den aktuellen Korrektur-Durchlauf, wird nie gespeichert: erzwingt die
-  // eingestellte Rechtschreibungs-Prozentzahl statt der im Horizont hinterlegten (3.1.0).
-  let rsEinstellungErzwingen = false;
 
   /* ═══════════════════════════════════════════════════════════════════
      3 · KLEINE HELFER
@@ -205,9 +209,6 @@ export function starteGrader() {
     return Math.round(p * 100) / 100;
   }
 
-  function woerter(text) {
-    return (String(text || '').trim().match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
-  }
 
   function ersteZeile(text) {
     return (String(text || '').split('\n').map(z => z.trim()).find(Boolean)) || '';
@@ -224,9 +225,9 @@ export function starteGrader() {
     }
     // Rechtschreibungs- und Punkteschritte-Meta-Zeilen ebenfalls entfernen (3.1.0) — sie
     // sind Verwaltung, kein Bewertungsmassstab, egal ob als eigene <p>-Zeile oder Text.
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 8; i++) {
       const zz = ersteZeile(t);
-      if (zz && (RS_ZEILE_RE.test(zz) || SCHRITTE_ZEILE_RE.test(zz) || FEEDBACK_ZEILE_RE.test(zz))) {
+      if (zz && (istMetaZeile(zz) || RS_ZEILE_RE.test(zz) || SCHRITTE_ZEILE_RE.test(zz) || FEEDBACK_ZEILE_RE.test(zz))) {
         t = t.replace(zz, '').replace(/^\s*\n/, '');
       } else break;
     }
@@ -235,14 +236,61 @@ export function starteGrader() {
 
   function quellenWeg(text) {
     if (!E.entferneQuellen) return String(text || '');
-    return String(text || '').replace(/\[\w+:\d+\]/g, '').replace(/ {2,}/g, ' ').trim();
+    return ohneQuellen(text);
   }
 
   // Anrede nach Jahrgang — ab Jahrgang 11 wird gesiezt.
-  function anrede() {
-    const jg = parseInt(E.jahrgang, 10);
-    return (!isNaN(jg) && jg >= 11) ? 'Sie haben' : 'Du hast';
+  // Anrede gehoert zur Lerngruppe: Auswahl im Reiter Bewerten, Vorschlag nach Jahrgang.
+  function anredeArt() { return anredeFuer(rahmenBew().jahrgang, E.anredeWahl); }
+  function anrede() { return anredeArt() === 'sie' ? 'Sie haben' : 'Du hast'; }
+
+  /* --- Angaben zur Aufgabe: Fach, Jahrgang, Niveau ---
+     Im Frageneditor stehen sie im Kasten „Diese Aufgabe" (AR), vorbelegt aus dem Horizont
+     oder mit den zuletzt benutzten Werten. Auf der Bewertungsseite kommen sie aus dem
+     Horizont; fehlen sie dort (alter Horizont), gelten die zuletzt benutzten Werte. */
+  let AR = null;
+  // Der Horizont regelt die Bewertung (1.0): Auf der Bewertungsseite gilt beim Bewerten,
+  // was im GESPEICHERTEN Horizont steht. Aenderungen im Kasten „Diese Aufgabe" (AR) gehen
+  // nur in den Horizont-Prompt und gelten erst, wenn der neue Horizont eingetragen ist.
+  // Fehlt eine Angabe im Horizont (alter Horizont), gelten die beim Laden zuletzt benutzten
+  // Werte – eingefroren, damit Eingaben im Kasten sie nicht nebenbei verschieben.
+  let RAHMEN_START = null;
+  function startwerte() {
+    if (!RAHMEN_START) RAHMEN_START = { fach: E.fach || '', jahrgang: E.jahrgang || '', niveau: E.kursniveau || 'G' };
+    return RAHMEN_START;
   }
+  function rahmenBew() {
+    if (KONTEXT !== 'bewertung') return rahmenAktuell();
+    const h = rahmenAusHorizont(); const st = startwerte();
+    return { fach: h.fach || st.fach, jahrgang: h.jahrgang || st.jahrgang, niveau: h.niveau || st.niveau,
+      ausHorizont: !!(h.fach || h.jahrgang || h.niveau) };
+  }
+  function fbBew() {
+    if (KONTEXT !== 'bewertung') return fbLaenge();
+    let roh = '';
+    try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* egal */ }
+    return feedbackAusHorizont(roh) || (MODUS === 'kurztest' ? 'Mittel' : 'Ausführlich');
+  }
+  function rahmenAusHorizont() {
+    let roh = '';
+    try { roh = leseHorizontRoh() || E.horizontLokal || ''; } catch (e) { /* egal */ }
+    return metaAusText(htmlZuText(roh));
+  }
+  function rahmenAktuell() {
+    if (AR) return AR;
+    const h = rahmenAusHorizont();
+    return {
+      fach: h.fach || E.fach || '', jahrgang: h.jahrgang || E.jahrgang || '', niveau: h.niveau || E.kursniveau || 'G',
+      ausHorizont: !!(h.fach || h.jahrgang || h.niveau)
+    };
+  }
+  // Rechtschreibung je Stufe merken: Sek I und Sek II haben verschiedene Werte, sonst
+  // wird beim Wechsel zwischen Kursen leicht vergessen umzustellen.
+  function rsWert(jahrgang) {
+    if (stufeVon(jahrgang) === 'sek2') return E.rsSek2 === '' || E.rsSek2 == null ? '25' : String(E.rsSek2);
+    return E.rsSek1 === '' || E.rsSek1 == null ? String(E.rechtschreibung || '10') : String(E.rsSek1);
+  }
+  function rsSchluessel(jahrgang) { return stufeVon(jahrgang) === 'sek2' ? 'rsSek2' : 'rsSek1'; }
 
   // ACHTUNG: innerText liefert bei einem Element, das NICHT im Dokument haengt,
   // dasselbe wie textContent — ohne Zeilenumbrueche. Deshalb die Blockenden vorher
@@ -434,12 +482,17 @@ export function starteGrader() {
 
   // Roher Horizont — aus dem Formularfeld (Bearbeiten) oder aus dem DOM der
   // Bewertungsseite (dort steht er als div.graderinfo, kein Umweg noetig).
+  // Bewertungsseite: Horizont der NEUESTEN Fragenfassung, sobald nachgeladen (Versuche
+  // haengen an der Fassung, mit der sie geschrieben wurden).
+  let HORIZONT_NEU = null;
   function leseHorizontRoh() {
     if (KONTEXT === 'bearbeiten') {
       return leseEditorfeldLive('graderinfo[text]');
     }
+    if (HORIZONT_NEU) return HORIZONT_NEU;
     const gi = $('.que .graderinfo') || $('.graderinfo');
-    return gi ? gi.innerHTML : '';
+    // Moodles eigene Ueberschrift gehoert nicht zum Horizont.
+    return gi ? gi.innerHTML.replace(/^\s*<h\d[^>]*>[^<]*Bewerter[^<]*<\/h\d>/i, '') : '';
   }
 
   // Welche Erweiterung ist zustaendig? Der Grader sperrt nie, er sagt nur Bescheid.
@@ -450,7 +503,11 @@ export function starteGrader() {
     // („Informationen für Bewerter/innen") — deshalb die ersten Zeilen durchsuchen.
     const zeilen = roh.split('\n').map(z => z.trim()).filter(Boolean).slice(0, 5);
     const treffer = zeilen.map(z => z.match(MARKER_RE)).find(Boolean) || null;
-    return { horizont: true, wer: markerWer(treffer) };
+    let wer = markerWer(treffer);
+    // Ohne Marker am Format erkennen: Kernaussage, aber keine „Aufgabe N"-Bloecke = Kurztest
+    // (alte Coach-Horizonte, von Hand geschriebene Kurztest-Horizonte).
+    if (!wer && /Kernaussage\s*:/i.test(roh) && !roh.split('\n').some(z => AUFGABE_RE.test(z))) wer = 'coach';
+    return { horizont: true, wer };
   }
 
   /* --- Horizont in Aufgabenbloecke zerlegen --- */
@@ -578,29 +635,11 @@ export function starteGrader() {
      gezaehlte Fehlerliste. Alles Weitere rechnet dieser Abschnitt.
      ═══════════════════════════════════════════════════════════════════ */
 
-  // Anteil vom Hoechstabzug. Unter MINDESTWOERTER greift die Dichte nicht —
-  // dort nach absoluter Fehlerzahl staffeln, wie im Coach.
-  function rsAnteil(fehlerGewichtet, wortzahl) {
-    if (wortzahl < MINDESTWOERTER) {
-      const i = Math.min(Math.round(fehlerGewichtet), RS_ABSOLUT.length - 1);
-      return RS_ABSOLUT[i];
-    }
-    const dichte = wortzahl > 0 ? (fehlerGewichtet * 100) / wortzahl : 0;
-    for (const [grenze, anteil] of RS_LEITER) if (dichte <= grenze) return anteil;
-    return 1;
-  }
-
-  // Schwere Fehler zaehlen doppelt — welche schwer sind, sagt die KI in der Kategorie.
-  function fehlerGewicht(liste) {
-    return (liste || []).reduce((s, f) => s + (f && f.schwer ? 2 : 1), 0);
-  }
-
   /* Rechnet eine Abgabe durch.
      bewertung = { aufgaben: [{nr, prozent}], fehler: [{wort, korrektur, kategorie, schwer}] }
      horizont  = Bloecke aus zerlegeHorizont(), fuer die Punkteverteilung             */
-  // rsProzentOverride/schrittOverride: der aus dem Horizont gelesene Wert (siehe
-  // korrekturPruefen) hat Vorrang vor der Einstellung — es sei denn, die Lehrkraft hat
-  // ausdruecklich "Einstellung erzwingen" angeklickt. null/undefined heisst: Einstellung.
+  // rsProzentOverride/schrittOverride: seit 0.9 die Werte aus „Für diese Bewertung"
+  // (Rechtschreibung je Stufe, Punkteschritte), siehe korrekturPruefen.
   function rechneAbgabe(abgabe, bewertung, horizontBloecke, rsProzentOverride, schrittOverride) {
     const gesamtMax = abgabe.max || leseGesamtpunkte() || 0;
 
@@ -800,7 +839,7 @@ export function starteGrader() {
   // Hat die Aufgabe schon einen Horizont? Dann sagen, was er ist, und die Schritte
   // so benennen, dass klar ist: hier wird ueberarbeitet und ersetzt, nicht neu angelegt.
   function horizontStatusAnzeigen() {
-    if (KONTEXT !== 'bearbeiten' || !R('hstatus')) return;
+    if (!R('hstatus')) return;
     const roh = leseHorizontRoh() || '';
     const text = htmlZuText(roh).trim();
     const l1 = R('hschritt1');
@@ -813,7 +852,7 @@ export function starteGrader() {
       if (k3) k3.textContent = '3 · In die Aufgabe eintragen';
       if (bis) bis.hidden = true;
       return status('hstatus', 'Noch kein Erwartungshorizont in dieser Aufgabe.'
-        + (einstellungenUnvollstaendig() ? ' Tipp: Fach und Jahrgang im Zahnrad ⚙ eintragen – sie gehen in den Prompt ein.' : ''));
+        + (einstellungenUnvollstaendig() ? ' Bitte unter „Diese Aufgabe" Fach und Jahrgang angeben.' : ''));
     }
     const alt = /moodle[-\s]?ai[-\s]?(coach|grader)/i.test(text);
     const m = modusAus(text);
@@ -834,6 +873,7 @@ export function starteGrader() {
     const st = R('hstatus') ? R('hstatus').textContent : '';
     horizontStatusAnzeigen();
     if (st && R('hstatus')) R('hstatus').textContent = st;
+    hinweiseAktualisieren();
   }
 
   function layoutAnzeigen() {
@@ -868,7 +908,7 @@ export function starteGrader() {
     // trotzdem in den ersten Block geschrieben, nicht doppelt setzen — wie im Coach.
     const schonDa = (aufgaben || []).some(a => MARKER_RE.test(ersteZeile(htmlZuText(a.horizont))));
     const kopf = schonDa ? ''
-      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(E.rechtschreibung, E.punkteschritte, KONTEXT === 'bearbeiten' ? FEEDBACK : fbLaenge());
+      : '<p>' + MARKER_ZEILE + '</p>' + metaZeilen(FEEDBACK);
     const bloecke = (aufgaben || []).map(a => {
       let inhalt = String(a.horizont || '').trim();
       if (!/<[a-z][\s\S]*>/i.test(inhalt)) {
@@ -886,21 +926,23 @@ export function starteGrader() {
   const NIVEAU = { G: 'G — gymnasial', M: 'M — mittel', E: 'E — einfach' };
 
   function rahmendaten() {
+    const r = rahmenBew();
     return [
-      'Fach: '                 + (E.fach || '[nicht angegeben]'),
-      'Jahrgang: '             + (E.jahrgang || '[nicht angegeben]'),
-      'Kursniveau: '           + (NIVEAU[E.kursniveau] || E.kursniveau),
-      'Feedbacklänge: '        + fbLaenge(),
+      'Fach: '                 + (r.fach || '[nicht angegeben]'),
+      'Jahrgang: '             + (r.jahrgang || '[nicht angegeben]'),
+      'Kursniveau: '           + (NIVEAU[r.niveau] || r.niveau),
+      'Feedbacklänge: '        + fbBew(),
       'Anrede im Feedback: '   + anrede() + ' …'
     ].join('\n');
   }
 
   // Horizont-Prompts: keine Feedbacklaenge/Anrede (das ist Bewertungs-Sache).
   function horizontRahmen() {
+    const r = rahmenAktuell();
     return [
-      'Fach: '       + (E.fach || '[nicht angegeben]'),
-      'Jahrgang: '   + (E.jahrgang || '[nicht angegeben]'),
-      'Kursniveau: ' + (NIVEAU[E.kursniveau] || E.kursniveau)
+      'Fach: '       + (r.fach || '[nicht angegeben]'),
+      'Jahrgang: '   + (r.jahrgang || '[nicht angegeben]'),
+      'Kursniveau: ' + (NIVEAU[r.niveau] || r.niveau)
     ].join('\n');
   }
 
@@ -992,14 +1034,14 @@ die setzt die Erweiterung. Keine Punktzahlen im Fließtext.`;
   }
 
   function baueHorizontPrompt() {
-    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
+    if (MODUS === 'kurztest') {
       const name = ($('[name="name"]') || {}).value || 'Diese Frage';
       const e = { qid: 'diese-frage', frage: name, aufgabe: leseAufgabenstellung(), max: leseGesamtpunkte() };
       const bisher = htmlZuText(leseHorizontRoh());
       if (bisher) e.horizont_bisher = ohneMarker(bisher);
       const mat = materialBlock();
       const block = 'Rahmendaten:\n' + horizontRahmen() + '\n\n' + (mat ? mat + '\n\n' : '') + '```json\n' + JSON.stringify([e], null, 1) + '\n```';
-      return kurztestHorizontVorlage({ einzeln: true, jahrgang: E.jahrgang, stufe: fbLaenge() }).replace('[MOODLE_AI_COACH_AUFGABEN]', block);
+      return kurztestHorizontVorlage({ einzeln: true, jahrgang: rahmenAktuell().jahrgang, stufe: fbLaenge() }).replace('[MOODLE_AI_COACH_AUFGABEN]', block);
     }
     const eigen = (E.promptHorizont || '').trim();
     let v = eigen || horizontPromptVorlage();
@@ -1007,7 +1049,7 @@ die setzt die Erweiterung. Keine Punktzahlen im Fließtext.`;
     v = v.includes('[MAG_STUFE]') ? v.replace('[MAG_STUFE]', stufe) : v + '\n\n' + stufe;
     const mat = materialBlock();
     return v
-      .replace('Lernende der Jahrgangsstufe [MAG_JAHRGANG]', E.jahrgang ? 'Lernende der Jahrgangsstufe ' + E.jahrgang : 'Lernende dieser Jahrgangsstufe')
+      .replace('Lernende der Jahrgangsstufe [MAG_JAHRGANG]', rahmenAktuell().jahrgang ? 'Lernende der Jahrgangsstufe ' + rahmenAktuell().jahrgang : 'Lernende dieser Jahrgangsstufe')
       .replace('[MAG_RAHMENDATEN]', horizontRahmen())
       .replace('[MAG_GESAMTPUNKTE]', komma(leseGesamtpunkte() || '?'))
       .replace('[MAG_AUFGABEN]', (leseAufgabenstellung() || '[keine Aufgabenstellung gefunden]')
@@ -1055,6 +1097,7 @@ Kategorien: satzbau · kasus · zeitform · grossschreibung · fachbegriff · re
 zeichensetzung · umgangssprache. Ein Satz ohne Prädikat, ein abgebrochener Satz oder ein
 Satzbau, den man zweimal lesen muss, zählt als "schwer": true. Denselben Fehler im selben
 Wort nur einmal zählen. Zähle vollständig — die Erweiterung leitet daraus den Abzug ab.
+${rsPromptSatz(rsWert(rahmenBew().jahrgang), 'der Gesamtpunktzahl')}
 
 FEEDBACKTEXTE
 Länge: [MAG_FBLAENGE]. Anrede: [MAG_ANREDE] … Sachlich, konkret, zugewandt.
@@ -1086,6 +1129,15 @@ In "aufgaben" ist "nr" die Aufgabennummer wie im Datenblock (z. B. "1", "2a").
 bist und die sie mit OK bestätigt hat; sonst false.
 Liefere für JEDE Abgabe des Blocks einen Eintrag, auch für leere Abgaben
 (dort alle Prozentwerte 0 und ein Hinweis in der Zusammenfassung).`;
+  }
+
+  // Kompakte Fassung (⚙ „Kompakter Prompt"): Regelteil durch Verweis auf die Skills ersetzt.
+  function korrekturVorlageAktiv() {
+    const v = korrekturPromptVorlage();
+    if (!E.kompaktPrompt) return v;
+    const i = v.indexOf('WICHTIG — WAS DU NICHT TUST'), j = v.indexOf('FEEDBACKTEXTE');
+    if (i < 0 || j < i) return v;
+    return v.slice(0, i) + KLAUSUR_KOMPAKT + '\n' + rsPromptSatz(rsWert(rahmenBew().jahrgang), 'der Gesamtpunktzahl') + '\n\n' + v.slice(j);
   }
 
   // Modusfrage NUR in Teil 1 (mit Stop-Regel); Teil 2/3 setzen nur fort.
@@ -1133,12 +1185,13 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     }).join('\n\n');
 
     const eigen = (E.promptKorrektur || '').trim();
-    const kopf = bewertungsKopf({ fach: E.fach, jahrgang: E.jahrgang, niveau: NIVEAU[E.kursniveau] || E.kursniveau });
-    let p = eigen || korrekturPromptVorlage();
+    const rr = rahmenBew();
+    const kopf = bewertungsKopf({ fach: rr.fach, jahrgang: rr.jahrgang, niveau: NIVEAU[rr.niveau] || rr.niveau, anrede: anredeArt() });
+    let p = eigen || korrekturVorlageAktiv();
     p = (p.includes('[MAG_KOPF]') ? p.replace('[MAG_KOPF]', kopf) : kopf + '\n\n' + p)
       .replace('[MAG_RAHMENDATEN]', rahmendaten())
       .replace('[MAG_HORIZONT]', horizontText || '[kein Horizont hinterlegt]')
-      .replace('[MAG_FBLAENGE]', FB_LAENGE[fbLaenge()] || FB_LAENGE['Ausführlich'])
+      .replace('[MAG_FBLAENGE]', FB_LAENGE[fbBew()] || FB_LAENGE['Ausführlich'])
       .replace('[MAG_ANREDE]', anrede())
       .replace('[MAG_ABGABEN]', daten)
       .replace('[MAG_MODUS]', modusBlock(teil, gesamtTeile));
@@ -1157,19 +1210,19 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     if (bewertung.staerken) abs.push(bewertung.staerken.trim());
 
     (bewertung.aufgaben || []).forEach(a => {
-      const t = rechnung.teil.find(x => x.nr === a.nr);
-      const block = (horizontBloecke || []).find(b => b.nr === a.nr);
-      const name = 'Aufgabe ' + a.nr + (block && block.kopf.includes('·')
+      const t = rechnung.teil.find(x => x.nr === nrKey(a.nr));
+      const block = (horizontBloecke || []).find(b => b.nr === nrKey(a.nr));
+      const name = 'Aufgabe ' + nrKey(a.nr) + (block && block.kopf.includes('·')
         ? ' – ' + block.kopf.split('·').slice(1).join('·').replace(/\(.*?\)/, '').trim() : '');
       let zeile = name + ': ' + (t ? komma(t.punkte) : '?') + ' von ' + (t ? komma(Math.round(t.max * 100) / 100) : '?') + ' P.';
       if (t && t.abzug > 0.004) zeile += ' (davon −' + komma(Math.round(t.abzug * 100) / 100) + ' P. Rechtschreibung)';
       abs.push(zeile + '\n' + (a.begruendung || '').trim());
     });
 
-    if (fbLaenge() === 'Umfangreich') {
+    if (fbBew() === 'Umfangreich') {
       const ops = (bewertung.aufgaben || []).filter(a => a.operator);
       if (ops.length) {
-        abs.push('Operatorerfüllung:\n' + ops.map(a => 'Aufgabe ' + a.nr + ': ' + a.operator).join('\n'));
+        abs.push('Operatorerfüllung:\n' + ops.map(a => 'Aufgabe ' + nrKey(a.nr) + ': ' + a.operator).join('\n'));
       }
     }
 
@@ -1201,10 +1254,8 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   function feedbackAlsHtml(text) {
     let html = text.split(/\n{2,}/)
       .map(b => '<p>' + escapeHtml(b).replace(/\n/g, '<br>') + '</p>').join('');
-    if (E.kiHinweis) {
-      html += '<p><em><small>Dieses Feedback wurde von der Lehrkraft mithilfe von '
-            + 'KI-Unterstützung erstellt und geprüft.</small></em></p>';
-    }
+    const satz = String(E.kiHinweisText || KI_HINWEIS_STANDARD).trim();
+    if (E.kiHinweis && satz) html += '<p><em><small>' + escapeHtml(satz) + '</small></em></p>';
     return html;
   }
 
@@ -1272,12 +1323,14 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   function pruefeVollstaendig(liste, sollNummern) {
     const gesehen = new Set();
     const doppelt = [];
+    // Abgaben sind Zahlen (1, 2, …), Aufgaben auch Text („2a") — beides gleich behandeln.
+    const norm = v => /^\s*\d+\s*$/.test(String(v)) ? Number(v) : nrKey(v);
     liste.forEach(e => {
-      const n = Number(e.nr);
+      const n = norm(e.nr);
       if (gesehen.has(n)) doppelt.push(n);
       gesehen.add(n);
     });
-    const fehlend = sollNummern.filter(n => !gesehen.has(n));
+    const fehlend = sollNummern.filter(n => !gesehen.has(norm(n)));
     return { fehlend, doppelt };
   }
 
@@ -1405,18 +1458,30 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
         <label>Feedbacklänge</label>
         <select data-rolle="hfeedbacksel"></select>
         <div class="mag-hinweis" data-rolle="hfeedbackhinweis"></div>
-      </div>
-      <div class="mag-rahmen">
-        <div class="mag-rahmen-titel">Diese Angaben gehen in den Prompt</div>
-        <div data-rolle="hrahmen"></div>
-        <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zueinst">ändern</button>
+        <div class="mag-zeile3">
+          <div><label>Fach</label><input type="text" data-rolle="hfach" placeholder="z. B. Chemie"></div>
+          <div><label>Jahrgang</label><select data-rolle="hjahrgang"></select></div>
+          <div><label>Niveau</label><select data-rolle="hniveau">
+            <option value="G">G – gymnasial</option><option value="M">M – mittel</option><option value="E">E – einfach</option>
+          </select></div>
+        </div>
+        <div class="mag-hinweis" data-rolle="hrahmenhinweis"></div>
+        <details class="mag-details mag-mehr">
+          <summary>Was gehört hierher – und was nicht?</summary>
+          <p class="mag-hinweis">Alles in diesem Kasten gehört <strong>zur Aufgabe</strong>: Es bestimmt, wie der
+          Erwartungshorizont aussieht (z. B. welche Formulierungen für Jahrgang 9 als richtig gelten), und wird
+          zusammen mit dem Horizont in der Aufgabe gespeichert. So gilt es auch in Zufallspools, beim Export
+          und bei Kolleginnen und Kollegen.</p>
+          <p class="mag-hinweis"><strong>Rechtschreibung, Punkteschritte und Anrede (Du/Sie)</strong> legst du
+          erst <strong>beim Bewerten</strong> fest – sie gehören zur Bewertung einer Lerngruppe, nicht zur Aufgabe.</p>
+        </details>
       </div>
       <details class="mag-details mag-hilfe" data-rolle="hhilfe">
         <summary>So funktioniert's</summary>
         <p class="mag-hinweis">Der Erwartungshorizont sagt der KI später beim Bewerten, was eine
         richtige Antwort ist. So entsteht er:</p>
         <p class="mag-hinweis"><strong>1 · Horizont-Prompt kopieren:</strong> Die Erweiterung nimmt
-        Aufgabenstellung, Punkte und Einstellungen und baut daraus einen Prompt, mit dem die KI den
+        Aufgabenstellung, Punkte und die Angaben unter „Diese Aufgabe" und baut daraus einen Prompt, mit dem die KI den
         Erwartungshorizont schreibt. Mit den Antworten der Lernenden hat er nichts zu tun – die
         kommen erst beim Bewerten.</p>
         <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Verweist die
@@ -1516,7 +1581,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       <details class="mag-details mag-hilfe" data-rolle="khilfe">
         <summary>So funktioniert's</summary>
         <p class="mag-hinweis"><strong>1 · Bewertungsprompt kopieren:</strong> Die Erweiterung packt
-        Erwartungshorizont, Einstellungen und alle Antworten in einen Prompt. Namen gehen nicht mit –
+        Erwartungshorizont, die Angaben unter „Für diese Bewertung" und alle Antworten in einen Prompt. Namen gehen nicht mit –
         die Antworten sind nur nummeriert.</p>
         <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Die KI fragt
         zuerst: <em>gemeinsam durchgehen</em> (Arbeit für Arbeit, du kannst jede ändern – empfohlen) oder
@@ -1530,9 +1595,39 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       </details>
       <div class="mag-status" data-rolle="kstatus"></div>
       <div class="mag-rahmen">
-        <div class="mag-rahmen-titel">Diese Angaben gehen in den Prompt und in die Rechnung</div>
+        <div class="mag-rahmen-titel">Für diese Bewertung</div>
+        <label>Anrede im Feedback</label>
+        <select data-rolle="kanrede">
+          <option value="auto">Automatisch nach Jahrgang</option>
+          <option value="du">Du</option><option value="sie">Sie</option>
+        </select>
+        <div class="mag-hinweis" data-rolle="anredehinweis"></div>
+        <label data-rolle="krslabel">Rechtschreibung: Höchstabzug in % der Gesamtpunktzahl</label>
+        <select data-rolle="krs">
+          <option value="0">0 % – kein Abzug</option><option value="5">5 %</option>
+          <option value="10">10 %</option><option value="15">15 %</option>
+          <option value="20">20 %</option><option value="25">25 %</option><option value="30">30 %</option>
+        </select>
+        <div class="mag-hinweis" data-rolle="rshinweis"></div>
+        <label>Punkteschritte</label>
+        <select data-opt="punkteschritte">
+          <option value="0.25">0,25</option><option value="0.5">0,5</option><option value="1">1 – nur ganze Punkte</option>
+        </select>
+        <details class="mag-details mag-mehr">
+          <summary>Was bedeutet das?</summary>
+          <p class="mag-hinweis"><strong>Anrede:</strong> „Automatisch" schreibt bis Jahrgang 10 „Du hast …",
+          ab Jahrgang 11 „Sie haben …".</p>
+          <p class="mag-hinweis"><strong>Rechtschreibung:</strong> So viel Prozent der Gesamtpunktzahl kann die
+          Sprache höchstens kosten. Die Erweiterung merkt sich einen Wert für die Sekundarstufe I (bis Jahrgang 10)
+          und einen für die Oberstufe. Auch bei 0 % bekommen die Lernenden eine Rückmeldung zur Sprache.</p>
+          <p class="mag-hinweis"><strong>Punkteschritte:</strong> Auf diese Schritte wird die Punktzahl je Aufgabe gerundet.</p>
+          <p class="mag-hinweis"><strong>Fach, Jahrgang, Niveau, Feedbacklänge:</strong> Der Horizont regelt die
+          Bewertung. Diese Angaben kommen aus dem gespeicherten Horizont der Aufgabe. Ändern heißt: im Reiter
+          Horizont einen neuen Horizont erstellen und eintragen.</p>
+        </details>
+        <div class="mag-rahmen-titel" style="margin-top:8px">Aus dem gespeicherten Horizont dieser Aufgabe</div>
         <div data-rolle="krahmen"></div>
-        <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zueinst">ändern</button>
+        <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zuhorizont">im Reiter Horizont ändern</button>
       </div>
       <label>Abgaben je Durchgang</label>
       <select data-rolle="kgroesse"></select>
@@ -1566,38 +1661,39 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     <div class="mag-inhalt" data-panel="einst" hidden>
       <details class="mag-details mag-hilfe mag-wozu">
         <summary>Wozu dieser Reiter?</summary>
-        <p class="mag-hinweis">Grundangaben für alle Aufgaben: Fach, Jahrgang, Kursniveau, Anrede, Rechtschreibung. Sie stehen als Rahmendaten im Prompt und steuern die Rechnung. Was nur für eine Aufgabe gilt (Modus, Feedbacklänge), stellst du im Reiter „Horizont" der Aufgabe ein.</p>
+        <p class="mag-hinweis">Hier steht nur, was für <strong>alle</strong> Aufgaben gleich ist. Alles andere
+        steht dort, wo es gebraucht wird: Fach, Jahrgang, Niveau, Modus und Feedbacklänge im Reiter
+        „Horizont" (gehören zur Aufgabe), Anrede, Rechtschreibung und Punkteschritte beim Bewerten im Reiter
+        „Bewerten" (gehören zur Bewertung einer Lerngruppe, nicht zur Aufgabe).</p>
       </details>
       <div class="mag-status" data-rolle="estatus"></div>
-      <p class="mag-hinweis">Diese Angaben stehen später als Rahmendaten im Prompt und
-      steuern, wie die Erweiterung rechnet. Bitte einmal durchsehen, bevor du den Prompt
-      kopierst — nachträglich lässt sich ein Horizont nur neu erzeugen.</p>
-      <label>Fach</label><input type="text" data-opt="fach" placeholder="z. B. Chemie">
-      <label>Jahrgang</label><input type="text" data-opt="jahrgang" placeholder="z. B. 10">
-      <div class="mag-hinweis" data-rolle="anredehinweis"></div>
-      <label>Kursniveau</label>
-      <select data-opt="kursniveau">
-        <option value="G">G — gymnasial</option>
-        <option value="M">M — mittel</option>
-        <option value="E">E — einfach</option>
-      </select>
-      <label>Punkteschritte</label>
-      <select data-opt="punkteschritte">
-        <option value="0.25">0,25</option><option value="0.5">0,5 (Standard)</option>
-        <option value="1">1,0 — nur ganze Punkte</option>
-      </select>
-      <label>Rechtschreibung: Höchstabzug in % der Gesamtpunktzahl</label>
-      <select data-opt="rechtschreibung">
-        <option value="0">0 % — kein Abzug</option><option value="5">5 %</option>
-        <option value="10">10 % (Standard Mittelstufe)</option><option value="15">15 %</option>
-        <option value="20">20 %</option><option value="25">25 % (Oberstufe, Klausuren)</option>
-        <option value="30">30 %</option>
-      </select>
-      <div class="mag-hinweis" data-rolle="rshinweis"></div>
-      <label class="mag-haken"><input type="checkbox" data-opt="kiHinweis"> KI-Transparenzhinweis unter das Feedback</label>
+      <p class="mag-hinweis">Diese Einstellungen gelten überall in der Erweiterung – auf der
+      Bewertungsseite einer Aufgabe ebenso wie auf der Kurztest-Übersicht.</p>
+      <label class="mag-haken"><input type="checkbox" data-opt="kiHinweis"> KI-Hinweis unter das Feedback</label>
+      <label>Text des KI-Hinweises</label>
+      <textarea data-opt="kiHinweisText" rows="3"></textarea>
+      <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="kistandard">Standardtext einsetzen</button>
+      <details class="mag-details mag-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="mag-hinweis">Unter jedes eingetragene Feedback setzt die Erweiterung diesen Satz, kursiv
+        und klein. Er kommt von der Erweiterung, nicht von der KI. Den Wortlaut kannst du ändern.</p>
+      </details>
       <label class="mag-haken"><input type="checkbox" data-opt="entferneQuellen"> Quellenangaben entfernen</label>
+      <details class="mag-details mag-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="mag-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
+        entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
+      </details>
+      <label class="mag-haken"><input type="checkbox" data-opt="kompaktPrompt"> Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
+      <details class="mag-details mag-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="mag-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
+        „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere Tausend
+        Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong> Den
+        Prompt selbst kannst du im Reiter Bewerten unter „✏️ Prompt anpassen" lesen und ändern.</p>
+      </details>
       <div class="mag-reihe">
-        <button class="mag-btn mag-btn-ok" data-tu="esichern">Speichern und weiter</button>
+        <button class="mag-btn mag-btn-ok" data-tu="esichern">Speichern und zurück</button>
         <button class="mag-btn mag-btn-grau" data-tu="eabbruch">Verwerfen</button>
       </div>
     </div>
@@ -1687,7 +1783,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const teilaufgaben = /(^|\n)\s*(?:[a-h]\)|aufgabe\s*\d|\d+[.)]\s)/i.test(text);
     return (!teilaufgaben && (leseGesamtpunkte() || 0) <= 3) ? 'kurztest' : 'klausur';
   }
-  let MODUS = KONTEXT === 'bearbeiten' ? modusVorschlag() : 'klausur';
+  let MODUS = KONTEXT === 'bearbeiten' ? modusVorschlag() : (zustaendigkeit().wer === 'coach' ? 'kurztest' : 'klausur');
   // Feedbacklaenge je Aufgabe (steht als Meta-Zeile im Horizont). Auswahl haengt vom Modus ab.
   const FB_STUFEN = {
     kurztest: [['Kurz', 'Kurz – 1–2 Sätze'], ['Mittel', 'Mittel – 3–5 Sätze (Standard)']],
@@ -1696,7 +1792,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   };
   const FB_STANDARD = { kurztest: 'Mittel', klausur: 'Ausführlich' };
   let FEEDBACK = (() => {
-    const h = KONTEXT === 'bearbeiten' ? feedbackAusHorizont(leseHorizontRoh()) : null;
+    const h = feedbackAusHorizont(leseHorizontRoh() || E.horizontLokal || '');
     return (h && FB_STUFEN[MODUS].some(o => o[0] === h)) ? h : FB_STANDARD[MODUS];
   })();
   function feedbackAnzeigen() {
@@ -1717,7 +1813,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   function modusAnzeigen() {
     const box = R('hmodus');
     if (!box) return;
-    box.hidden = KONTEXT !== 'bearbeiten';
+    box.hidden = false;
     R('hmodussel').value = MODUS;
     R('hmodushinweis').textContent = MODUS === 'kurztest'
       ? 'Kurztest: kurze Antworten, Horizont mit Kernaussage und „Auch richtig". Bewertet wird auf '
@@ -1731,8 +1827,8 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       if (h) h.hidden = false;
     }
   }
-  if (KONTEXT === 'bearbeiten') {
-    R('hfeedbacksel').addEventListener('change', () => { FEEDBACK = R('hfeedbacksel').value; });
+  {
+    R('hfeedbacksel').addEventListener('change', () => { FEEDBACK = R('hfeedbacksel').value; hinweiseAktualisieren(); });
     R('hmodussel').addEventListener('change', () => {
       MODUS = R('hmodussel').value;
       FEEDBACK = FB_STANDARD[MODUS];
@@ -1743,6 +1839,34 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       modusAnzeigen();
     });
   }
+  // Angaben zur Aufgabe (Kasten „Diese Aufgabe"): Eingabe merkt sich die Werte als
+  // Vorbelegung fuer die naechste Aufgabe.
+  function rahmenAusKasten() {
+    startwerte();
+    AR = {
+      fach: (R('hfach').value || '').trim(),
+      jahrgang: R('hjahrgang').value || '',
+      niveau: R('hniveau').value || 'G',
+      ausHorizont: !!rahmenAusHorizont().jahrgang
+    };
+    E.fach = AR.fach; E.jahrgang = AR.jahrgang; E.kursniveau = AR.niveau;
+    sichereEinstellungen();
+    hinweiseAktualisieren();
+  }
+  ['hfach', 'hjahrgang', 'hniveau'].forEach(r => {
+    const n = R(r); if (!n) return;
+    n.addEventListener(r === 'hfach' ? 'input' : 'change', rahmenAusKasten);
+  });
+  // Kasten „Für diese Bewertung"
+  function bewertungNeuRechnen() {
+    if (KONTEXT === 'bewertung' && R('kjson') && R('kjson').value.trim() && eintragungen) korrekturPruefen();
+  }
+  R('kanrede') && R('kanrede').addEventListener('change', () => {
+    E.anredeWahl = R('kanrede').value; sichereEinstellungen(); hinweiseAktualisieren(); bewertungNeuRechnen();
+  });
+  R('krs') && R('krs').addEventListener('change', () => {
+    E[rsSchluessel(rahmenBew().jahrgang)] = R('krs').value; sichereEinstellungen(); hinweiseAktualisieren(); bewertungNeuRechnen();
+  });
   modusAnzeigen();
 
   // Kurztest-Horizont als HTML fuer graderinfo: Marker, Sprachabzug-Zeile, Text.
@@ -1750,8 +1874,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const ohne = ohneMarker(String(text || '').replace(/\r/g, '')).trim();
     const absaetze = ohne.split(/\n\s*\n/).filter(a => a.trim())
       .map(a => '<p>' + escapeHtml(a.trim()).replace(/\n/g, '<br>') + '</p>').join('');
-    return '<p>' + MARKER_KURZTEST + '</p><p>[Rechtschreibung: '
-      + komma(E.rechtschreibung) + '%]</p><p>[Feedback: ' + FEEDBACK + ']</p>' + absaetze;
+    return '<p>' + MARKER_KURZTEST + '</p>' + metaZeilen(FEEDBACK) + absaetze;
   }
 
   // Neue Frage: direkt ins offene Formular, Moodle speichert mit der Frage.
@@ -1763,6 +1886,25 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     } catch (e) {
       status(statusRolle, 'Fehler: ' + e.message, true);
     }
+  }
+
+  function kurztestSperre(banner) {
+      // Kurztests werden auf der Uebersicht bewertet (alle Kurztest-Fragen in einem Prompt).
+    // Hier im Klausur-Weg passte weder Prompt noch Horizont-Format — deshalb sperren und verweisen.
+    mehrereFragen = true; kurztestSeite = true;
+    banner.hidden = false;
+    banner.textContent = 'Diese Frage ist ein Kurztest. Kurztests werden auf der Übersicht des Tests '
+      + 'bewertet – alle Kurztest-Fragen zusammen in einem Prompt. ';
+    const cmid = new URLSearchParams(location.search).get('id');
+    if (cmid) {
+      const a = document.createElement('a');
+      a.href = uebersichtUrl(cmid); a.textContent = 'Zur Übersicht →';
+      a.className = 'mag-btn mag-btn-ok mag-btn-klein';
+      banner.appendChild(a);
+    }
+    R('kstatus') && status('kstatus', 'Kurztest – bitte auf der Übersicht bewerten (Link oben).', true);
+    const ks = panel.querySelector('[data-tu="kschreiben"]');
+    if (ks) ks.disabled = true;
   }
 
   /* --- Bearbeiten-URL der Frage, auch von der Bewertungsseite aus --- */
@@ -1813,6 +1955,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       const k = f.dataset.opt;
       E[k] = (f.type === 'checkbox') ? f.checked : f.value;
     });
+    if (!String(E.kiHinweisText || '').trim()) E.kiHinweisText = KI_HINWEIS_STANDARD;
     // Eigene Prompts zurücksetzen: sonst bleiben veraltete Parameter eingebettet.
     E.promptHorizont = null;
     E.promptKorrektur = null;
@@ -1820,48 +1963,79 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     hinweiseAktualisieren();
   }
   // Kurzfassung der Einstellungen fuer die Zeile ueber den Kopierknoepfen.
+  // Kurzfassung der Angaben zur Aufgabe (aus dem Horizont bzw. Kasten „Diese Aufgabe").
   function einstellungenZeile() {
-    const rs = (parseFloat(E.rechtschreibung) === 0)
-      ? 'Rechtschreibung: kein Abzug'
-      : 'Rechtschreibung: ' + E.rechtschreibung + ' %';
+    const r = rahmenBew();
     return [
-      (E.fach || '⚠ Fach fehlt'),
-      'Jahrgang ' + (E.jahrgang || '⚠ fehlt'),
-      'Niveau ' + (NIVEAU[E.kursniveau] || E.kursniveau).split(' ')[0],
-      'Feedback ' + fbLaenge(),
-      rs,
-      'Schritte ' + komma(E.punkteschritte)
+      (r.fach || '⚠ Fach fehlt'),
+      'Jahrgang ' + (r.jahrgang || '⚠ fehlt'),
+      'Niveau ' + (r.niveau || 'G'),
+      'Feedback ' + fbBew()
     ].join(' · ');
   }
 
   function einstellungenUnvollstaendig() {
-    return !String(E.fach || '').trim() || !String(E.jahrgang || '').trim();
+    const r = rahmenAktuell();
+    return !String(r.fach || '').trim() || !String(r.jahrgang || '').trim();
   }
 
+  // Auf der Bewertungsseite: Steht im Kasten „Diese Aufgabe" etwas anderes als im
+  // gespeicherten Horizont? Dann sagen, dass es erst mit dem Eintragen gilt.
+  function rahmenWeichtAb() {
+    if (KONTEXT !== 'bewertung' || !AR) return FEEDBACK && KONTEXT === 'bewertung' && FEEDBACK !== fbBew();
+    const b = rahmenBew(); const r = rahmenAktuell();
+    return (r.fach || '') !== (b.fach || '') || String(r.jahrgang || '') !== String(b.jahrgang || '')
+      || (r.niveau || 'G') !== (b.niveau || 'G') || fbLaenge() !== fbBew();
+  }
   function rahmenzeilenAktualisieren() {
-    const text = einstellungenZeile();
-    const fehlt = einstellungenUnvollstaendig();
-    ['hrahmen', 'krahmen'].forEach(r => {
-      const n = R(r);
-      if (!n) return;
-      n.textContent = text;
-      n.parentElement.classList.toggle('unvollstaendig', fehlt);
-    });
+    const k = R('krahmen');
+    if (k) {
+      const r = rahmenBew();
+      k.textContent = einstellungenZeile()
+        + (KONTEXT === 'bewertung' && !r.ausHorizont
+          ? '  –  Der Horizont enthält diese Angaben noch nicht; es gelten die zuletzt benutzten Werte. Feste Werte bekommt die Aufgabe mit einem neu eingetragenen Horizont.' : '')
+        + (KONTEXT === 'bewertung' && !fbAusHorizontDa() ? '  –  Feedbacklänge: Standard.' : '')
+        + (KONTEXT === 'bewertung' && rahmenWeichtAb()
+          ? '  –  Im Reiter Horizont stehen Änderungen, die noch nicht eingetragen sind. Bewertet wird nach dem gespeicherten Horizont, bis du den neuen einträgst.' : '');
+      k.parentElement.classList.toggle('unvollstaendig', einstellungenUnvollstaendig());
+    }
+    // Kasten „Für diese Bewertung"
+    const ka = R('kanrede'); if (ka) ka.value = E.anredeWahl || 'auto';
+    const jg = rahmenBew().jahrgang;
+    const krs = R('krs'); if (krs) krs.value = rsWert(jg);
+    const kl = R('krslabel');
+    if (kl) kl.textContent = 'Rechtschreibung: Höchstabzug in % der Gesamtpunktzahl – '
+      + (stufeVon(jg) === 'sek2' ? 'Oberstufe (ab Jahrgang 11)' : 'Sekundarstufe I (bis Jahrgang 10)');
+    // Kasten „Diese Aufgabe"
+    const r = rahmenAktuell();
+    const hf = R('hfach'); if (hf && document.activeElement !== hf) hf.value = r.fach || '';
+    const hj = R('hjahrgang');
+    if (hj) {
+      if (!hj.options.length) {
+        const leer = document.createElement('option'); leer.value = ''; leer.textContent = '–'; hj.appendChild(leer);
+        for (let j = 5; j <= 13; j++) { const o = document.createElement('option'); o.value = String(j); o.textContent = String(j); hj.appendChild(o); }
+      }
+      hj.value = r.jahrgang || '';
+    }
+    const hn = R('hniveau'); if (hn) hn.value = r.niveau || 'G';
+    const hh = R('hrahmenhinweis');
+    if (hh) {
+      const fehlt = einstellungenUnvollstaendig();
+      hh.textContent = fehlt ? '⚠ Bitte Fach und Jahrgang angeben – sie gehen in den Prompt und in den Horizont.'
+        : KONTEXT === 'bewertung'
+          ? 'Der Horizont regelt die Bewertung: Änderungen hier gelten erst, wenn du den neuen Horizont in Schritt 3 einträgst. Bis dahin wird nach dem gespeicherten Horizont bewertet.'
+          : (!rahmenAusHorizont().jahrgang ? 'Vorbelegt mit den zuletzt benutzten Werten – bitte prüfen.' : '');
+      hh.classList.toggle('fehler', fehlt);
+    }
   }
 
   function hinweiseAktualisieren() {
     rahmenzeilenAktualisieren();
     const a = R('anredehinweis');
-    if (a) a.textContent = 'Im Feedback wird „' + anrede() + ' …" verwendet.';
+    if (a) a.textContent = 'Im Feedback steht „' + anrede() + ' …"'
+      + ((E.anredeWahl || 'auto') === 'auto' ? ' (Jahrgang ' + (rahmenBew().jahrgang || '?') + ').' : '.');
     const rs = R('rshinweis');
-    if (rs) {
-      if (parseFloat(E.rechtschreibung) === 0) {
-        rs.textContent = 'Kein Punktabzug — das Sprachfeedback wird trotzdem geschrieben.';
-      } else {
-        rs.textContent = 'Voller Abzug ab ' + komma(RS_LEITER[2][0]) + ' Fehlern je 100 Wörtern; '
-          + 'unter ' + MINDESTWOERTER + ' Wörtern zählt die absolute Fehlerzahl.';
-      }
-    }
+    if (rs) rs.textContent = rsErklaerung(rsWert(rahmenBew().jahrgang), 'der Gesamtpunktzahl');
     const v = R('vvorschau');
     const lv = layoutVorlageHtml();
     if (v) setzeHtml(v, lv || '<p class="mag-hinweis">Im Horizont sind keine Teilaufgaben erkennbar – '
@@ -1924,7 +2098,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   function horizontPruefen() {
     const roh = R('hjson').value.trim();
     if (!roh) return status('hstatus', 'Bitte erst die Antwort der KI einfügen.', true);
-    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') return horizontPruefenKurztest(roh);
+    if (MODUS === 'kurztest') return horizontPruefenKurztest(roh);
     try {
       const liste = leseJson(roh, 'aufgaben')
         .map(a => ({
@@ -1998,19 +2172,20 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   }
 
   async function horizontSchreiben(trocken) {
-    if (KONTEXT === 'bearbeiten' && MODUS === 'kurztest') {
+    if (MODUS === 'kurztest') {
       if (!horizontKurztest) return status('hstatus', 'Es liegt noch kein geprüfter Horizont vor.', true);
       const f = { 'graderinfo[text]': kurztestHorizontHtml(horizontKurztest) };
-      if (istNeueFrage()) { liveEintragen(f, 'hstatus'); return layoutAnzeigen(); }
+      if (istNeueFrage()) { liveEintragen(f, 'hstatus'); layoutAnzeigen(); return setTimeout(horizontStatusAnzeigenNachSchreiben, 50); }
       await schreibenAusfuehren(f, trocken, protokoll('hlog'), 'hstatus');
-      if (!trocken) offenesFormularAngleichen(f);
+      if (!trocken && KONTEXT === 'bearbeiten') offenesFormularAngleichen(f);
       layoutAnzeigen();
       return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
     }
     if (istNeueFrage() && horizontAufgaben) {
       const f = { 'graderinfo[text]': baueHorizont(horizontAufgaben) };
       liveEintragen(f, 'hstatus');
-      return layoutAnzeigen();
+      layoutAnzeigen();
+      return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
     }
     const sRolle = 'hstatus';
     if (!horizontAufgaben) {
@@ -2145,7 +2320,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const abgaben = leseAbgaben();
     const sel = R('kgroesse');
     if (!sel.options.length) {
-      [1, 2, 3, 5, 8, 10, 15, 20, 30].forEach(n => sel.appendChild(new Option(n + ' Abgaben', n)));
+      [1, 2, 3, 5, 8, 10, 15, 20, 30].forEach(n => sel.appendChild(new Option(n + (n === 1 ? ' Abgabe' : ' Abgaben'), n)));
       sel.value = String(stapelVorschlag(abgaben));
       sel.addEventListener('change', stapelAufbauen);
     }
@@ -2206,40 +2381,14 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
         return;
       }
 
-      // Rechtschreibungs-Prozent: Horizont gegen Einstellung abgleichen (seit 3.1.0).
-      // Ohne "erzwingen" hat der Horizont-Wert Vorrang — er wurde beim Anlegen des
-      // Erwartungshorizonts bewusst so gewaehlt. Punkteschritte kommen ohne Abgleich
-      // direkt aus dem Horizont (wirken sich auf die Note kaum aus).
-      const aktuellerRs = parseFloat(E.rechtschreibung) || 0;
-      const rsHorizont = rechtschreibungAusHorizont(horizont);
-      const schritteHorizont = punkteschritteAusHorizont(horizont);
-      const effRs = (rsHorizont != null && !rsEinstellungErzwingen) ? rsHorizont : aktuellerRs;
-      const effSchritt = schritteHorizont != null ? schritteHorizont : (parseFloat(E.punkteschritte) || 0.5);
+      // Ab 0.9 eine Quelle: Rechtschreibung und Punkteschritte aus dem Kasten „Für diese
+      // Bewertung" (Reiter Bewerten). Alte Zeilen im Horizont werden nicht mehr verwendet.
+      const effRs = parseFloat(rsWert(rahmenBew().jahrgang)) || 0;
+      const effSchritt = parseFloat(E.punkteschritte) || 0.5;
 
       const box = R('kliste'); box.innerHTML = '';
       const abgleich = R('rsabgleich');
-      if (abgleich) {
-        abgleich.innerHTML = '';
-        if (rsHorizont != null && rsHorizont !== aktuellerRs) {
-          abgleich.hidden = false;
-          abgleich.appendChild(el('div', null,
-            '⚠ Im Horizont steht ' + komma(rsHorizont) + ' % Rechtschreibung, eingestellt sind '
-            + komma(aktuellerRs) + ' %. Es gilt gerade: '
-            + (rsEinstellungErzwingen ? komma(aktuellerRs) + ' % (Einstellung)'
-                                       : komma(rsHorizont) + ' % (Horizont)') + '.'));
-          const umschalten = el('button', 'mag-btn mag-btn-grau',
-            rsEinstellungErzwingen
-              ? 'Stattdessen den Horizont-Wert verwenden'
-              : 'Stattdessen ' + komma(aktuellerRs) + ' % (Einstellung) verwenden');
-          umschalten.addEventListener('click', () => {
-            rsEinstellungErzwingen = !rsEinstellungErzwingen;
-            korrekturPruefen();
-          });
-          abgleich.appendChild(umschalten);
-        } else {
-          abgleich.hidden = true;
-        }
-      }
+      if (abgleich) { abgleich.innerHTML = ''; abgleich.hidden = true; }
 
       eintragungen = [];
       let ohneAenderung = 0;
@@ -2351,6 +2500,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   const AKTIONEN = {
     einst:   () => { formularAusEinstellungen(); zeige('einst'); },
     zueinst: () => { formularAusEinstellungen(); zeige('einst'); },
+    zuhorizont: () => zeige('horizont'),
     zu:     () => { panel.classList.remove('offen'); knopf.classList.remove('versteckt'); },
 
     hprompt: () => kopiere(baueHorizontPrompt(), 'hstatus', 'Prompt kopiert.', 'hjson'),
@@ -2387,7 +2537,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     },
     krohdaten: () => kopiere(JSON.stringify({
       stand: new Date().toLocaleString('de-DE'),
-      fach: E.fach, jahrgang: E.jahrgang,
+      fach: rahmenBew().fach, jahrgang: rahmenBew().jahrgang,
       gesamtpunkte: leseGesamtpunkte(),
       aufgabenstellung: leseAufgabenstellung(),
       horizont: htmlZuText(leseHorizontRoh() || E.horizontLokal),
@@ -2399,26 +2549,23 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
 
     esichern: () => {
       einstellungenAusFormular();
-      if (einstellungenUnvollstaendig()) {
-        return status('estatus', 'Fach und Jahrgang fehlen noch — beides steht im Prompt '
-          + 'und bestimmt Anspruchsniveau und Anrede.', true);
-      }
       status('estatus', '');
       zeige(KONTEXT === 'bearbeiten' ? 'horizont'
             : (letzterReiter === 'einst' ? 'korrektur' : letzterReiter));
     },
     eabbruch: () => { formularAusEinstellungen(); status('estatus', ''); },
+    kistandard: () => { const t = R('kitext') || panel.querySelector('[data-opt="kiHinweisText"]'); if (t) t.value = KI_HINWEIS_STANDARD; },
 
     psichern: () => {
       const t = R('ptext').value.trim();
-      const original = promptZiel === 'horizont' ? horizontPromptVorlage() : korrekturPromptVorlage();
+      const original = promptZiel === 'horizont' ? horizontPromptVorlage() : korrekturVorlageAktiv();
       const wert = (t === original.trim()) ? null : t;
       if (promptZiel === 'horizont') E.promptHorizont = wert; else E.promptKorrektur = wert;
       sichereEinstellungen();
       zeige(letzterReiter);
     },
     pzurueck: () => {
-      R('ptext').value = promptZiel === 'horizont' ? horizontPromptVorlage() : korrekturPromptVorlage();
+      R('ptext').value = promptZiel === 'horizont' ? horizontPromptVorlage() : korrekturVorlageAktiv();
     },
     pabbruch: () => zeige(letzterReiter)
   };
@@ -2462,7 +2609,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       ? 'Prompt für den Erwartungshorizont' : 'Prompt für die Korrektur';
     const eigen = ziel === 'horizont' ? E.promptHorizont : E.promptKorrektur;
     R('ptext').value = (eigen && eigen.trim())
-      || (ziel === 'horizont' ? horizontPromptVorlage() : korrekturPromptVorlage());
+      || (ziel === 'horizont' ? horizontPromptVorlage() : korrekturVorlageAktiv());
     zeige('prompt');
   }
 
@@ -2512,10 +2659,11 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const f = ev.target.closest('[data-opt]');
     if (!f) return;
     // Die Aussehen-Häkchen der Antwortvorlage wirken sofort auf die Vorschau.
-    if (['afbFarben', 'vorlagePunkte', 'vorlageAfb', 'kartePunkte', 'layoutAufgabe', 'layoutAntwort'].includes(f.dataset.opt)) {
-      E[f.dataset.opt] = f.checked;
+    if (['afbFarben', 'vorlagePunkte', 'vorlageAfb', 'kartePunkte', 'layoutAufgabe', 'layoutAntwort', 'punkteschritte'].includes(f.dataset.opt)) {
+      E[f.dataset.opt] = f.type === 'checkbox' ? f.checked : f.value;
       sichereEinstellungen();
       hinweiseAktualisieren();
+      if (f.dataset.opt === 'punkteschritte') bewertungNeuRechnen();
     }
   });
 
@@ -2532,6 +2680,13 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     } catch (e) { const kb = panel.querySelector('.mag-kopfbild'); if (kb) kb.remove(); }
     document.body.appendChild(knopf);
     document.body.appendChild(panel);
+    startwerte();
+    // Kasten „Diese Aufgabe": im Editor aus dem Horizont, sonst die zuletzt benutzten Werte.
+    if (KONTEXT === 'bearbeiten') {
+      const h = rahmenAusHorizont();
+      AR = { fach: h.fach || E.fach || '', jahrgang: h.jahrgang || E.jahrgang || '',
+             niveau: h.niveau || E.kursniveau || 'G', ausHorizont: !!h.jahrgang };
+    }
     formularAusEinstellungen();
     R('hlokal').value = E.horizontLokal || '';
 
@@ -2552,22 +2707,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       const ks = panel.querySelector('[data-tu="kschreiben"]');
       if (ks) ks.disabled = true;
     } else if (z.wer === 'coach' && KONTEXT === 'bewertung') {
-      // Kurztests werden auf der Uebersicht bewertet (alle Kurztest-Fragen in einem Prompt).
-      // Hier im Klausur-Weg passte weder Prompt noch Horizont-Format — deshalb sperren und verweisen.
-      mehrereFragen = true; kurztestSeite = true;
-      banner.hidden = false;
-      banner.textContent = 'Diese Frage ist ein Kurztest. Kurztests werden auf der Übersicht des Tests '
-        + 'bewertet – alle Kurztest-Fragen zusammen in einem Prompt. ';
-      const cmid = new URLSearchParams(location.search).get('id');
-      if (cmid) {
-        const a = document.createElement('a');
-        a.href = uebersichtUrl(cmid); a.textContent = 'Zur Übersicht →';
-        a.className = 'mag-btn mag-btn-ok mag-btn-klein';
-        banner.appendChild(a);
-      }
-      R('kstatus') && status('kstatus', 'Kurztest – bitte auf der Übersicht bewerten (Link oben).', true);
-      const ks = panel.querySelector('[data-tu="kschreiben"]');
-      if (ks) ks.disabled = true;
+      kurztestSperre(banner);
     } else if (!z.horizont && KONTEXT === 'bewertung' && !E.horizontLokal) {
       banner.hidden = false;
       banner.textContent = 'Diese Frage hat noch keinen Erwartungshorizont. '
@@ -2579,11 +2719,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const ut = panel.querySelector('.mag-untertitel');
     if (ut) ut.textContent = KONTEXT === 'bearbeiten' ? 'Aufgabe vorbereiten' : 'Antworten bewerten';
     let start;
-    if (einstellungenUnvollstaendig() && KONTEXT !== 'bearbeiten') {
-      start = 'einst';
-      status('estatus', 'Bitte einmal ausfüllen: Fach und Jahrgang fehlen. '
-        + 'Beides geht als Rahmendatum in den Prompt.', true);
-    } else if (KONTEXT === 'bewertung' && !z.horizont && !E.horizontLokal) {
+    if (KONTEXT === 'bewertung' && !z.horizont && !E.horizontLokal) {
       start = 'horizont';
     } else {
       start = KONTEXT === 'bearbeiten' ? 'horizont' : 'korrektur';
@@ -2594,6 +2730,27 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     if (KONTEXT === 'bewertung') {
       const n = leseAbgaben().length;
       if (!mehrereFragen) status('kstatus', n ? n + ' Arbeiten auf dieser Seite.' : 'Keine Arbeiten gefunden.');
+      horizontStatusAnzeigen();
+      const fassung = verschiedene > 1 ? null : fassungAusAbzeichen($('.que'));
+      const qidSeite = new URLSearchParams(location.search).get('qid');
+      if (fassung && fassung.gesamt > fassung.ist && qidSeite) {
+        const cm = new URLSearchParams(location.search).get('id');
+        neuesteFassungHorizont(qidSeite, id => location.origin + '/question/bank/editquestion/question.php?id=' + id
+          + (cm ? '&cmid=' + cm : '')).then(r => {
+          if (!r) return;
+          HORIZONT_NEU = r.html;
+          const z2 = zustaendigkeit();
+          MODUS = z2.wer === 'coach' ? 'kurztest' : 'klausur';
+          const fbNeu = feedbackAusHorizont(HORIZONT_NEU);
+          FEEDBACK = (fbNeu && FB_STUFEN[MODUS].some(o => o[0] === fbNeu)) ? fbNeu : FB_STANDARD[MODUS];
+          modusAnzeigen(); hinweiseAktualisieren();
+          if (z2.wer === 'coach' && !kurztestSeite) kurztestSperre(banner);
+          if (!mehrereFragen) status('kstatus', n + ' Arbeiten auf dieser Seite. Maßstab ist der Horizont der neuesten '
+            + 'Fragenfassung (v' + fassung.gesamt + '), nicht der ältere, den Moodle hier anzeigt.');
+          horizontStatusAnzeigen();
+          if (!R('kknoepfe') || !panel.querySelector('[data-panel="korrektur"]').hidden) stapelAufbauen();
+        }).catch(() => { /* dann gilt der Horizont dieser Seite */ });
+      }
       const kh = R('khilfe');
       if (kh) {
         kh.open = !E.khilfeGesehen;

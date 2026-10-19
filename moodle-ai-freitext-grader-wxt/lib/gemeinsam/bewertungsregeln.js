@@ -8,7 +8,10 @@ export function bewertungsKopf(r = {}) {
   const wo = [r.jahrgang ? 'Jahrgang ' + r.jahrgang : '', r.niveau ? 'Niveau ' + r.niveau : ''].filter(Boolean).join(', ');
   return `ROLLE
 Du bist ${fach} und bewertest Schülerantworten${wo ? ' (' + wo + ')' : ''} streng nach einem
-festen Erwartungshorizont.
+festen Erwartungshorizont.${r.anrede ? '\n\nANREDE\n' + (r.anrede === 'sie'
+  ? 'Sprich die Schülerinnen und Schüler in jeder Rückmeldung mit „Sie" an („Sie haben …"). '
+    + 'Beispiele in diesem Prompt, die „du" verwenden, überträgst du in die Sie-Form.'
+  : 'Sprich die Schülerinnen und Schüler in jeder Rückmeldung mit „du" an („Du hast …").') : ''}
 
 ZENTRALE BEWERTUNGSREGEL
 Bewerte alle folgenden Antworten strikt nach demselben Maßstab. Fachlich gleiche

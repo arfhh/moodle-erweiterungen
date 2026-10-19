@@ -68,7 +68,7 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 0.7.1 (Erprobung) | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.0.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
 | ~~Moodle AI Grader~~ · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
 | **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.7.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
 | ~~Moodle AI Coach~~ · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
@@ -123,9 +123,9 @@ der Tabelle oben).
 Jeder Ordner hat eine eigene, ausführliche `README.md` — dort stehen Bedienung,
 Bewertungsmaßstab, Grenzen und die Änderungsgeschichte.
 
-> **Der Freitext Grader ist in Erprobung (0.x).** Horizont und Layout sind im echten Moodle
-> getestet, der vollständige Bewertungsweg noch nicht in jeder Variante. Beim ersten Einsatz
-> mit **einer** Frage anfangen und das Ergebnis in Moodle nachsehen.
+> **Freitext Grader 1.0.** Horizont, Layout und Bewertung sind vollständig gebaut. Der erste
+> komplette Durchgang im Schulbetrieb steht noch aus – beim ersten Einsatz mit **einer** Frage
+> anfangen und das Ergebnis in Moodle nachsehen.
 
 ---
 

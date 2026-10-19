@@ -185,3 +185,10 @@
 
 /* Freitext Grader 0.3: Erklaerkasten oben in jedem Reiter */
 .mag-wozu { margin: 0 0 8px; }
+
+/* Freitext Grader 0.9: Angaben zur Aufgabe nebeneinander, Erklaerungen zum Aufklappen */
+.mag-zeile3 { display: grid; grid-template-columns: 1.2fr 0.7fr 1.3fr; gap: 6px; margin-top: 6px; }
+.mag-zeile3 input, .mag-zeile3 select { width: 100%; box-sizing: border-box; }
+.mag-mehr { margin: 4px 0 6px; }
+.mag-mehr > summary { cursor: pointer; font-size: 12px; color: #4a5a6a; }
+.mag-hinweis.fehler { color: #b42318; }

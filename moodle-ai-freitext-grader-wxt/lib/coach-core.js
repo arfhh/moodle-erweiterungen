@@ -25,7 +25,10 @@ import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
 import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
 import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
+import { metaAusText, istMetaZeile, stufeVon, anredeFuer } from './gemeinsam/horizont-meta.js';
 import { materialBlock } from './gemeinsam/horizont-bausteine.js';
+import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
+import { KI_HINWEIS_STANDARD, GEMEINSAME_OPTIONEN, GEMEINSAM_STANDARD, ohneQuellenTief } from './gemeinsam/feedback-optionen.js';
 import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
 
 export function starteCoach() {
@@ -42,7 +45,13 @@ export function starteCoach() {
   try {
     browser.storage.local.get(['magSettings']).then((r) => {
       const m = (r && r.magSettings) || {};
-      RAHMEN = { fach: m.fach || '', jahrgang: m.jahrgang || '', niveau: NIVEAU_TEXT[m.kursniveau] || m.kursniveau || '' };
+      const zahlOderNull = (v) => { const x = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(x) ? null : x; };
+      RAHMEN = { fach: m.fach || '', jahrgang: m.jahrgang || '', niveau: m.kursniveau || '',
+        // Rechtschreibung je Stufe – dieselben Werte wie im Reiter „Bewerten" des Klausur-Wegs
+        rsSek1: zahlOderNull(m.rsSek1 !== undefined && m.rsSek1 !== '' ? m.rsSek1 : m.rechtschreibung),
+        rsSek2: zahlOderNull(m.rsSek2 !== undefined && m.rsSek2 !== '' ? m.rsSek2 : 25),
+        anredeWahl: m.anredeWahl || 'auto' };
+      if (typeof abzugFeldAktualisieren === 'function') abzugFeldAktualisieren();
     }).catch(() => {});
   } catch (e) { /* ohne Speicher: neutrale Rolle */ }
 
@@ -219,8 +228,15 @@ export function starteCoach() {
 
   // 'coach' | 'grader' | null (kein Marker oder gar kein Horizont)
   function zustaendigkeit(horizont) {
-    const m = ersteZeile(horizont).match(MARKER_RE);
-    return markerWer(m);
+    const zeilen = String(horizont || '').split('\n').map((z) => z.trim()).filter(Boolean);
+    const m = zeilen.slice(0, 5).map((z) => z.match(MARKER_RE)).find(Boolean) || null;
+    const wer = markerWer(m);
+    if (wer) return wer;
+    // Ohne Marker am Inhalt erkennen: Ueberschriften „Aufgabe N" = Klausur,
+    // „Kernaussage:" ohne solche Ueberschriften = Kurztest.
+    if (zeilen.some((z) => /^(?:[①-⑳]\s*)?Aufgabe\s+\d{1,2}\s*[a-h]?\b/i.test(z))) return 'grader';
+    if (zeilen.some((z) => /^Kernaussage\s*:/i.test(z))) return 'coach';
+    return null;
   }
 
   // Der Marker ist Verwaltung, kein Bewertungsmassstab — er gehoert nicht in den
@@ -266,10 +282,10 @@ export function starteCoach() {
     if (i > -1 && PROZENT_ZEILE_RE.test(zeilen[i].trim())) {
       zeilen.splice(i, 1);
     }
-    // Feedback-Meta-Zeile (Freitext Grader) ist Verwaltung, kein Massstab.
-    const j = zeilen.findIndex((z) => z.trim());
-    if (j > -1 && /^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel|ausführlich|umfangreich)\s*\]?\s*$/i.test(zeilen[j])) {
-      zeilen.splice(j, 1);
+    // Alle Verwaltungszeilen (Fach, Jahrgang, Niveau, Feedback, alte Prozent-/Schritte-Zeilen).
+    for (let k = 0; k < 8; k++) {
+      const j = zeilen.findIndex((z) => z.trim());
+      if (j > -1 && istMetaZeile(zeilen[j])) zeilen.splice(j, 1); else break;
     }
     return zeilen.join('\n').trim();
   }
@@ -286,8 +302,6 @@ export function starteCoach() {
 
   /* ================= Einstellungen ================= */
 
-  const KI_HINWEIS_STANDARD =
-    'Dieses Feedback wurde von der Lehrkraft mithilfe von KI-Unterstützung erstellt und geprüft.';
 
   const OPT_STANDARD = {
     // Sprache wird ABGEZOGEN, nicht als zweiter Topf addiert: sonst bekäme eine
@@ -303,25 +317,59 @@ export function starteCoach() {
     // Standardmaessig AUS, wie beim Reviewer: der volle Prompt ist die Fassung, die
     // fuer jede KI (auch ohne eigene Skills) sicher funktioniert. Bewusst per
     // Haekchen einschaltbar, nicht als Bedingung im Prompt selbst.
-    kompaktPrompt: false
+    kompaktPrompt: false,
+    kiHinweis: true,
+    entferneQuellen: true
   };
   let optionen = { ...OPT_STANDARD };
   // Gilt nur fuer den aktuellen Ernte-Durchlauf, wird nie gespeichert: erzwingt die
   // eingestellte Prozentzahl statt der im Horizont hinterlegten (Abgleich, 1.8.0).
   let prozentEinstellungErzwingen = false;
 
+  // Ein Wert fuer beide Wege: die Grundeinstellungen (⚙ „Rechtschreibung").
+  // Ein Wert je Stufe fuer beide Wege (Kasten „Für diese Bewertung").
+  function rsFuerJahrgang(jahrgang) {
+    const k = stufeVon(jahrgang) === 'sek2' ? 'rsSek2' : 'rsSek1';
+    if (RAHMEN && RAHMEN[k] != null) return RAHMEN[k];
+    return k === 'rsSek2' ? 25 : (optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug);
+  }
+  // Angaben fuer Rolle und Anrede: die haeufigsten aus den Horizonten der Fragen,
+  // sonst die zuletzt benutzten Werte.
+  function rolleAktuell() {
+    const fr = (typeof ausgabe !== 'undefined' && ausgabe && ausgabe.fragen) ? Object.values(ausgabe.fragen) : [];
+    const haeufig = (k) => {
+      const z = {}; fr.forEach((f) => { if (f[k]) z[f[k]] = (z[f[k]] || 0) + 1; });
+      return Object.keys(z).sort((a, b) => z[b] - z[a])[0] || '';
+    };
+    const jahrgang = haeufig('jahrgang') || RAHMEN.jahrgang || '';
+    const niveau = haeufig('niveau') || RAHMEN.niveau || '';
+    return {
+      fach: haeufig('fach') || RAHMEN.fach || '',
+      jahrgang,
+      niveau: NIVEAU_TEXT[niveau] || niveau,
+      anrede: anredeFuer(jahrgang, RAHMEN.anredeWahl)
+    };
+  }
+  function rsStandard() { return rsFuerJahrgang(rolleAktuell().jahrgang); }
+  // Die Rechtschreib-Zeile im Horizont zaehlt nur, wenn der Freitext Grader sie selbst
+  // geschrieben hat. Alte Coach-Horizonte tragen noch ihren eigenen Wert (oft 30 %).
   function hoechstabzugFuer(frageDaten) {
-    const standard = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
+    const standard = rsStandard();
     if (prozentEinstellungErzwingen) return standard;
-    const h = frageDaten && frageDaten.horizontProzent;
-    return (h === null || h === undefined) ? standard : h;
+    // Ab 0.9 zaehlt keine Prozentzeile im Horizont mehr; der Wert haengt am Jahrgang der Frage.
+    return frageDaten && frageDaten.jahrgang ? rsFuerJahrgang(frageDaten.jahrgang) : standard;
   }
 
   function optionenLaden() {
     return new Promise((resolve) => {
       try {
-        browser.storage.local.get(['coachOptionen'], (r) => {
-          optionen = { ...OPT_STANDARD, ...(r && r.coachOptionen ? r.coachOptionen : {}) };
+        // KI-Hinweis, Quellen und kompakter Prompt gelten fuer beide Wege: sie liegen in
+        // magSettings und haben dort Vorrang (seit 1.0.0).
+        browser.storage.local.get(['coachOptionen', 'magSettings'], (r) => {
+          const m = (r && r.magSettings) || {};
+          const gemeinsam = {};
+          GEMEINSAME_OPTIONEN.forEach((k) => { if (m[k] !== undefined) gemeinsam[k] = m[k]; });
+          optionen = { ...OPT_STANDARD, ...(r && r.coachOptionen ? r.coachOptionen : {}), ...gemeinsam };
           resolve(optionen);
         });
       } catch (e) { resolve(optionen); }
@@ -330,32 +378,28 @@ export function starteCoach() {
   function optionenSpeichern(neu) {
     optionen = { ...optionen, ...neu };
     return new Promise((resolve) => {
-      try { browser.storage.local.set({ coachOptionen: optionen }, resolve); }
-      catch (e) { resolve(); }
+      try {
+        browser.storage.local.get(['magSettings'], (r) => {
+          const m = { ...((r && r.magSettings) || {}) };
+          GEMEINSAME_OPTIONEN.forEach((k) => { m[k] = optionen[k]; });
+          browser.storage.local.set({ coachOptionen: optionen, magSettings: m }, resolve);
+        });
+      } catch (e) { resolve(); }
     });
   }
 
   /* ================= Sprachabzug ================= */
 
-  // Anteile vom eingestellten Höchstabzug. Bewusst bis 5 Fehler gestaffelt:
-  // bei einer Leiter bis 3 landen fast alle Antworten sofort am Anschlag und
-  // die Bewertung sagt nichts mehr aus.
-  const LEITER = [0, 1 / 3, 1 / 2, 2 / 3, 5 / 6, 1];
-
-  function abzugProzent(fehlerzahl, hoechstabzugOverride) {
-    const i = Math.min(Math.max(0, Math.round(fehlerzahl)), LEITER.length - 1);
-    const basis = hoechstabzugOverride ?? (optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug);
-    return LEITER[i] * basis;
+  // Gleiche Rechnung wie im Klausur-Weg (gemeinsam/rechtschreibung.js): unter 40 Woertern
+  // nach Fehlerzahl, darueber nach Fehlerquotient. Schwere Fehler zaehlen doppelt.
+  function abzugProzent(fehlerGewichtet, wortzahl, hoechstabzugOverride) {
+    const basis = hoechstabzugOverride ?? rsStandard();
+    return rsAnteil(fehlerGewichtet, wortzahl) * basis;
   }
 
-  // Schwere Fehler zählen doppelt — ein Satz ohne Prädikat wiegt mehr als ein
-  // vergessenes Komma. Das ist der „strenge Deutschlehrer".
-  const fehlerGewicht = (liste) =>
-    (liste || []).reduce((s, f) => s + (f && f.schwer ? 2 : 1), 0);
-
-  function punkteRechnen(max, inhaltProzent, fehlerListe, hoechstabzugOverride) {
+  function punkteRechnen(max, inhaltProzent, fehlerListe, hoechstabzugOverride, antwortText) {
     const gewicht = fehlerGewicht(fehlerListe);
-    const ab = abzugProzent(gewicht, hoechstabzugOverride);
+    const ab = abzugProzent(gewicht, woerter(antwortText), hoechstabzugOverride);
     const roh = max * inhaltProzent / 100 - max * ab / 100;
     return {
       gewicht, abzug: ab,
@@ -414,8 +458,11 @@ export function starteCoach() {
   // Mit Teilen: „a · Deine Antwort AFB I (1 Punkt)" — wird zu „a) ", damit die KI die Teile auseinanderhaelt.
   const VORLAGE_KOPF_RE = /^\s*Deine Antwort(?:\s+AFB\s+I{1,3}(?:\s*[-–]\s*I{1,3})?)?(?:\s+\(\s*[\d.,]+\s+Punkte?\s*\))?\s*/i;
   const VORLAGE_TEIL_RE = /(^|\s)([a-h])\s*·\s*Deine Antwort(?:\s+AFB\s+I{1,3}(?:\s*[-–]\s*I{1,3})?)?(?:\s+\(\s*[\d.,]+\s+Punkte?\s*\))?\s*/gi;
+  // Kopfzeile einer AELTEREN Antwortvorlage („Atommodell … AFB II · Kernaussage (2 Punkte)").
+  const ALT_KOPF_RE = /^\s*(?:[^\n]{0,120}?\s)?AFB\s+I{1,3}(?:\s*[-–]\s*I{1,3})?\s*·[^()\n]{0,80}\(\s*[\d.,]+\s+Punkte?\s*\)\s*/i;
   const essayWert = (feld) =>
     (feld.tagName === 'TEXTAREA' ? (feld.value || '') : txt(feld))
+      .replace(ALT_KOPF_RE, '')
       .replace(VORLAGE_TEIL_RE, (m0, vor, b) => (vor ? '\n' : '') + b.toLowerCase() + ') ')
       .replace(VORLAGE_KOPF_RE, '').trim()
       .replace(/^(?:[a-h]\)\s*)+$/i, '');   // nur leere Teilkaesten = leere Antwort
@@ -472,6 +519,8 @@ export function starteCoach() {
       name: zeile.name, qid: zeile.qid, slot: zeile.slot,
       aufgabe: txt(erste.querySelector('.qtext')),
       zustaendig: zustaendigkeit(horizontRoh),
+      vonFreitext: /moodle[-\s]?ai[-\s]?freitext/i.test(horizontRoh),
+      ...(() => { const m = metaAusText(horizontRoh); return { fach: m.fach || '', jahrgang: m.jahrgang || '', niveau: m.niveau || '' }; })(),
       horizontProzent: prozentAusHorizont(horizontRoh),
       feedback: (horizontRoh.match(/^\s*\[?\s*feedback\s*[:\-]?\s*(kurz|mittel)\s*\]?\s*$/im) || [])[1] || 'Mittel',
       horizont: horizontBereinigt(horizontRoh),
@@ -588,7 +637,7 @@ export function starteCoach() {
         keine_freitextfrage: keinEssay,
         antworten: antworten.length,
         uebersprungen,
-        max_sprachabzug_prozent: optionen.maxSprachabzug
+        max_sprachabzug_prozent: rsStandard()
       },
       fragen, fremde, antworten, fehler
     };
@@ -856,8 +905,7 @@ export function starteCoach() {
   // vom Coach erzeugte Horizont ihn automatisch.
   function horizontSchreiben(qid, text, nurPruefen) {
     const mitMarker = MARKER_RE.test(ersteZeile(text)) ? text : MARKER_ZEILE + '\n' + text;
-    const mitProzent = fuegeProzentZeileEin(
-      mitMarker, optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug);
+    const mitProzent = mitMarker;   // ab 0.9 keine Prozentzeile mehr im Horizont
     return graderinfoSchreiben(
       qid,
       () => '<p>' + escapeHtml(mitProzent).replace(/\n/g, '<br>') + '</p>',
@@ -868,8 +916,7 @@ export function starteCoach() {
   // bisherige Inhalt wird unveraendert uebernommen — er ist HTML, und ihn ueber den
   // Textweg neu zu schreiben wuerde Absaetze und Listen zerstoeren.
   function markerNachtragen(qid) {
-    const kopf = '<p>' + MARKER_ZEILE + '</p><p>'
-      + prozentZeile(optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug) + '</p>';
+    const kopf = '<p>' + MARKER_ZEILE + '</p>';
     return graderinfoSchreiben(
       qid,
       (vorher) => kopf + (vorher || ''),
@@ -940,8 +987,27 @@ export function starteCoach() {
 
   const DATEN_PLATZHALTER = '[MOODLE_AI_COACH_DATEN]';
 
+  // Fuer wen die Rueckmeldung geschrieben wird – aus dem Jahrgang der Horizonte.
+  function leserKurz() {
+    const jg = rolleAktuell().jahrgang;
+    return jg ? 'Jahrgang ' + jg : 'Sekundarstufe I';
+  }
+  function leserSatz() {
+    const jg = rolleAktuell().jahrgang;
+    if (stufeVon(jg) === 'sek2') {
+      return `Es lesen Schülerinnen und Schüler der Oberstufe (Jahrgang ${jg}). Sie sollen daraus
+lernen — also klar, fachlich genau und ohne Umschweife, wie eine Lehrkraft, die einer
+Oberstufenschülerin etwas erklärt.`;
+    }
+    return `Es lesen Schülerinnen und Schüler ${jg ? 'des Jahrgangs ' + jg : 'der Mittelstufe'}, viele davon
+schreibschwach. Sie sollen daraus lernen — also schreibst du wie eine Deutschlehrkraft, die
+einem Kind dieses Alters etwas erklärt.`;
+  }
+
+  function vorlageAktiv() { return optionen.kompaktPrompt ? kompaktPromptVorlage() : bewertungsPromptVorlage(); }
+
   function bewertungsPromptVorlage() {
-    const maxAb = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
+    const maxAb = rsStandard();
     return `═══════════════════════════════════════════════════════
 MOODLE AI FREITEXT GRADER – BEWERTUNG KURZTEST
 ═══════════════════════════════════════════════════════
@@ -960,7 +1026,7 @@ Beginne mit genau diesen drei Punkten, dann folge den Arbeitsanweisungen:
 BEWERTUNGSMASSSTAB
 ═══════════════════════════════════════════════════════
 
-${bewertungsKopf(RAHMEN)}
+${bewertungsKopf(rolleAktuell())}
 
 ═══════════════════════════════════════════════════════
 AUSGANGSLAGE
@@ -1016,17 +1082,13 @@ Zählregeln:
 • Zähle nur, was du benennen kannst. Ein Bauchgefühl ist kein Fehler.
 • Eine leere Antwort hat keine Sprachfehler – dort ist der Inhalt 0 %.
 
-Zur Einordnung, was mit deiner Zählung geschieht: Der Höchstabzug ist gerade auf
-${maxAb} % der Aufgabenpunkte eingestellt. 1 Fehler kostet ein Drittel davon,
-2 Fehler die Hälfte, 3 zwei Drittel, 4 fünf Sechstel, ab 5 den vollen Abzug.
+${rsPromptSatz(maxAb, 'der Aufgabenpunkte')}
 
 ═══════════════════════════════════════════════════════
 TEIL 3 – RÜCKMELDUNG
 ═══════════════════════════════════════════════════════
 
-Das Feedback ist das eigentliche Produkt. Es lesen Schülerinnen und Schüler der
-Mittelstufe, viele davon schreibschwach. Sie sollen daraus lernen — also schreibst du
-wie eine Deutschlehrkraft, die einem Vierzehnjährigen etwas erklärt.
+Das Feedback ist das eigentliche Produkt. ${leserSatz()}
 
 SPRACHE — so schreibst du:
 • Kurze Hauptsätze. Ein Gedanke pro Satz. KEINE verschachtelten Sätze.
@@ -1211,19 +1273,19 @@ ${DATEN_PLATZHALTER}`;
   // kennt. Das Ausgabeformat (Tabelle, JSON-Schema, Horizont-Nachziehen) ist NICHT
   // Teil dieser Skills und bleibt deshalb ausgeschrieben.
   function kompaktPromptVorlage() {
-    const maxAb = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
+    const maxAb = rsStandard();
     return `═══════════════════════════════════════════════════════
 MOODLE AI FREITEXT GRADER – BEWERTUNG KURZTEST (KOMPAKT)
 ═══════════════════════════════════════════════════════
 
-${bewertungsKopf(RAHMEN)}
+${bewertungsKopf(rolleAktuell())}
 
 Falls du Zugriff auf die Skills „2-didaktik-bewertung“ und „3-moodle-erweiterungen“
 von A. Spielhoff hast: Wende deren Bewertungslogik an — Inhalt strikt getrennt von
 Sprache, die Abstufung im Horizont ist verbindlich (keine eigene Skala erfinden),
 Sprachfehler zählen (schwer = doppelt) statt selbst Punkte abzuziehen, die
 Feedback-Gliederung in Felder (lob/inhalt/rechtschreibung/grammatik/tipp) mit
-kurzen, schülergerechten Sätzen für die Mittelstufe, und die drei Rückmeldungsfälle
+kurzen, schülergerechten Sätzen (${leserKurz()}), und die drei Rückmeldungsfälle
 (volle Punktzahl → nur Lob; ≥95 % → Lob zuerst; darunter → kein Lob).
 
 Hast du diese Skills NICHT: Bitte um den ausführlichen Prompt (⚙ → Häkchen
@@ -1231,10 +1293,9 @@ Hast du diese Skills NICHT: Bitte um den ausführlichen Prompt (⚙ → Häkchen
 die Trennung Inhalt/Sprache und die Feld-Gliederung) sind falsche Bewertungen und
 unpassendes Feedback wahrscheinlich.
 
-Höchstabzug für Sprache ist gerade auf ${maxAb} % der Aufgabenpunkte eingestellt:
-1 Fehler kostet ein Drittel davon, 2 die Hälfte, 3 zwei Drittel, 4 fünf Sechstel,
-ab 5 den vollen Abzug. Punkte NICHT selbst ausrechnen, nur Inhalt-Prozent und
-Fehlerliste angeben — das rechnet die Erweiterung.
+${rsPromptSatz(maxAb, 'der Aufgabenpunkte')}
+Punkte NICHT selbst ausrechnen, nur Inhalt-Prozent und Fehlerliste angeben — das
+rechnet die Erweiterung.
 
 ═══════════════════════════════════════════════════════
 MODUSFRAGE – STELLE SIE ZUERST UND WARTE
@@ -1382,7 +1443,7 @@ ${DATEN_PLATZHALTER}`;
   try {
     const bild = document.createElement('img');
     bild.src = browser.runtime.getURL('icon/128.png');
-    bild.alt = 'AI Coach';
+    bild.alt = 'Freitext Grader';
     bild.className = 'co-fab-icon';
     bild.addEventListener('error', () => { bild.remove(); knopf.textContent = 'Co'; });
     knopf.appendChild(bild);
@@ -1401,7 +1462,7 @@ ${DATEN_PLATZHALTER}`;
     <div class="co-tabs">
       <button class="co-tab co-aktiv" data-tab="lesen">1 · Bewerten</button>
       <button class="co-tab" data-tab="eintrag">2 · Eintragen</button>
-      <button class="co-tab" data-tab="horizont">3 · Horizont <span class="co-badge co-hidden"></span></button>
+      <button class="co-tab" data-tab="horizont">3 · Aufgaben <span class="co-badge co-hidden"></span></button>
       <button class="co-tab" data-tab="opt">⚙</button>
     </div>
 
@@ -1411,9 +1472,38 @@ ${DATEN_PLATZHALTER}`;
         <p class="co-hinweis">Hier bewertest du alle Kurztest-Antworten dieses Tests auf einmal. Die Erweiterung sammelt die Antworten aller Versuche und baut daraus mit den Erwartungshorizonten einen Prompt. Diesen in die KI einfügen; deren Antwort kommt in Reiter 2.</p>
       </details>
       <p class="co-meta"></p>
+      <div class="co-kasten">
+        <div class="co-kastenkopf">Für diese Bewertung</div>
+        <label class="co-label">Anrede im Feedback
+          <select class="co-anrede">
+            <option value="auto">Automatisch nach Jahrgang</option>
+            <option value="du">Du</option><option value="sie">Sie</option>
+          </select>
+        </label>
+        <label class="co-label"><span class="co-abzuglabel">Rechtschreibung: Höchstabzug in % der Aufgabenpunkte</span>
+          <select class="co-abzug">
+            <option value="0">0 % – kein Abzug</option><option value="5">5 %</option>
+            <option value="10">10 %</option><option value="15">15 %</option>
+            <option value="20">20 %</option><option value="25">25 %</option><option value="30">30 %</option>
+          </select>
+        </label>
+        <p class="co-abzuginfo"></p>
+        <details class="co-details co-mehr">
+          <summary>Was bedeutet das?</summary>
+          <p class="co-hinweis"><strong>Anrede:</strong> „Automatisch" schreibt bis Jahrgang 10 „Du hast …",
+          ab Jahrgang 11 „Sie haben …". Der Jahrgang steht im Erwartungshorizont der Aufgaben.</p>
+          <p class="co-hinweis"><strong>Rechtschreibung:</strong> So viel Prozent der Aufgabenpunkte kann die
+          Sprache höchstens kosten. Es gibt einen Wert für die Sekundarstufe I (bis Jahrgang 10) und einen für
+          die Oberstufe – dieselben wie bei Klausuren. Auch bei 0 % bekommen die Lernenden eine Rückmeldung
+          zur Sprache.</p>
+        </details>
+        <p class="co-kastenfuss"></p>
+      </div>
       <label class="co-check"><input type="checkbox" class="co-bereits">
         Auch schon bewertete Versuche noch einmal vorlegen</label>
-      <button class="co-go">Freitextaufgaben durchsuchen</button>
+      <button class="co-go">Kurztest-Aufgaben durchsuchen</button>
+      <p class="co-hinweis">Klausur-Aufgaben in diesem Test werden erkannt, hier übersprungen und
+      im Ergebnis verlinkt – sie werden auf ihrer eigenen Bewertungsseite bewertet.</p>
       <div class="co-progress co-hidden"><div class="co-bar"></div><span class="co-ptext"></span></div>
       <div class="co-result co-hidden">
         <p class="co-summary"></p>
@@ -1448,7 +1538,7 @@ ${DATEN_PLATZHALTER}`;
       die Erweiterung aus Inhalt und Fehlerzahl selbst.</p>
       <textarea class="co-json" rows="6" placeholder='{ "bewertungen": [ … ] }'></textarea>
       <label class="co-check"><input type="checkbox" class="co-ki" checked>
-        KI-Hinweis ans Feedback anhängen</label>
+        KI-Hinweis ans Feedback anhängen <span class="co-hinweis">(Standard und Wortlaut unter ⚙)</span></label>
       <p class="co-kivorschau"></p>
       <button class="co-pruef co-hidden">🔍 Prüfen</button>
       <p class="co-pinfo co-hidden"></p>
@@ -1464,8 +1554,14 @@ ${DATEN_PLATZHALTER}`;
     <div class="co-body co-hidden" data-panel="horizont">
       <details class="co-details co-wozu">
         <summary>Wozu dieser Reiter?</summary>
-        <p class="co-hinweis">Für Aufgaben, die noch keinen Erwartungshorizont haben: Prompt für mehrere Aufgaben auf einmal erstellen und die Horizonte eintragen. Einzelne Aufgaben gehen bequemer im Frageneditor (Aufgabe bearbeiten → Freitext Grader).</p>
+        <p class="co-hinweis">Übersicht über alle Freitextaufgaben dieses Tests: Ist es ein Kurztest oder eine
+        Klausur? Hat sie einen aktuellen Erwartungshorizont? Erstellt oder überarbeitet wird ein Horizont
+        immer für <strong>eine</strong> Aufgabe – im Frageneditor oder auf ihrer Bewertungsseite (Reiter
+        „Horizont"). Nur dort lassen sich Modus, Feedbacklänge, Fach, Jahrgang und Niveau einstellen.</p>
       </details>
+      <div class="co-aufgabenliste"><p class="co-hinweis">Erst in Reiter 1 „Kurztest-Aufgaben durchsuchen" –
+      dann stehen hier alle Aufgaben mit ihren Links.</p></div>
+      <div class="co-hidden co-althorizont">
       <p class="co-hinweis">Der Erwartungshorizont gehört in die Frage, nicht in die
       Erweiterung — einmal erstellt, gilt er dauerhaft und wandert beim Export mit.
       Hier wird er angelegt, wo er fehlt — oder für vorhandene neu geschrieben.</p>
@@ -1507,42 +1603,55 @@ ${DATEN_PLATZHALTER}`;
       <div class="co-hknoepfe co-hidden">
         <button class="co-hschreib">In die Aufgaben eintragen</button>
       </div>
+      </div>
     </div>
 
     <div class="co-body co-hidden" data-panel="opt">
       <details class="co-details co-wozu">
         <summary>Wozu dieser Reiter?</summary>
-        <p class="co-hinweis">Einstellungen für alle Kurztests, etwa der höchste Abzug für Sprache und eigene Prompt-Fassungen.</p>
+        <p class="co-hinweis">Hier steht nur, was für alle Aufgaben gleich ist. Fach, Jahrgang, Niveau und
+        Feedbacklänge gehören zur Aufgabe und stehen in ihrem Erwartungshorizont; Anrede und Rechtschreibung
+        stehen im Reiter „1 · Bewerten" unter „Für diese Bewertung".</p>
       </details>
-      <label class="co-label">Maximaler Abzug für Sprache und Ausdruck (% der Aufgabenpunkte)
-        <input type="text" class="co-abzug" value="30">
-      </label>
-      <p class="co-abzuginfo"></p>
-      <label class="co-check"><input type="checkbox" class="co-nurmarker">
-        Nur Fragen bewerten, die „[moodle-ai-coach]" im Erwartungshorizont tragen</label>
-      <p class="co-hinweis">Fragen, deren Horizont mit <code>[moodle-ai-grader]</code>
-      beginnt, überspringt der Coach <strong>immer</strong> — dafür ist dieses Häkchen
-      nicht nötig. Es entscheidet nur über Fragen <em>ohne</em> Marker: aus (Standard)
-      werden sie bewertet und im Ergebnis gemeldet, an bleiben sie liegen. Leg es um,
-      wenn dein Bestand vollständig markiert ist.</p>
-      <label class="co-check"><input type="checkbox" class="co-kompakt">
-        Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
-      <p class="co-hinweis">Verweist für die Bewertungslogik auf die Skills
-      „2-didaktik-bewertung“ und „3-moodle-erweiterungen“ statt sie komplett
-      auszuschreiben – spart pro Aufruf mehrere Tausend Zeichen. <strong>Nur
-      einschalten, wenn du sicher bist, dass die verwendete KI diese Skills wirklich
-      kennt</strong> (z. B. dein eigener Claude-Cowork-Zugang). Andere Lehrkräfte
-      oder andere KI-Systeme lassen dieses Häkchen aus – die bekommen automatisch den
-      vollständigen Prompt. Wirkt nur auf den Bewertungs-Prompt in Reiter 1, nicht
-      auf den Horizont-Prompt in Reiter 3.</p>
-      <label class="co-label">KI-Hinweis unter dem Feedback
+      <p class="co-hinweis">Diese Einstellungen gelten überall in der Erweiterung – auf der Kurztest-Übersicht
+      ebenso wie auf der Bewertungsseite einer Aufgabe.</p>
+      <label class="co-check"><input type="checkbox" class="co-kian"> KI-Hinweis unter das Feedback</label>
+      <label class="co-label">Text des KI-Hinweises
         <textarea class="co-kitext" rows="3"></textarea>
       </label>
-      <p class="co-hinweis">Die beiden Prompts stehen dort, wo sie gebraucht werden:
-      der <strong>Bewertungs-Prompt</strong> in Reiter 1 (damit bewertet die KI die
-      Antworten), der <strong>Horizont-Prompt</strong> in Reiter 3 (damit schreibt sie
-      den Erwartungshorizont für Fragen, die noch keinen haben) — jeweils unter
-      „Prompt anpassen". In beiden Feldern steht der volle Text zum Lesen und Ändern.</p>
+      <button class="co-kistd co-zweit">Standardtext einsetzen</button>
+      <details class="co-details co-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="co-hinweis">Unter jedes eingetragene Feedback setzt die Erweiterung diesen Satz, kursiv
+        und klein. Er kommt von der Erweiterung, nicht von der KI. Den Wortlaut kannst du ändern.</p>
+      </details>
+      <label class="co-check"><input type="checkbox" class="co-quellen"> Quellenangaben entfernen</label>
+      <details class="co-details co-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="co-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
+        entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
+      </details>
+      <label class="co-check"><input type="checkbox" class="co-kompakt">
+        Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
+      <details class="co-details co-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="co-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
+        „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere Tausend
+        Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong> Den
+        Prompt selbst kannst du im Reiter 1 unter „Bewertungs-Prompt anpassen" lesen und ändern.</p>
+      </details>
+      <p class="co-hinweis"><strong>Nur auf der Kurztest-Übersicht:</strong></p>
+      <label class="co-check"><input type="checkbox" class="co-nurmarker">
+        Nur Fragen bewerten, die als Kurztest markiert sind</label>
+      <details class="co-details co-mehr">
+        <summary>Was bedeutet das?</summary>
+        <p class="co-hinweis">Ein Erwartungshorizont trägt in der ersten Zeile, wie die Aufgabe bewertet
+        wird: <code>[moodle-ai-freitext: kurztest]</code> oder <code>[moodle-ai-freitext: klausur]</code>
+        (ältere Horizonte: <code>[moodle-ai-coach]</code> bzw. <code>[moodle-ai-grader]</code>).
+        Klausur-Aufgaben werden hier <strong>immer</strong> übersprungen. Das Häkchen betrifft nur Aufgaben
+        <em>ohne</em> Marker: aus (Standard) werden sie hier bewertet, wenn ihr Horizont wie ein Kurztest
+        aussieht, und im Ergebnis gemeldet; an bleiben sie liegen.</p>
+      </details>
       <button class="co-optsave">Speichern</button>
       <button class="co-optreset co-zweit">Alles zurücksetzen</button>
       <p class="co-optinfo co-hidden"></p>
@@ -1598,12 +1707,7 @@ ${DATEN_PLATZHALTER}`;
   }
   function abzugInfo() {
     const v = abzugWert();
-    $('.co-abzuginfo').textContent = v === 0
-      ? 'Sprache zählt nicht für die Punkte. Das Sprachfeedback wird trotzdem geschrieben.'
-      : `Höchstabzug ${prozentText(v)} %. Ein Fehler kostet ${prozentText(Math.round(v / 3 * 10) / 10)} %, `
-        + `zwei ${prozentText(Math.round(v / 2 * 10) / 10)} %, drei ${prozentText(Math.round(v * 2 / 3 * 10) / 10)} %, `
-        + `vier ${prozentText(Math.round(v * 5 / 6 * 10) / 10)} %, ab fünf ${prozentText(v)} %. `
-        + 'Schwere Fehler zählen doppelt.';
+    $('.co-abzuginfo').textContent = rsErklaerung(v, 'der Aufgabenpunkte');
   }
   function kiVorschau() {
     const p = $('.co-kivorschau');
@@ -1616,23 +1720,57 @@ ${DATEN_PLATZHALTER}`;
   $('.co-abzug').addEventListener('input', abzugInfo);
   $('.co-abzug').addEventListener('change', async () => {
     abzugInfo(); await optionenSpeichern({ maxSprachabzug: abzugWert() });
+    // Derselbe Wert gilt im Klausur-Weg: je Stufe gemeinsam speichern.
+    const k = stufeVon(rolleAktuell().jahrgang) === 'sek2' ? 'rsSek2' : 'rsSek1';
+    RAHMEN[k] = abzugWert();
+    await gemeinsamSpeichern(k, String(abzugWert()));
+    abzugFeldAktualisieren();
+  });
+  function abzugFeldAktualisieren() {
+    const f = $('.co-abzug');
+    const r = rolleAktuell();
+    if (f) { f.value = String(rsStandard()); abzugInfo(); }
+    const l = $('.co-abzuglabel');
+    if (l) l.textContent = 'Rechtschreibung: Höchstabzug in % der Aufgabenpunkte – '
+      + (stufeVon(r.jahrgang) === 'sek2' ? 'Oberstufe (ab Jahrgang 11)' : 'Sekundarstufe I (bis Jahrgang 10)');
+    const a = $('.co-anrede'); if (a) a.value = RAHMEN.anredeWahl || 'auto';
+    const fuss = $('.co-kastenfuss');
+    if (fuss) fuss.textContent = 'Im Feedback steht „' + (r.anrede === 'sie' ? 'Sie haben' : 'Du hast') + ' …"'
+      + (r.jahrgang ? ' · Jahrgang ' + r.jahrgang : ' · Jahrgang unbekannt (Horizont ohne Angabe)') + '.';
+  }
+  async function gemeinsamSpeichern(feld, wert) {
+    try {
+      const rr = await browser.storage.local.get(['magSettings']);
+      const m = (rr && rr.magSettings) || {};
+      m[feld] = wert;
+      await browser.storage.local.set({ magSettings: m });
+    } catch (e) { /* ohne Speicher bleibt es beim lokalen Wert */ }
+  }
+  $('.co-anrede').addEventListener('change', async () => {
+    RAHMEN.anredeWahl = $('.co-anrede').value;
+    await gemeinsamSpeichern('anredeWahl', RAHMEN.anredeWahl);
+    abzugFeldAktualisieren();
   });
   $('.co-nurmarker').addEventListener('change', async (e) => {
     await optionenSpeichern({ nurMitMarker: e.target.checked });
   });
 
   optionenLaden().then(() => {
-    $('.co-abzug').value = prozentText(optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug);
+    abzugFeldAktualisieren();
     $('.co-kitext').value = optionen.kiHinweisText || KI_HINWEIS_STANDARD;
     // Ein leeres Feld, das „Standard" bedeutet, ist eine Blackbox: man sieht nicht,
     // was tatsächlich verschickt wird. Deshalb steht hier immer der volle Text.
     // Gespeichert wird nur, was vom Standard abweicht.
-    $('.co-prompt').value = optionen.promptOverride || bewertungsPromptVorlage();
+    $('.co-prompt').value = optionen.promptOverride || vorlageAktiv();
     $('.co-hprompt').value = optionen.horizontPromptOverride || horizontPromptVorlage();
     $('.co-nurmarker').checked = !!optionen.nurMitMarker;
     $('.co-kompakt').checked = !!optionen.kompaktPrompt;
+    $('.co-kian').checked = optionen.kiHinweis !== false;
+    $('.co-ki').checked = optionen.kiHinweis !== false;
+    $('.co-quellen').checked = optionen.entferneQuellen !== false;
     abzugInfo(); kiVorschau();
   });
+  $('.co-kistd').addEventListener('click', () => { $('.co-kitext').value = KI_HINWEIS_STANDARD; });
 
   function optInfo(t) {
     const i = $('.co-optinfo');
@@ -1644,8 +1782,13 @@ ${DATEN_PLATZHALTER}`;
       maxSprachabzug: abzugWert(),
       nurMitMarker: $('.co-nurmarker').checked,
       kompaktPrompt: $('.co-kompakt').checked,
+      kiHinweis: $('.co-kian').checked,
+      entferneQuellen: $('.co-quellen').checked,
       kiHinweisText: $('.co-kitext').value.trim() || KI_HINWEIS_STANDARD
     });
+    $('.co-ki').checked = optionen.kiHinweis !== false;
+    // Der Bewertungsprompt haengt am kompakten Schalter: Feld neu fuellen, wenn kein eigener.
+    if (!optionen.promptOverride) $('.co-prompt').value = vorlageAktiv();
     $('.co-kitext').value = optionen.kiHinweisText;
     abzugInfo(); kiVorschau(); optInfo('Gespeichert ✓');
     // Der Einstellungs-Reiter schliesst sich nach dem Speichern von selbst. Bleibt er
@@ -1663,14 +1806,14 @@ ${DATEN_PLATZHALTER}`;
     setTimeout(() => (knopf.textContent = urText), 2000);
   }
   $('.co-promptstd').addEventListener('click', () => {
-    $('.co-prompt').value = bewertungsPromptVorlage();
+    $('.co-prompt').value = vorlageAktiv();
     kurzQuittung($('.co-promptstd'), '✓ eingefügt', 'Standard einfügen');
   });
   $('.co-promptsave').addEventListener('click', async () => {
     const v = $('.co-prompt').value.trim();
     // Deckungsgleich mit dem Standard = kein eigener Prompt. Sonst friert man die
     // mitgelieferte Fassung ein und bekommt spätere Verbesserungen nicht mehr mit.
-    const eigen = (v === bewertungsPromptVorlage().trim()) ? '' : v;
+    const eigen = (v === vorlageAktiv().trim() || v === bewertungsPromptVorlage().trim()) ? '' : v;
     await optionenSpeichern({ promptOverride: eigen });
     kurzQuittung($('.co-promptsave'), eigen ? '✓ eigener Prompt gespeichert' : '✓ Standard',
                  'Prompt speichern');
@@ -1687,12 +1830,13 @@ ${DATEN_PLATZHALTER}`;
                  'Prompt speichern');
   });
   $('.co-optreset').addEventListener('click', async () => {
-    await optionenSpeichern({ ...OPT_STANDARD });
+    await optionenSpeichern({ ...OPT_STANDARD, ...GEMEINSAM_STANDARD });
+    $('.co-kian').checked = true; $('.co-ki').checked = true; $('.co-quellen').checked = true;
     $('.co-abzug').value = prozentText(OPT_STANDARD.maxSprachabzug);
     $('.co-nurmarker').checked = OPT_STANDARD.nurMitMarker;
     $('.co-kompakt').checked = OPT_STANDARD.kompaktPrompt;
     $('.co-kitext').value = KI_HINWEIS_STANDARD;
-    $('.co-prompt').value = bewertungsPromptVorlage();
+    $('.co-prompt').value = vorlageAktiv();
     $('.co-hprompt').value = horizontPromptVorlage();
     abzugInfo(); kiVorschau();
     optInfo('Auf Standard zurückgesetzt — auch die Prompts in Reiter 1 und 3.');
@@ -1728,7 +1872,7 @@ ${DATEN_PLATZHALTER}`;
       $('.co-summary').textContent =
         `${m.antworten} Antworten auf ${Object.keys(ausgabe.fragen).length} Freitextfragen · `
         + `${mitH.length} mit Horizont, ${ohneH.length} ohne · ${m.uebersprungen} übersprungen`
-        + (fremde.length ? ` · ${fremde.length} nicht für den Coach` : '')
+        + (fremde.length ? ` · ${fremde.length} Klausur-Aufgabe(n), siehe unten` : '')
         + (nachgeladen ? ` · ${nachgeladen} Horizont(e) aus der neuesten Fragenfassung geholt` : '');
 
       const warn = $('.co-warn');
@@ -1743,7 +1887,8 @@ ${DATEN_PLATZHALTER}`;
       // auf, ohne die Fragen ein zweites Mal von Moodle zu laden.
       function zeichnenProzentbox() {
         const prozentBox = $('.co-prozentbox'); prozentBox.innerHTML = '';
-        const aktuellerProzent = optionen.maxSprachabzug ?? OPT_STANDARD.maxSprachabzug;
+        prozentBox.classList.add('co-hidden'); return;   // ab 0.9: eine Quelle, kein Abgleich mehr
+        const aktuellerProzent = rsStandard();
         const prozentAbweichend = Object.values(ausgabe.fragen)
           .filter((f) => f.horizont && f.horizontProzent != null && f.horizontProzent !== aktuellerProzent);
         if (!prozentAbweichend.length) { prozentBox.classList.add('co-hidden'); return; }
@@ -1817,9 +1962,9 @@ ${DATEN_PLATZHALTER}`;
         if (ohneMarker.length) {
           zustBox.appendChild(el('div', 'co-zustkopf',
             `⚠ ${ohneMarker.length} Frage(n) haben einen Horizont, aber keinen Marker — sie `
-            + 'wurden mitbewertet. Trag den Marker nach, dann ist die Zuständigkeit dauerhaft geklärt.'));
+            + 'wurden mitbewertet. Markiere sie als Kurztest (Knopf unten), dann ist die Zuständigkeit dauerhaft geklärt.'));
           ohneMarker.forEach((f) => zustBox.appendChild(el('div', 'co-logzeile', f.name)));
-          const urText = `${MARKER_ZEILE} in ${ohneMarker.length} Frage(n) nachtragen`;
+          const urText = ohneMarker.length === 1 ? 'Diese Frage als Kurztest markieren' : `Diese ${ohneMarker.length} Fragen als Kurztest markieren`;
           const nach = el('button', 'co-marker co-zweit', urText);
           let bestaetigt = false, rueckfallUhr = null;
           nach.addEventListener('click', async () => {
@@ -1862,21 +2007,16 @@ ${DATEN_PLATZHALTER}`;
             nach.textContent = `${ok} nachgetragen`
               + (schlecht.length ? `, ${schlecht.length} fehlgeschlagen` : '');
             if (ok) zustBox.appendChild(el('div', 'co-logzeile',
-              'Bitte „Freitextaufgaben durchsuchen" noch einmal laufen lassen — dann liest '
+              'Bitte „Kurztest-Aufgaben durchsuchen" noch einmal laufen lassen — dann liest '
               + 'die Erweiterung den neuen Stand.'));
           });
           zustBox.appendChild(nach);
 
           // Zweiter Weg: Wer nicht weiss, was in diesen Fragen ueberhaupt steht, will den
           // Horizont oft lieber neu schreiben als einen fremden nur mit Marker versehen.
-          const neuSchreiben = el('button', 'co-hneu co-zweit', 'Horizont neu schreiben');
-          neuSchreiben.title = 'Springt zu Reiter 3 und nimmt diese Fragen in den Prompt auf';
-          neuSchreiben.addEventListener('click', () => {
-            $('.co-halle').checked = true;
-            hcopyBeschriften();
-            reiterZeigen('horizont');
-            $('.co-hcopy').scrollIntoView({ block: 'nearest' });
-          });
+          const neuSchreiben = el('button', 'co-hneu co-zweit', 'Horizonte einzeln überarbeiten →');
+          neuSchreiben.title = 'Springt zu Reiter 3: Liste aller Aufgaben mit Links zum Bearbeiten';
+          neuSchreiben.addEventListener('click', () => reiterZeigen('horizont'));
           zustBox.appendChild(neuSchreiben);
         }
       } else zustBox.classList.add('co-hidden');
@@ -1915,6 +2055,8 @@ ${DATEN_PLATZHALTER}`;
       // dann steht das Häkchen von vornherein.
       if (!ohneH.length && mitH.length) $('.co-halle').checked = true;
       hcopyBeschriften();
+      aufgabenlisteZeigen();
+      abzugFeldAktualisieren();
 
       ernteSichern();
       const gr = bauePrompt(ausgabe).length;
@@ -1929,7 +2071,7 @@ ${DATEN_PLATZHALTER}`;
       $('.co-error').classList.remove('co-hidden');
     } finally {
       $('.co-progress').classList.add('co-hidden');
-      b.disabled = false; b.textContent = 'Freitextaufgaben durchsuchen';
+      b.disabled = false; b.textContent = 'Kurztest-Aufgaben durchsuchen';
     }
   });
 
@@ -1971,10 +2113,51 @@ ${DATEN_PLATZHALTER}`;
     quittung('.co-copy2', '📋 nur JSON', 'eintrag', '.co-json');
   });
 
+  /* ---- Reiter 3: Aufgabenliste mit Links (ab 0.9) ----
+     Horizonte werden nur noch einzeln erstellt: im Frageneditor oder auf der
+     Bewertungsseite der Aufgabe. Hier steht nur, welche Aufgabe was braucht. */
+  function aufgabenlisteZeigen() {
+    const box = $('.co-aufgabenliste');
+    if (!box || !ausgabe) return;
+    box.innerHTML = '';
+    const editorUrl = (qid) => location.origin + '/question/bank/editquestion/question.php?id=' + qid
+      + (CMID ? '&cmid=' + CMID : '');
+    const zeile = (f, art) => {
+      const z = el('div', 'co-aufgabe');
+      const h = f.horizont ? (f.vonFreitext ? 'Horizont aktuell' : 'alter Horizont – bitte überarbeiten')
+        : 'kein Horizont';
+      const angaben = [f.jahrgang ? 'Jg. ' + f.jahrgang : '', f.feedback && f.vonFreitext ? 'Feedback ' + f.feedback : '']
+        .filter(Boolean).join(' · ');
+      z.appendChild(el('div', 'co-aufgabekopf', f.name || ('Aufgabe ' + f.slot)));
+      z.appendChild(el('div', 'co-aufgabestatus' + (f.horizont && f.vonFreitext ? ' co-ok' : ' co-fehlt'),
+        art + ' · ' + h + (angaben ? ' · ' + angaben : '')));
+      const links = el('div', 'co-aufgabelinks');
+      if (f.qid) {
+        const a1 = el('a', 'co-link', 'Im Frageneditor öffnen');
+        a1.href = editorUrl(f.qid); a1.target = '_blank'; a1.rel = 'noopener';
+        links.appendChild(a1);
+      }
+      if (f.qid && f.slot && CMID) {
+        const a2 = el('a', 'co-link', 'Auf der Bewertungsseite öffnen');
+        a2.href = einzelseiteUrl(CMID, { slot: f.slot, qid: f.qid }); a2.target = '_blank'; a2.rel = 'noopener';
+        links.appendChild(a2);
+      }
+      z.appendChild(links);
+      return z;
+    };
+    const kurz = Object.values(ausgabe.fragen || {});
+    const klausur = Object.values(ausgabe.fremde || {});
+    box.appendChild(el('p', 'co-hinweis', 'Frageneditor: für Aufgaben, die noch nicht geschrieben wurden oder '
+      + 'gestaltet werden sollen. Bewertungsseite: für schon geschriebene Tests – dort im Reiter „Horizont".'));
+    kurz.forEach((f) => box.appendChild(zeile(f, 'Kurztest')));
+    klausur.forEach((f) => box.appendChild(zeile(f, f.grund === 'grader' ? 'Klausur' : 'ohne Marker')));
+    if (!kurz.length && !klausur.length) box.appendChild(el('p', 'co-hinweis', 'Keine Freitextaufgaben gefunden.'));
+  }
+
   /* ---- Reiter 2: Eintragen ---- */
 
   const KEINE_ERNTE = 'Zu diesem Test liegen keine ausgelesenen Daten vor. Bitte zuerst in '
-    + 'Reiter 1 „Freitextaufgaben durchsuchen" laufen lassen.';
+    + 'Reiter 1 „Kurztest-Aufgaben durchsuchen" laufen lassen.';
 
   function jsonAusFeld(feld) {
     const roh = feld.value.replace(/^\s*```(?:json)?/, '').replace(/```\s*$/, '').trim();
@@ -2012,12 +2195,12 @@ ${DATEN_PLATZHALTER}`;
         // Musterloesung nur, wenn inhaltlich etwas fehlte — bei voller Punktzahl waere
         // sie eine Belehrung fuer eine richtige Antwort.
         const frageDaten = (ausgabe.fragen && ausgabe.fragen[a.frage]) || {};
-        const r = punkteRechnen(a.max, inhalt, e.fehler, hoechstabzugFuer(frageDaten));
+        const r = punkteRechnen(a.max, inhalt, e.fehler, hoechstabzugFuer(frageDaten), a.antwort);
         // Neue Form: gegliederte Rueckmeldung, aus der das Plugin das HTML baut.
         // Alte Form („text" als fertiger Satz) bleibt gueltig, damit gespeicherte
         // eigene Prompts weiter funktionieren.
         const muster = inhalt < 100 ? kernaussage(frageDaten.horizont) : '';
-        const rmText = rueckmeldungHtml(e.rueckmeldung, muster,
+        const rmText = rueckmeldungHtml(optionen.entferneQuellen ? ohneQuellenTief(e.rueckmeldung) : e.rueckmeldung, muster,
           { inhalt: r.inhaltPunkte, inhaltMax: a.max, abzug: r.abzugPunkte, gewicht: r.gewicht })
           || String(e.text || '').trim();
         raus.push({
@@ -2037,7 +2220,8 @@ ${DATEN_PLATZHALTER}`;
       const seiten = new Set(raus.map((e) => e.slot + '|' + e.qid)).size;
       info.className = 'co-pinfo co-ok';
       info.textContent = `✓ ${raus.length} Bewertungen auf ${seiten} Fragenseiten — bereit. `
-        + 'Punkte und Abzug wurden aus Inhalt und Fehlerzahl berechnet.'
+        + 'Punkte und Abzug wurden aus Inhalt und Fehlerzahl berechnet '
+        + `(Rechtschreib-Höchstabzug ${prozentText(rsStandard())} %).`
         + (ohneText ? ` ⚠ ${ohneText} Eintrag/Einträge ohne Rückmeldungstext.` : '');
 
       // Vergleich mit der bisherigen Bewertung (nur bei schon bewerteten Versuchen)
