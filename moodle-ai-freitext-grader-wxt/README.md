@@ -43,9 +43,30 @@ nichts, bis 2 ein Drittel, bis 3,5 zwei Drittel, darüber alles).
 
 ## Installation
 
-ZIP entpacken, den Ordner für deinen Browser wählen und als entpackte Erweiterung laden
-(Chrome/Edge: Erweiterungen → Entwicklermodus → „Entpackte Erweiterung laden").
+ZIP entpacken. Darin liegt je Browser ein Ordner:
+`moodle-ai-freitext-grader-chrom/`, `moodle-ai-freitext-grader-edge/`,
+`moodle-ai-freitext-grader-firefox/`. Den Ordner an einen festen Platz legen und danach
+nicht mehr verschieben oder umbenennen.
+
 Coach und Grader vorher deaktivieren, sonst erscheinen zwei Panels.
+
+**Chrome / Edge**
+1. `chrome://extensions` bzw. `edge://extensions` öffnen.
+2. Schalter **Entwicklermodus** einschalten.
+3. **„Entpackte Erweiterung laden"** und den Ordner `moodle-ai-freitext-grader-chrom`
+   bzw. `moodle-ai-freitext-grader-edge` wählen (den, in dem `manifest.json` liegt).
+
+**Firefox**
+1. Die `.xpi`-Datei im Ordner `moodle-ai-freitext-grader-firefox` per Doppelklick öffnen
+   (oder in ein offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
+
+Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
+
+**Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
+Version automatisch.
 
 ## Lizenz
 
