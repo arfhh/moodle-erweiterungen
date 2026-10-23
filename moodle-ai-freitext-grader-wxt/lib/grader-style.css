@@ -192,3 +192,11 @@
 .mag-mehr { margin: 4px 0 6px; }
 .mag-mehr > summary { cursor: pointer; font-size: 12px; color: #4a5a6a; }
 .mag-hinweis.fehler { color: #b42318; }
+
+/* Kurztest einzeln (1.1.0): im Reiter „Bewerten" nur Wozu-Kasten und Kurztest-Weg */
+.mag-inhalt.mag-kurztest > :not(.mag-wozu):not(.mag-kurztest-weg) { display: none !important; }
+.mag-kurztest-weg .co-check { display: flex !important; align-items: flex-start; gap: 7px; font-weight: 400;
+  font-size: 12.5px; color: #1f2933; margin: 8px 0; letter-spacing: 0; }
+.mag-kurztest-weg .co-check input { width: auto; display: inline-block; margin: 2px 0 0; flex: none; }
+.mag-kurztest-weg .co-label { font-weight: 600; font-size: 11.5px; color: #5a6672; }
+.mag-kurztest-weg p { font-size: 12.5px; line-height: 1.45; }

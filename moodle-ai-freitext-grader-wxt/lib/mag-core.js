@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.0.1 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.1.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -30,6 +30,7 @@ import { fassungAusAbzeichen, neuesteFassungHorizont } from './gemeinsam/fassung
 import { metaAusText, metaZeilenHtml, istMetaZeile, stufeVon, anredeFuer, NIVEAU_WORT } from './gemeinsam/horizont-meta.js';
 import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
 import { KI_HINWEIS_STANDARD, ohneQuellen, KLAUSUR_KOMPAKT } from './gemeinsam/feedback-optionen.js';
+import { starteCoach } from './coach-core.js';
 import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
 
 export function starteGrader() {
@@ -1614,7 +1615,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
           <option value="0.25">0,25</option><option value="0.5">0,5</option><option value="1">1 – nur ganze Punkte</option>
         </select>
         <details class="mag-details mag-mehr">
-          <summary>Was bedeutet das?</summary>
+          <summary>Was bedeuten Anrede, Rechtschreibung, Punkteschritte und die Angaben aus dem Horizont?</summary>
           <p class="mag-hinweis"><strong>Anrede:</strong> „Automatisch" schreibt bis Jahrgang 10 „Du hast …",
           ab Jahrgang 11 „Sie haben …".</p>
           <p class="mag-hinweis"><strong>Rechtschreibung:</strong> So viel Prozent der Gesamtpunktzahl kann die
@@ -1674,19 +1675,19 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       <textarea data-opt="kiHinweisText" rows="3"></textarea>
       <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="kistandard">Standardtext einsetzen</button>
       <details class="mag-details mag-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „KI-Hinweis“?</summary>
         <p class="mag-hinweis">Unter jedes eingetragene Feedback setzt die Erweiterung diesen Satz, kursiv
         und klein. Er kommt von der Erweiterung, nicht von der KI. Den Wortlaut kannst du ändern.</p>
       </details>
       <label class="mag-haken"><input type="checkbox" data-opt="entferneQuellen"> Quellenangaben entfernen</label>
       <details class="mag-details mag-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „Quellenangaben entfernen“?</summary>
         <p class="mag-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
         entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
       </details>
       <label class="mag-haken"><input type="checkbox" data-opt="kompaktPrompt"> Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
       <details class="mag-details mag-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „Kompakter Prompt“?</summary>
         <p class="mag-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
         „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere Tausend
         Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong> Den
@@ -1753,7 +1754,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   let bewertungen      = null;   // geprüfte Bewertungen
   let eintragungen     = null;   // fertig gerechnete Einträge
   let letzterReiter    = REITER[0][0];
-  let kurztestSeite    = false;  // Einzelseite einer Kurztest-Frage -> auf die Uebersicht verweisen
+  let kurztestSeite    = false;  // Einzelseite einer Kurztest-Frage -> Kurztest-Weg eingebettet
   let mehrereFragen    = false;  // Zufallsfrage ohne qid-Filter -> Korrektur gesperrt
   let reviewTrotzdem   = false;  // zweiter Klick auf „Alle eintragen" trotz ungesehener Karten
 
@@ -1888,23 +1889,33 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     }
   }
 
-  function kurztestSperre(banner) {
-      // Kurztests werden auf der Uebersicht bewertet (alle Kurztest-Fragen in einem Prompt).
-    // Hier im Klausur-Weg passte weder Prompt noch Horizont-Format — deshalb sperren und verweisen.
-    mehrereFragen = true; kurztestSeite = true;
-    banner.hidden = false;
-    banner.textContent = 'Diese Frage ist ein Kurztest. Kurztests werden auf der Übersicht des Tests '
-      + 'bewertet – alle Kurztest-Fragen zusammen in einem Prompt. ';
-    const cmid = new URLSearchParams(location.search).get('id');
-    if (cmid) {
-      const a = document.createElement('a');
-      a.href = uebersichtUrl(cmid); a.textContent = 'Zur Übersicht →';
-      a.className = 'mag-btn mag-btn-ok mag-btn-klein';
-      banner.appendChild(a);
+  // Kurztest auf seiner Bewertungsseite (seit 1.1.0): einzeln bewertbar. Der Reiter
+  // „Bewerten" zeigt dann den Kurztest-Weg (dieselben Prompts, dieselbe Rechnung und
+  // dasselbe Feedback wie auf der Uebersicht) statt des Klausur-Wegs. Horizont und ⚙
+  // bleiben die des Panels.
+  function kurztestEinzeln(banner) {
+    if (kurztestSeite) return;
+    kurztestSeite = true;
+    mehrereFragen = true;            // Klausur-Bewertung hier aus
+    banner.hidden = true;
+    const p = new URLSearchParams(location.search);
+    const cmid = p.get('id'), slot = p.get('slot'), qid = p.get('qid');
+    const kp = panel.querySelector('[data-panel="korrektur"]');
+    if (!kp || !slot || !qid) return;
+    kp.classList.add('mag-kurztest');
+    const wozu = kp.querySelector('.mag-wozu .mag-hinweis');
+    if (wozu) wozu.textContent = 'Diese Frage ist ein Kurztest. Hier bewertest du ihre Antworten einzeln: '
+      + 'Antworten laden, Prompt kopieren, Ergebnis der KI einfügen, eintragen. Maßstab ist der '
+      + 'Erwartungshorizont der Aufgabe (Reiter „Horizont").';
+    const box = el('div', 'mag-kurztest-weg');
+    kp.appendChild(box);
+    const qt = $('.que .qtext');
+    const name = qt ? qt.textContent.replace(/\s+/g, ' ').trim().slice(0, 60) : 'Diese Aufgabe';
+    try {
+      starteCoach({ einzel: { slot, qid, name }, ziel: box, uebersicht: cmid ? uebersichtUrl(cmid) : null });
+    } catch (e) {
+      box.textContent = 'Der Kurztest-Weg ließ sich hier nicht starten: ' + e.message;
     }
-    R('kstatus') && status('kstatus', 'Kurztest – bitte auf der Übersicht bewerten (Link oben).', true);
-    const ks = panel.querySelector('[data-tu="kschreiben"]');
-    if (ks) ks.disabled = true;
   }
 
   /* --- Bearbeiten-URL der Frage, auch von der Bewertungsseite aus --- */
@@ -2353,9 +2364,9 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   // Der Link „Trotzdem nur diese pruefen" setzt teilErlaubt fuer genau diesen Text.
   let teilErlaubt = false;
   function korrekturPruefen() {
-    if (mehrereFragen) return status('kstatus', kurztestSeite
-      ? 'Kurztest – bitte auf der Übersicht bewerten (Link oben).'
-      : 'Gesperrt: Antworten zu mehreren Fragen auf dieser Seite. Bitte jede Frage einzeln über die Übersicht öffnen.', true);
+    if (kurztestSeite) return;
+    if (mehrereFragen) return status('kstatus',
+      'Gesperrt: Antworten zu mehreren Fragen auf dieser Seite. Bitte jede Frage einzeln über die Übersicht öffnen.', true);
     const roh = R('kjson').value.trim();
     if (!roh) return status('kstatus', 'Bitte erst die Antworten der KI einfügen.', true);
     try {
@@ -2707,7 +2718,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       const ks = panel.querySelector('[data-tu="kschreiben"]');
       if (ks) ks.disabled = true;
     } else if (z.wer === 'coach' && KONTEXT === 'bewertung') {
-      kurztestSperre(banner);
+      kurztestEinzeln(banner);
     } else if (!z.horizont && KONTEXT === 'bewertung' && !E.horizontLokal) {
       banner.hidden = false;
       banner.textContent = 'Diese Frage hat noch keinen Erwartungshorizont. '
@@ -2744,7 +2755,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
           const fbNeu = feedbackAusHorizont(HORIZONT_NEU);
           FEEDBACK = (fbNeu && FB_STUFEN[MODUS].some(o => o[0] === fbNeu)) ? fbNeu : FB_STANDARD[MODUS];
           modusAnzeigen(); hinweiseAktualisieren();
-          if (z2.wer === 'coach' && !kurztestSeite) kurztestSperre(banner);
+          if (z2.wer === 'coach' && !kurztestSeite) kurztestEinzeln(banner);
           if (!mehrereFragen) status('kstatus', n + ' Arbeiten auf dieser Seite. Maßstab ist der Horizont der neuesten '
             + 'Fragenfassung (v' + fassung.gesamt + '), nicht der ältere, den Moodle hier anzeigt.');
           horizontStatusAnzeigen();

@@ -242,3 +242,14 @@ textarea.co-hwunsch {
 .co-aufgabestatus.co-fehlt { color: #b45309; }
 .co-aufgabestatus.co-ok { color: #2e7d32; }
 .co-aufgabelinks { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
+
+/* Eingebettet in den Reiter „Bewerten" der Bewertungsseite (Kurztest einzeln, seit 1.1.0) */
+.co-panel.co-eingebettet { position: static; width: auto; max-height: none; box-shadow: none;
+  border: none; border-radius: 0; z-index: auto; display: block; }
+.co-panel.co-eingebettet .co-body { padding-left: 0; padding-right: 0; }
+.co-schritttitel { font-weight: 600; margin: 14px 0 6px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+.co-uebersichtshinweis { margin: 8px 0; }
+.co-uebersichtlink { display: block; text-align: center; text-decoration: none; padding: 8px; margin-bottom: 8px;
+  border: 1px solid #93c5fd; border-radius: 6px; color: #1d4ed8; background: #fff; font-weight: 600; }
+.co-hzhinweis a { cursor: pointer; color: #1d4ed8; text-decoration: underline; }
+.co-hzregel { background: #eff6ff; border-left: 3px solid #2563eb; padding: 6px 8px; border-radius: 4px; }

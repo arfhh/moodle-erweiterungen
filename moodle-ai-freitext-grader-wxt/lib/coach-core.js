@@ -31,8 +31,9 @@ import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './
 import { KI_HINWEIS_STANDARD, GEMEINSAME_OPTIONEN, GEMEINSAM_STANDARD, ohneQuellenTief } from './gemeinsam/feedback-optionen.js';
 import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
 
-export function starteCoach() {
+export function starteCoach(opts) {
   'use strict';
+  opts = opts || {};
 
   // Versionsnummer aus dem Manifest — sie steht in der Kopfzeile des Panels, damit
   // nach "↺ neu laden" sofort sichtbar ist, welche Fassung wirklich aktiv ist.
@@ -57,7 +58,12 @@ export function starteCoach() {
 
   const P = new URLSearchParams(location.search);
   if (P.get('mode') !== 'grading') return;
-  if (P.get('slot')) return;                 // Einzelfrageseite gehört dem Grader
+  // Einzelmodus (seit 1.1.0): Auf der Bewertungsseite EINER Kurztest-Frage bettet der
+  // Klausur-Weg dieses Panel in seinen Reiter „Bewerten" ein – gleiche Prompts, gleiche
+  // Rechnung, gleiches Feedback wie auf der Uebersicht, nur fuer diese eine Frage.
+  const EINZEL = opts.einzel || null;
+  const ZIEL = opts.ziel || null;
+  if (P.get('slot') && !EINZEL) return;      // Einzelfrageseite gehört dem Klausur-Weg
   // Sind die automatisch bewerteten Fragen eingeblendet, gehoert die Seite dem
   // Moodle AI Reviewer — dort geht es um Cloze- und Kurzantwort-Luecken, nicht um
   // unbewertete Freitextantworten. Spiegelbild zur Pruefung im Reviewer, damit sich
@@ -416,6 +422,7 @@ export function starteCoach() {
   // Die Übersichtstabelle listet je Pool-Frage eine Zeile mit gleichbleibender
   // Slot-Nummer. Genau diese Paare laufen wir ab.
   function uebersichtsZeilen() {
+    if (EINZEL) return [{ slot: String(EINZEL.slot), qid: String(EINZEL.qid), name: EINZEL.name || 'Diese Aufgabe', summe: null }];
     const t = document.querySelector('table');
     if (!t) return [];
     return [...t.querySelectorAll('tbody tr')].map((tr) => {
@@ -576,7 +583,7 @@ export function starteCoach() {
       while (warteschlange.length) {
         const z = warteschlange.shift();
         try {
-          const { bloecke } = await seiteAllerVersucheLaden(z, 8);
+          const { bloecke } = await seiteAllerVersucheLaden(z, EINZEL ? 3 : 8);
           const res = await werteSeiteAus(bloecke, z);
           if (!res) { keinEssay++; }
           else {
@@ -585,7 +592,7 @@ export function starteCoach() {
             // Fremd ist eine Frage, die ausdruecklich dem Grader gehoert — und im
             // strengen Modus zusaetzlich jede ohne Coach-Marker.
             const fuerAnderen = zust === 'grader';
-            const strengRaus = optionen.nurMitMarker && zust !== 'coach';
+            const strengRaus = optionen.nurMitMarker && zust !== 'coach' && !EINZEL;
             if (fuerAnderen || strengRaus) {
               if (!fremde[schluessel]) {
                 fremde[schluessel] = {
@@ -1448,9 +1455,9 @@ ${DATEN_PLATZHALTER}`;
     bild.addEventListener('error', () => { bild.remove(); knopf.textContent = 'Co'; });
     knopf.appendChild(bild);
   } catch (e) { knopf.textContent = 'Co'; }
-  document.body.appendChild(knopf);
+  if (!ZIEL) document.body.appendChild(knopf);
 
-  const panel = el('div', 'co-panel co-hidden');
+  const panel = el('div', ZIEL ? 'co-panel co-eingebettet' : 'co-panel co-hidden');
   panel.innerHTML = `
     <div class="co-head">
       <div class="co-titelblock">
@@ -1462,7 +1469,7 @@ ${DATEN_PLATZHALTER}`;
     <div class="co-tabs">
       <button class="co-tab co-aktiv" data-tab="lesen">1 · Bewerten</button>
       <button class="co-tab" data-tab="eintrag">2 · Eintragen</button>
-      <button class="co-tab" data-tab="horizont">3 · Aufgaben <span class="co-badge co-hidden"></span></button>
+      <button class="co-tab" data-tab="horizont">3 · Horizonte <span class="co-badge co-hidden"></span></button>
       <button class="co-tab" data-tab="opt">⚙</button>
     </div>
 
@@ -1489,7 +1496,7 @@ ${DATEN_PLATZHALTER}`;
         </label>
         <p class="co-abzuginfo"></p>
         <details class="co-details co-mehr">
-          <summary>Was bedeutet das?</summary>
+          <summary>Was bedeuten Anrede und Rechtschreibung?</summary>
           <p class="co-hinweis"><strong>Anrede:</strong> „Automatisch" schreibt bis Jahrgang 10 „Du hast …",
           ab Jahrgang 11 „Sie haben …". Der Jahrgang steht im Erwartungshorizont der Aufgaben.</p>
           <p class="co-hinweis"><strong>Rechtschreibung:</strong> So viel Prozent der Aufgabenpunkte kann die
@@ -1507,9 +1514,15 @@ ${DATEN_PLATZHALTER}`;
       <div class="co-progress co-hidden"><div class="co-bar"></div><span class="co-ptext"></span></div>
       <div class="co-result co-hidden">
         <p class="co-summary"></p>
+        <p class="co-hinweis co-hzhinweis co-hidden"></p>
         <p class="co-warn co-hidden"></p>
         <div class="co-prozentbox co-hidden"></div>
         <div class="co-zust co-hidden"></div>
+        <div class="co-uebersichtshinweis co-hidden">
+          <p class="co-hinweis">Mehrere Kurztests lassen sich auch auf einmal bewerten: auf der Übersicht des
+          Tests, alle Kurztest-Fragen zusammen in einem Prompt.</p>
+          <a class="co-zweit co-uebersichtlink">Zur Übersicht →</a>
+        </div>
         <button class="co-copy">📋 Prompt + Daten kopieren</button>
         <button class="co-copy2 co-zweit">📋 nur JSON</button>
         <p class="co-groesse"></p>
@@ -1559,6 +1572,9 @@ ${DATEN_PLATZHALTER}`;
         immer für <strong>eine</strong> Aufgabe – im Frageneditor oder auf ihrer Bewertungsseite (Reiter
         „Horizont"). Nur dort lassen sich Modus, Feedbacklänge, Fach, Jahrgang und Niveau einstellen.</p>
       </details>
+      <p class="co-hinweis co-hzregel"><strong>Horizonte entstehen Aufgabe für Aufgabe.</strong> Öffne die
+      Aufgabe über einen der Links unten – im Frageneditor oder auf ihrer Bewertungsseite – und erstelle
+      oder überarbeite ihren Horizont dort im Reiter „Horizont“.</p>
       <div class="co-aufgabenliste"><p class="co-hinweis">Erst in Reiter 1 „Kurztest-Aufgaben durchsuchen" –
       dann stehen hier alle Aufgaben mit ihren Links.</p></div>
       <div class="co-hidden co-althorizont">
@@ -1621,20 +1637,20 @@ ${DATEN_PLATZHALTER}`;
       </label>
       <button class="co-kistd co-zweit">Standardtext einsetzen</button>
       <details class="co-details co-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „KI-Hinweis“?</summary>
         <p class="co-hinweis">Unter jedes eingetragene Feedback setzt die Erweiterung diesen Satz, kursiv
         und klein. Er kommt von der Erweiterung, nicht von der KI. Den Wortlaut kannst du ändern.</p>
       </details>
       <label class="co-check"><input type="checkbox" class="co-quellen"> Quellenangaben entfernen</label>
       <details class="co-details co-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „Quellenangaben entfernen“?</summary>
         <p class="co-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
         entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
       </details>
       <label class="co-check"><input type="checkbox" class="co-kompakt">
         Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
       <details class="co-details co-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „Kompakter Prompt“?</summary>
         <p class="co-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
         „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere Tausend
         Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong> Den
@@ -1644,7 +1660,7 @@ ${DATEN_PLATZHALTER}`;
       <label class="co-check"><input type="checkbox" class="co-nurmarker">
         Nur Fragen bewerten, die als Kurztest markiert sind</label>
       <details class="co-details co-mehr">
-        <summary>Was bedeutet das?</summary>
+        <summary>Was bedeutet „Nur markierte Fragen bewerten“?</summary>
         <p class="co-hinweis">Ein Erwartungshorizont trägt in der ersten Zeile, wie die Aufgabe bewertet
         wird: <code>[moodle-ai-freitext: kurztest]</code> oder <code>[moodle-ai-freitext: klausur]</code>
         (ältere Horizonte: <code>[moodle-ai-coach]</code> bzw. <code>[moodle-ai-grader]</code>).
@@ -1656,7 +1672,7 @@ ${DATEN_PLATZHALTER}`;
       <button class="co-optreset co-zweit">Alles zurücksetzen</button>
       <p class="co-optinfo co-hidden"></p>
     </div>`;
-  document.body.appendChild(panel);
+  (ZIEL || document.body).appendChild(panel);
   panel.querySelector('.co-version').textContent = VERSION;
 
   const $ = (s) => panel.querySelector(s);
@@ -1664,7 +1680,7 @@ ${DATEN_PLATZHALTER}`;
 
   // Den Auslese-Durchlauf sichern. Ohne das ist er nach jedem Neuladen der Seite weg
   // und Reiter 2 kann die Punkte nicht mehr rechnen — man müsste alles neu durchsuchen.
-  const ERNTE_KEY = 'coachErnte_' + CMID;
+  const ERNTE_KEY = 'coachErnte_' + CMID + (EINZEL ? '_slot' + EINZEL.slot : '');
   function ernteSichern() {
     try { browser.storage.local.set({ [ERNTE_KEY]: ausgabe }); } catch (e) { /* egal */ }
   }
@@ -1681,8 +1697,33 @@ ${DATEN_PLATZHALTER}`;
   } catch (e) { /* egal */ }
 
   knopf.addEventListener('click', () => panel.classList.toggle('co-hidden'));
+  if (ZIEL) {
+    // Eingebettet: kein eigener Kopf, keine Reiter – „Bewerten" und „Eintragen" stehen
+    // untereinander. Horizont und ⚙ gibt es im umgebenden Panel.
+    panel.querySelector('.co-head').classList.add('co-hidden');
+    panel.querySelector('.co-tabs').classList.add('co-hidden');
+    panel.querySelectorAll('[data-panel="horizont"], [data-panel="opt"]').forEach((x) => x.classList.add('co-hidden'));
+    panel.querySelector('[data-panel="eintrag"]').classList.remove('co-hidden');
+    const wl = panel.querySelector('[data-panel="lesen"] .co-wozu'); if (wl) wl.classList.add('co-hidden');
+    const we = panel.querySelector('[data-panel="eintrag"] .co-wozu'); if (we) we.classList.add('co-hidden');
+    const go = panel.querySelector('.co-go'); if (go) go.textContent = 'Antworten dieser Aufgabe laden';
+    const kh = [...panel.querySelectorAll('[data-panel="lesen"] .co-hinweis')].find((p) => /Klausur-Aufgaben in diesem Test/.test(p.textContent));
+    if (kh) kh.classList.add('co-hidden');
+    const ue = panel.querySelector('.co-uebersichtshinweis');
+    if (ue && opts.uebersicht) {
+      ue.classList.remove('co-hidden');
+      const a = ue.querySelector('.co-uebersichtlink'); a.href = opts.uebersicht;
+    }
+    const zw = el('p', 'co-schritttitel', 'Ergebnis der KI einfügen und eintragen');
+    panel.querySelector('[data-panel="eintrag"]').prepend(zw);
+  }
   $('.co-close').addEventListener('click', () => panel.classList.add('co-hidden'));
   function reiterZeigen(name) {
+    if (ZIEL) {
+      const b = panel.querySelector('[data-panel="' + name + '"]');
+      if (b && (name === 'lesen' || name === 'eintrag')) b.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     panel.querySelectorAll('.co-tab').forEach((x) =>
       x.classList.toggle('co-aktiv', x.dataset.tab === name));
     panel.querySelectorAll('[data-panel]').forEach((p) =>
@@ -1927,7 +1968,7 @@ ${DATEN_PLATZHALTER}`;
             `↷ ${fuerGrader.length} Klausur-Frage(n) — werden auf ihrer Einzelseite bewertet, hier übersprungen.`));
           // Rundgang: Klausur-Fragen als Links, Liste fuer die Einzelseiten ablegen.
           const klausurListe = fuerGrader.map((f) => ({ slot: f.slot, qid: f.qid, name: f.name }));
-          rundgangSpeichern(CMID, klausurListe);
+          if (!EINZEL) rundgangSpeichern(CMID, klausurListe);
           fuerGrader.forEach((f) => {
             const a = el('a', 'co-logzeile', '→ ' + f.name);
             a.href = einzelseiteUrl(CMID, f);
@@ -2015,15 +2056,13 @@ ${DATEN_PLATZHALTER}`;
           // Zweiter Weg: Wer nicht weiss, was in diesen Fragen ueberhaupt steht, will den
           // Horizont oft lieber neu schreiben als einen fremden nur mit Marker versehen.
           const neuSchreiben = el('button', 'co-hneu co-zweit', 'Horizonte einzeln überarbeiten →');
-          neuSchreiben.title = 'Springt zu Reiter 3: Liste aller Aufgaben mit Links zum Bearbeiten';
+          neuSchreiben.title = 'Springt zu Reiter 3 · Horizonte: Liste aller Aufgaben mit Links';
           neuSchreiben.addEventListener('click', () => reiterZeigen('horizont'));
           zustBox.appendChild(neuSchreiben);
         }
       } else zustBox.classList.add('co-hidden');
 
       const badge = panel.querySelector('.co-badge');
-      badge.classList.toggle('co-hidden', !ohneH.length);
-      badge.textContent = ohneH.length || '';
 
       const liste = $('.co-list'); liste.innerHTML = '';
       Object.values(ausgabe.fragen).forEach((f) => {
@@ -2071,7 +2110,7 @@ ${DATEN_PLATZHALTER}`;
       $('.co-error').classList.remove('co-hidden');
     } finally {
       $('.co-progress').classList.add('co-hidden');
-      b.disabled = false; b.textContent = 'Kurztest-Aufgaben durchsuchen';
+      b.disabled = false; b.textContent = EINZEL ? 'Antworten dieser Aufgabe neu laden' : 'Kurztest-Aufgaben durchsuchen';
     }
   });
 
@@ -2152,6 +2191,22 @@ ${DATEN_PLATZHALTER}`;
     kurz.forEach((f) => box.appendChild(zeile(f, 'Kurztest')));
     klausur.forEach((f) => box.appendChild(zeile(f, f.grund === 'grader' ? 'Klausur' : 'ohne Marker')));
     if (!kurz.length && !klausur.length) box.appendChild(el('p', 'co-hinweis', 'Keine Freitextaufgaben gefunden.'));
+    // Reiter 1 und Abzeichen: wie viele Aufgaben brauchen einen (neuen) Horizont?
+    const offen = [...kurz, ...klausur].filter((f) => !(f.horizont && f.vonFreitext)).length;
+    const badge = panel.querySelector('.co-badge');
+    if (badge) { badge.textContent = offen ? String(offen) : ''; badge.classList.toggle('co-hidden', !offen || !!EINZEL); }
+    const hh = $('.co-hzhinweis');
+    if (hh) {
+      hh.innerHTML = '';
+      hh.classList.toggle('co-hidden', !offen || !!EINZEL);
+      if (offen && !EINZEL) {
+        hh.appendChild(document.createTextNode(offen + (offen === 1 ? ' Aufgabe hat' : ' Aufgaben haben')
+          + ' keinen aktuellen Horizont. '));
+        const a = el('a', null, 'Zu Reiter 3 · Horizonte →');
+        a.addEventListener('click', () => reiterZeigen('horizont'));
+        hh.appendChild(a);
+      }
+    }
   }
 
   /* ---- Reiter 2: Eintragen ---- */
@@ -2313,7 +2368,12 @@ ${DATEN_PLATZHALTER}`;
         // Ohne Fehler gibt es nichts mehr nachzusehen: das Panel schließt sich selbst,
         // damit das Ende sichtbar ist. Mit Fehlern bleibt es offen — sonst verschwände
         // genau die Zeile, die man lesen muss. Ein Klick ins Panel bricht ab.
-        if (!trocken) {
+        if (!trocken && EINZEL) {
+          // Einzelseite: Das Formular unten zeigt noch den alten Stand. Neu laden, damit
+          // niemand mit Moodles „Speichern" die eben eingetragenen Werte ueberschreibt.
+          abschluss.textContent = `✓ Fertig — ${r.ok} Einträge, keine Fehler. Die Seite lädt neu und zeigt die neuen Punkte …`;
+          setTimeout(() => location.reload(), 2500);
+        } else if (!trocken) {
           let rest = 3;
           const zaehler = setInterval(() => {
             rest--;
