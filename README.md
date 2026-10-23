@@ -151,7 +151,7 @@ Erweiterung* geladen. Jedes ZIP enthält **drei fertige Ordner**, einen je Brows
    Signierung durch Mozilla oder den Entwicklermodus.
 
 Mehrere Erweiterungen lassen sich gleichzeitig laden; sie kommen sich nicht in die
-Quere. Grader, Reviewer und Coach liegen zwar auf derselben Moodle-Seite, zeigen ihr
+Quere. Freitext Grader und Reviewer liegen zwar auf derselben Moodle-Seite, zeigen ihr
 Panel aber unter verschiedenen Bedingungen und in verschiedenen Farben.
 
 **Update:** denselben ⬇-Link noch einmal aufrufen, den alten Ordnerinhalt ersetzen, in
@@ -189,8 +189,8 @@ Erwartungshorizonts sagt, wie eine Freitextfrage bewertet wird —
 `[moodle-ai-freitext: kurztest]` oder `[moodle-ai-freitext: klausur]`. Der Freitext Grader
 liest auch die alten Marker `[moodle-ai-coach]` und `[moodle-ai-grader]`; alte Horizonte
 sollten aber neu erstellt werden (der alte geht dabei als Vorlage mit).
-**Nicht parallel betreiben:** Wer auf den Freitext Grader umsteigt, schaltet Coach und Grader
-in der Erweiterungsverwaltung aus.
+Wer noch die alten Erweiterungen Coach oder Grader installiert hat, schaltet sie in der
+Erweiterungsverwaltung aus, sonst erscheinen zwei Panels.
 
 **Fang mit einer Frage an.** Alle Erweiterungen, die schreiben, zeigen
 vor dem Eintragen eine Prüfung. Nutze sie beim ersten Mal — und sieh in Moodle nach,
@@ -218,7 +218,7 @@ benutzen. Näheres in der README des Autofill.
   wo es ging, wird primär über Moodle-Feldnamen und IDs gesucht, die
   sprachunabhängig sind. Auf einer englischsprachigen Oberfläche kann trotzdem eine
   Beschriftung nicht erkannt werden — dann bitte ein Issue mit dem sichtbaren Text.
-- Grader, Reviewer und Coach sind an der Moodle-Seite **Manuelle Bewertung**
+- Freitext Grader und Reviewer sind an der Moodle-Seite **Manuelle Bewertung**
   entwickelt und an einem Moodle-4-Theme erprobt. Andere Themes ändern das HTML —
   wenn ein Panel nicht erscheint, liegt es fast immer daran.
 - Um die hinterlegten richtigen Antworten mitzulesen, braucht man das Recht,
@@ -237,14 +237,14 @@ dann, wenn die letzte Stelle 0 ist.
 
 | Stelle | Bedeutet | Beispiel |
 |---|---|---|
-| **x** | Echte neue Fassung: großer Umbau, geänderter Arbeitsablauf | Grader 2.30 → 3.0.0 |
+| **x** | Echte neue Fassung: großer Umbau, geänderter Arbeitsablauf | 2.3.0 → 3.0.0 |
 | **y** | Neue Funktion oder spürbare Erweiterung im bestehenden Ablauf | 1.4.2 → 1.5.0 |
 | **z** | Laufende Anpassung: Fehlerbehebung, Feinschliff, Text, Symbol, Doku | 1.5.6 → 1.5.7 |
 
 Maßgeblich ist immer die `version` in `wxt.config.ts` der jeweiligen Erweiterung
 (dort im Code, seit der WXT-Umstellung nicht mehr in einer separaten `manifest.json`)
-— die Tabelle oben und die READMEs werden danach nachgezogen. Grader, Reviewer und
-Coach zeigen ihre Versionsnummer außerdem in der Kopfzeile ihres Panels — direkt aus
+— die Tabelle oben und die READMEs werden danach nachgezogen. Freitext Grader, Reviewer
+und Aufgaben-Grader zeigen ihre Versionsnummer außerdem in der Kopfzeile ihres Panels — direkt aus
 dem gebauten Manifest gelesen. Nach „↺ neu laden" ist damit ohne Umweg über die
 Erweiterungsverwaltung sichtbar, welche Fassung wirklich läuft.
 
