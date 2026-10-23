@@ -85,18 +85,10 @@ werden".
   gestalten. Auf der Bewerten-Seite eines Tests bewertet er Kurztests gesammelt auf der
   Übersicht und Klausuren auf ihrer Einzelseite – gemeinsam mit der KI Arbeit für Arbeit
   oder automatisch –, rechnet die Punkte und trägt Punkte und Feedback ein.
-- **Moodle AI Grader** *(abgelöst)* — auf der Bewerten-Seite einer Klausurfrage erscheint
-  ein Panel. Es legt zuerst Erwartungshorizont und Antwortvorlage in der
-  Frage an (einmalig, mit Vorschau), danach erzeugt es pro Person einen
-  Bewertungs-Prompt, rechnet aus der KI-Antwort die Punkte und schreibt
-  Note plus begruendetes Feedback in die manuelle Bewertung.
-- **Moodle AI Reviewer** — auf derselben Art Seite, aber bei automatisch
+- **Moodle AI Reviewer** — auf der Bewerten-Seite eines Tests, aber bei automatisch
   ausgewerteten Fragen (Cloze, Kurzantwort, Numerisch): findet frei
   eingetippte Antworten, die Moodle nicht erkannt hat, und traegt fehlende
   Punkte und Kommentare nach.
-- **Moodle AI Coach** *(abgelöst)* — auf der Bewerten-Uebersicht eines Kurztests: liest
-  den in der Frage hinterlegten Erwartungshorizont aus, bewertet kurze
-  Freitextantworten (2–3 Saetze) und gibt zusaetzlich Sprachfeedback.
 - **Moodle AI Aufgaben-Grader** — auf der Bewerten-Uebersicht einer Aufgabe
   (Datei-Abgaben, z. B. PDF-Arbeitshefte) erscheint ein roter Knopf. Er laedt
   alle Abgaben anonymisiert (nur mit Kuerzel statt Klarnamen) als ein ZIP
