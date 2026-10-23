@@ -8,6 +8,21 @@
  *
  * © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
  */
+// HTML sicher in einen Editor-Koerper setzen (seit 1.1.4): ueber DOMParser statt innerHTML,
+// Skripte, eingebettete Objekte und on…-Handler werden vorher entfernt. Mozillas Pruefung
+// (web-ext lint, UNSAFE_VAR_ASSIGNMENT) verlangt das; inhaltlich aendert sich nichts.
+function setzeHtmlSicher(ziel, html) {
+  const dok = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  dok.querySelectorAll('script, iframe, object, embed').forEach((n) => n.remove());
+  dok.querySelectorAll('*').forEach((n) => {
+    [...n.attributes].forEach((a) => {
+      if (/^on/i.test(a.name) || /^\s*javascript:/i.test(a.value)) n.removeAttribute(a.name);
+    });
+  });
+  const zielDok = ziel.ownerDocument || document;
+  ziel.replaceChildren(...[...dok.body.childNodes].map((n) => zielDok.importNode(n, true)));
+}
+
 export function schreibeEditorfeldLive(name, html) {
   const ta = document.querySelector('[name="' + CSS.escape(name) + '"]');
   if (!ta) throw new Error('Feld „' + name + '" nicht im Formular');
@@ -17,13 +32,13 @@ export function schreibeEditorfeldLive(name, html) {
   const id = ta.id || '';
   const ifr = id && document.getElementById(id + '_ifr');
   if (ifr && ifr.contentDocument && ifr.contentDocument.body) {
-    ifr.contentDocument.body.innerHTML = html;
+    setzeHtmlSicher(ifr.contentDocument.body, html);
     ifr.contentDocument.body.dispatchEvent(new Event('input', { bubbles: true }));
     return 'TinyMCE';
   }
   const atto = id && document.getElementById(id + 'editable');
   if (atto) {
-    atto.innerHTML = html;
+    setzeHtmlSicher(atto, html);
     atto.dispatchEvent(new Event('input', { bubbles: true }));
     return 'Atto';
   }

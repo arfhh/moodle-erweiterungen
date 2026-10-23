@@ -1,0 +1,15 @@
+Quelltext von Moodle AI Freitext Grader (unveraendert, nicht gebuendelt/minifiziert).
+
+Bauen der Firefox-Fassung:
+1. Node.js 20 oder neuer installieren (https://nodejs.org)
+2. In diesem Ordner: npm install
+3. Dann: npm run build:firefox
+   (gleichwertig: npx wxt build -b firefox)
+4. Ergebnis liegt danach in Erweiterung/moodle-ai-freitext-grader-firefox/
+   (manifest.json, content-scripts/content.js, content-scripts/content.css, icon/)
+
+Quelltext der Erweiterung: entrypoints/content.ts, lib/*.js, lib/gemeinsam/*.js, lib/*.css
+Gebaut mit WXT (https://wxt.dev). Kein externer Code zur Laufzeit, kein Netzverkehr ausser
+zu der Moodle-Seite, auf der die Erweiterung laeuft. Keine Datensammlung.
+
+Lizenz CC BY-SA 4.0 – T. Henken und A. Spielhoff.

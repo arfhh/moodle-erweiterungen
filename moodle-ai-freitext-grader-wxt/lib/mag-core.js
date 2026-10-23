@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.1.1 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.1.4 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -850,7 +850,7 @@ export function starteGrader() {
     if (!text) {
       if (l1) l1.textContent = '1 · Prompt zum Erstellen des Erwartungshorizonts kopieren';
       if (k1) k1.textContent = '📋 Horizont-Prompt kopieren';
-      if (k3) k3.textContent = '3 · In die Aufgabe eintragen';
+      if (k3) k3.textContent = 'Horizont eintragen';
       if (bis) bis.hidden = true;
       return status('hstatus', 'Noch kein Erwartungshorizont in dieser Aufgabe.'
         + (einstellungenUnvollstaendig() ? ' Bitte unter „Diese Aufgabe" Fach und Jahrgang angeben.' : ''));
@@ -865,7 +865,7 @@ export function starteGrader() {
         + '. Der Prompt nimmt ihn als Vorlage mit; die KI sagt dir, was sie übernimmt und was sie ändert.');
     if (l1) l1.textContent = '1 · Prompt zum Überarbeiten des Erwartungshorizonts kopieren';
     if (k1) k1.textContent = '📋 Horizont-Prompt kopieren';
-    if (k3) k3.textContent = '3 · Vorhandenen Horizont in der Aufgabe ersetzen';
+    if (k3) k3.textContent = 'Vorhandenen Horizont ersetzen';
     if (bis) { bis.hidden = false; const pre = bis.querySelector('pre'); if (pre) pre.textContent = ohneMarker(text); }
   }
 
@@ -1506,6 +1506,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       <button class="mag-btn mag-btn-primary" data-tu="hpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
       <div class="mag-protokoll" data-rolle="hlog" hidden></div>
+      <label data-rolle="hschritt3" hidden>3 · In die Aufgabe eintragen</label>
       <div class="mag-reihe" data-rolle="hknoepfe" hidden></div>
       <details class="mag-details">
         <summary>Kein Bearbeitungsrecht? Horizont hier behalten</summary>
@@ -1733,7 +1734,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   }
   const hknoepfeContainer = panel.querySelector('[data-rolle="hknoepfe"]');
   if (KONTEXT !== 'bearbeiten') {
-    hknoepfeContainer.appendChild(knoepfchen('In die Frage eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
+    hknoepfeContainer.appendChild(knoepfchen('Horizont eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
   }
 
   // Runder Knopf mit dem Erweiterungs-Icon — wie bei Reviewer und Coach.
@@ -1809,7 +1810,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   let horizontKurztest = null;   // Kurztest-Horizont als Text, noch nicht geschrieben
 
   if (KONTEXT === 'bearbeiten') {
-    hknoepfeContainer.appendChild(knoepfchen('3 · In die Aufgabe eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
+    hknoepfeContainer.appendChild(knoepfchen('Horizont eintragen', 'mag-btn mag-btn-ok', 'hschreiben'));
   }
   function modusAnzeigen() {
     const box = R('hmodus');
@@ -1834,7 +1835,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       MODUS = R('hmodussel').value;
       FEEDBACK = FB_STANDARD[MODUS];
       horizontAufgaben = null; horizontKurztest = null;
-      R('hliste').innerHTML = ''; R('hknoepfe').hidden = true;
+      R('hliste').innerHTML = ''; R('hknoepfe').hidden = true; R('hschritt3').hidden = true;
       status('hstatus', 'Modus: ' + (MODUS === 'kurztest' ? 'Kurztest' : 'Klausur')
         + '. Bitte den Prompt jetzt (neu) kopieren.');
       modusAnzeigen();
@@ -2189,10 +2190,10 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
                  + komma(gesamt) + ' ab — die Erweiterung rechnet sie beim Bewerten um.';
       }
       if (KONTEXT === 'bearbeiten') {
-        meldung += '  Dann „3 · In die Aufgabe eintragen".';
+        meldung += '  Dann unten unter Schritt 3 eintragen.';
       }
       status('hstatus', meldung);
-      R('hknoepfe').hidden = false;
+      R('hknoepfe').hidden = false; R('hschritt3').hidden = false;
       hinweiseAktualisieren();
     } catch (e) {
       status('hstatus', 'Konnte nicht gelesen werden: ' + e.message, true);
@@ -2214,8 +2215,8 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       ta.addEventListener('input', () => { horizontKurztest = ta.value; });
       k.appendChild(ta);
       box.appendChild(k);
-      status('hstatus', 'Horizont gelesen. Prüfen, bei Bedarf ändern, dann „In die Frage eintragen".');
-      R('hknoepfe').hidden = false;
+      status('hstatus', 'Horizont gelesen. Prüfen, bei Bedarf ändern, dann unten unter Schritt 3 eintragen.');
+      R('hknoepfe').hidden = false; R('hschritt3').hidden = false;
       modusAnzeigen();
     } catch (e) {
       status('hstatus', 'Konnte nicht gelesen werden: ' + e.message, true);
@@ -2324,9 +2325,14 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
           if (!ok) schlecht++;
         });
         if (!neu) log('⚠ Neue Fragenversion nicht auffindbar — Gegenprobe unsicher.');
-        return status(statusRolle, schlecht
-          ? schlecht + ' Feld(er) nicht angekommen — Protokoll lesen.'
-          : 'In die Frage eingetragen und gegengeprüft.', schlecht > 0);
+        if (schlecht) return status(statusRolle, schlecht + ' Feld(er) nicht angekommen — Protokoll lesen.', true);
+        // Moodle legt beim Speichern eine NEUE Fragenfassung an. Schon geschriebene Versuche
+        // bleiben an ihrer alten Fassung – deshalb zeigt die Seite weiter den alten Horizont.
+        // Die Erweiterung rechnet ab jetzt mit dem neuen (wie beim Laden der neuesten Fassung).
+        if (felder['graderinfo[text]']) HORIZONT_NEU = felder['graderinfo[text]'];
+        return status(statusRolle, 'Als neue Fassung der Frage gespeichert und gegengeprüft. Moodle zeigt auf '
+          + 'dieser Seite weiter den alten Horizont – geschriebene Versuche bleiben in Moodle an der Fassung, '
+          + 'mit der sie geschrieben wurden. Die Erweiterung bewertet ab jetzt nach dem neuen Horizont.');
       }
 
       const r = await schreibeFrageFelder(felder, trocken);

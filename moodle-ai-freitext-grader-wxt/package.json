@@ -1,7 +1,7 @@
 {
   "name": "moodle-ai-freitext-grader",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.1.4",
   "type": "module",
   "scripts": {
     "dev": "node node_modules/wxt/bin/wxt.mjs -b chrom",
@@ -15,7 +15,7 @@
     "lint": "web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-chrom && web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-firefox",
     "postinstall": "node node_modules/wxt/bin/wxt.mjs prepare",
     "paket": "bash scripts/paketieren.sh",
-    "sign:firefox": "web-ext sign --source-dir=Erweiterung/moodle-ai-freitext-grader-firefox --artifacts-dir=web-ext-artifacts --channel=unlisted"
+    "sign:firefox": "web-ext sign --source-dir=\"Erweiterung/moodle-ai-freitext-grader-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\" --artifacts-dir=web-ext-artifacts --channel=unlisted"
   },
   "devDependencies": {
     "wxt": "^0.21.4",

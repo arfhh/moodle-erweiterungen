@@ -18,8 +18,8 @@ SICHERUNG="$(mktemp -d)"
 FF="$OUT/$NAME-firefox"
 if [ -d "$FF" ]; then
   find "$FF" -maxdepth 1 -iname "*.xpi" -exec cp {} "$SICHERUNG/" \;
-  UNTER_ALT="$FF/entpackte-dateien (nicht noetig)"
-  [ -d "$UNTER_ALT" ] && find "$UNTER_ALT" -maxdepth 1 -iname "*-quellcode.zip" -exec cp {} "$SICHERUNG/" \;
+  # Quellcode- und Firefox-ZIPs fuer Mozilla entstehen seit 1.1.3 bei jedem Bau neu
+  # (siehe unten) – alte Fassungen werden nicht mehr aufgehoben.
 fi
 
 # Reste eines frueheren Durchlaufs ZUERST weg — die Builds schreiben direkt in
@@ -37,8 +37,21 @@ for item in manifest.json content-scripts icon; do
   [ -e "$FF/$item" ] && mv "$FF/$item" "$UNTER/"
 done
 find "$SICHERUNG" -maxdepth 1 -iname "*.xpi" -exec cp {} "$FF/" \;
-find "$SICHERUNG" -maxdepth 1 -iname "*-quellcode.zip" -exec cp {} "$UNTER/" \;
 rm -rf "$SICHERUNG"
+
+# Einreichung bei addons.mozilla.org (seit 1.1.3): je Version zwei Dateien im Unterordner –
+#   <name>-<version>-firefox.zip    die gebaute Erweiterung (manifest.json ganz oben)
+#   <name>-<version>-quellcode.zip  der ungebuendelte Quelltext mit BAUANLEITUNG.txt
+# Mozilla verlangt den Quelltext, weil content.js gebuendelt ist. Anleitung: FIREFOX-EINREICHUNG.md
+VERSION="$(node -p "require('./package.json').version")"
+AMO="${TMPDIR:-/tmp}/amo.$$"; rm -rf "$AMO"; mkdir -p "$AMO/ff" "$AMO/src/$NAME"
+(cd "$UNTER" && cp -R manifest.json content-scripts icon "$AMO/ff/")
+(cd "$AMO/ff" && zip -q -r -X "$AMO/$NAME-$VERSION-firefox.zip" .)
+cp -R README.md BAUANLEITUNG.txt FIREFOX-EINREICHUNG.md .gitignore package.json package-lock.json wxt.config.ts entrypoints lib public "$AMO/src/$NAME/"
+find "$AMO/src" -name '.DS_Store' -delete
+(cd "$AMO/src" && zip -q -r -X "$AMO/$NAME-$VERSION-quellcode.zip" "$NAME")
+cp "$AMO/$NAME-$VERSION-firefox.zip" "$AMO/$NAME-$VERSION-quellcode.zip" "$UNTER/"
+rm -rf "$AMO"
 
 # README ist im Repo verfolgt (Erweiterung/ selbst ist gitignored, siehe .gitignore)
 cp "README.md" "$OUT/README.md"
