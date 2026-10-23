@@ -1713,6 +1713,9 @@ ${DATEN_PLATZHALTER}`;
     if (ue && opts.uebersicht) {
       ue.classList.remove('co-hidden');
       const a = ue.querySelector('.co-uebersichtlink'); a.href = opts.uebersicht;
+      // Ganz nach oben: Wer alle Kurztests zusammen bewerten will, soll das sehen,
+      // BEVOR er hier Antworten laedt – nicht erst danach.
+      panel.querySelector('[data-panel="lesen"]').prepend(ue);
     }
     const zw = el('p', 'co-schritttitel', 'Ergebnis der KI einfügen und eintragen');
     panel.querySelector('[data-panel="eintrag"]').prepend(zw);
@@ -1811,7 +1814,7 @@ ${DATEN_PLATZHALTER}`;
     $('.co-quellen').checked = optionen.entferneQuellen !== false;
     abzugInfo(); kiVorschau();
   });
-  $('.co-kistd').addEventListener('click', () => { $('.co-kitext').value = KI_HINWEIS_STANDARD; });
+  $('.co-kistd').addEventListener('click', () => { $('.co-kitext').value = KI_HINWEIS_STANDARD; kurzQuittung($('.co-kistd'), '✓ Eingesetzt – mit „Speichern“ übernehmen', 'Standardtext einsetzen'); });
 
   function optInfo(t) {
     const i = $('.co-optinfo');
@@ -2110,7 +2113,12 @@ ${DATEN_PLATZHALTER}`;
       $('.co-error').classList.remove('co-hidden');
     } finally {
       $('.co-progress').classList.add('co-hidden');
-      b.disabled = false; b.textContent = EINZEL ? 'Antworten dieser Aufgabe neu laden' : 'Kurztest-Aufgaben durchsuchen';
+      b.disabled = false;
+      const urText = EINZEL ? 'Antworten dieser Aufgabe neu laden' : 'Kurztest-Aufgaben durchsuchen';
+      const n = (ausgabe && ausgabe.antworten) ? ausgabe.antworten.length : 0;
+      // Sichtbare Quittung am Knopf – auch wenn das Ergebnis gleich aussieht wie vorher.
+      b.textContent = $('.co-error').classList.contains('co-hidden') ? `✓ Fertig – ${n} Antworten geladen` : '⚠ Nicht fertig – siehe Meldung';
+      setTimeout(() => { b.textContent = urText; }, 2500);
     }
   });
 

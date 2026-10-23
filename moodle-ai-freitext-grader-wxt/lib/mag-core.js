@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.1.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.1.1 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -1934,6 +1934,44 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     if (!n) return;
     n.textContent = text || '';
     n.className = 'mag-status' + (text ? (fehler ? ' fehler' : ' ok') : '');
+    // Jeder Knopf braucht eine sichtbare Rueckmeldung (1.1.1): Steht die Statuszeile
+    // gerade nicht im Blick, erscheint dieselbe Meldung direkt unter dem Knopf.
+    if (text && letzterKnopf && Date.now() - letzterKlick < 4000 && !nahAmKnopf(n, letzterKnopf)) quittung(letzterKnopf, text, fehler);
+  }
+  let letzterKnopf = null, letzterKlick = 0;
+  // Steht die Meldung sichtbar und nah (≤ 120 px) am gedrueckten Knopf?
+  function nahAmKnopf(knoten, knopf) {
+    if (!imBlick(knoten) || !knopf.isConnected) return false;
+    const a = knoten.getBoundingClientRect(), k = knopf.getBoundingClientRect();
+    return Math.abs(a.top - k.bottom) < 120 || Math.abs(k.top - a.bottom) < 120;
+  }
+  function imBlick(knoten) {
+    if (!knoten || knoten.offsetParent === null) return false;
+    const box = knoten.closest('.mag-inhalt') || panel;
+    const a = knoten.getBoundingClientRect(), b = box.getBoundingClientRect();
+    return a.bottom > b.top && a.top < b.bottom && a.height > 0;
+  }
+  function quittung(knopf, text, fehler) {
+    if (!knopf || !knopf.isConnected) return;
+    const anker = knopf.closest('.mag-reihe') || knopf;
+    let q = anker.nextElementSibling;
+    if (!q || !q.classList.contains('mag-quittung')) {
+      q = el('div', 'mag-quittung');
+      anker.insertAdjacentElement('afterend', q);
+    }
+    q.textContent = text;
+    q.classList.toggle('fehler', !!fehler);
+    clearTimeout(q._uhr);
+    q._uhr = setTimeout(() => q.remove(), 6000);
+  }
+  // Knopftext kurz austauschen – fuer Aktionen, deren Ergebnis man nicht sieht (Kopieren).
+  function knopfBestaetigen(knopf, text) {
+    if (!knopf || !knopf.isConnected) return;
+    if (knopf._urText == null) knopf._urText = knopf.textContent;
+    knopf.textContent = text;
+    knopf.classList.add('mag-bestaetigt');
+    clearTimeout(knopf._uhr);
+    knopf._uhr = setTimeout(() => { knopf.textContent = knopf._urText; knopf._urText = null; knopf.classList.remove('mag-bestaetigt'); }, 2500);
   }
   function protokoll(rolle) {
     const n = R(rolle);
@@ -2081,8 +2119,10 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
   // 3 s Countdown, dann steht der Cursor im Einfuegefeld (feldRolle).
   let weiterUhr = null;
   function kopiere(text, rolle, meldung, feldRolle) {
+    const knopf = letzterKnopf;
     navigator.clipboard.writeText(text)
       .then(() => {
+        knopfBestaetigen(knopf, '✓ In die Zwischenablage kopiert');
         const basis = meldung + '  (' + text.length.toLocaleString('de-DE') + ' Zeichen)';
         status(rolle, basis);
         if (!feldRolle || !R(feldRolle)) return;
@@ -2564,8 +2604,14 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       zeige(KONTEXT === 'bearbeiten' ? 'horizont'
             : (letzterReiter === 'einst' ? 'korrektur' : letzterReiter));
     },
-    eabbruch: () => { formularAusEinstellungen(); status('estatus', ''); },
-    kistandard: () => { const t = R('kitext') || panel.querySelector('[data-opt="kiHinweisText"]'); if (t) t.value = KI_HINWEIS_STANDARD; },
+    eabbruch: () => {
+      formularAusEinstellungen(); status('estatus', '');
+      quittung(letzterKnopf, 'Änderungen verworfen – die gespeicherten Einstellungen stehen wieder da.');
+    },
+    kistandard: () => {
+      const t = panel.querySelector('[data-opt="kiHinweisText"]'); if (t) t.value = KI_HINWEIS_STANDARD;
+      quittung(letzterKnopf, 'Standardtext eingesetzt. Mit „Speichern und zurück" übernehmen.');
+    },
 
     psichern: () => {
       const t = R('ptext').value.trim();
@@ -2624,6 +2670,11 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     zeige('prompt');
   }
 
+  // Welcher Knopf wurde zuletzt gedrueckt? Fuer die Rueckmeldung direkt am Knopf.
+  panel.addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (b && !b.classList.contains('mag-tab')) { letzterKnopf = b; letzterKlick = Date.now(); }
+  }, true);
   panel.addEventListener('click', ev => {
     const tab = ev.target.closest('.mag-tab');
     if (tab) {
