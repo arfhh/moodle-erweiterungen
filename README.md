@@ -6,8 +6,8 @@ mit **WXT** aus **einer** Codebasis für Chrome, Firefox und Edge gebaut.
 
 > **Neu: Moodle AI Freitext Grader.** Er vereint **Moodle AI Coach** (Kurztests) und
 > **Moodle AI Grader** (Klausuren) in einer Erweiterung und löst beide ab. Coach und Grader
-> bleiben nur noch so lange zum Download, bis der Freitext Grader im Schulbetrieb fertig
-> erprobt ist. Bitte nicht beide Generationen gleichzeitig aktivieren.
+> gibt es deshalb nicht mehr zum Download. Wer sie noch installiert hat, deaktiviert sie
+> vor dem Umstieg — bitte nicht beide Generationen gleichzeitig aktivieren.
 
 Alle laufen **ausschließlich im Browser**. Keine Erweiterung schickt Daten an einen
 Server, keine hat einen eigenen KI-Zugang und keine braucht einen API-Schlüssel.
@@ -68,11 +68,11 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.0.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
-| ~~Moodle AI Grader~~ · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.1.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
+| ~~Moodle AI Grader~~ · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | — | ⚠ **Abgelöst durch den Freitext Grader**, kein Download mehr. **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
 | **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 1.7.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| ~~Moodle AI Coach~~ · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | [⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip) | ⚠ **Abgelöst durch den Freitext Grader**, nur noch übergangsweise hier. **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
-| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.10.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
+| ~~Moodle AI Coach~~ · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | — | ⚠ **Abgelöst durch den Freitext Grader**, kein Download mehr. **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
+| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
 | **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
@@ -169,14 +169,11 @@ neue Fassung wirklich aktiv ist, verrät die Versionsnummer auf der Kachel.
 **Direktlinks zum Weitergeben** — sie führen immer zur neuesten Fassung:
 
 ```
-moodle-ai-grader
-https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-grader.zip
+moodle-ai-freitext-grader
+https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip
 
 moodle-ai-reviewer
 https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip
-
-moodle-ai-coach
-https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-coach.zip
 
 moodle-ai-aufgaben-grader
 https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip
