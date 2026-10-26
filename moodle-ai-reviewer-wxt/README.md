@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.1.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.1.1 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -446,7 +446,7 @@ Wofür:
   dienen als Anker. Deine eigenen Entscheidungen gehen vor denen der KI.
 - **Zum Pflegen der Fragen:** ⚙ → **„⬇ Als CSV exportieren"** – die Datei enthält alle
   neuen Varianten, die du gebündelt in die Cloze-Lücken übernehmen kannst.
-- **„⬆ CSV importieren"** übernimmt eine vorhandene Sammlung, etwa eine bisher von Hand
+- **„⬆ CSV importieren"** (auch ohne Moodle: `chrome://extensions` → Moodle AI Reviewer → Details → **Erweiterungsoptionen**) übernimmt eine vorhandene Sammlung, etwa eine bisher von Hand
   geführte `Fehlersammlung.csv` oder den Export aus einem anderen Browser. Vorhandene
   Einträge bleiben unverändert.
 
@@ -510,11 +510,15 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.1.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.1.1 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.1.1 (26.10.2026)**
+
+- Fehlersammlung importieren/exportieren auch auf der Einstellungsseite der Erweiterung – geht ohne Moodle (`chrome://extensions` → Details → Erweiterungsoptionen).
 
 **2.1.0 (26.10.2026)**
 

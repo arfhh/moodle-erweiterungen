@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="manifest.open_in_tab" content="true">
-  <title>Moodle AI Reviewer – KI direkt</title>
+  <title>Moodle AI Reviewer – Einstellungen</title>
   <style>
     body { font: 14px/1.5 system-ui, sans-serif; color: #1e293b; background: #f8fafc; margin: 0; padding: 24px 16px; }
     main { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; }
@@ -84,6 +84,19 @@
     <button id="probe">Probeanfrage</button>
   </div>
   <p id="info" class="meldung hidden"></p>
+</main>
+
+<main style="margin-top:16px">
+  <h1>Fehlersammlung</h1>
+  <p class="unter">Hier gesammelte Fälle dienen beim nächsten Test als Vergleich (Anker). Funktioniert auch, wenn Moodle gerade nicht erreichbar ist.</p>
+  <p id="sstand" class="hinweis">…</p>
+  <div class="zeile">
+    <button id="simport">⬆ CSV importieren</button>
+    <button id="sexport">⬇ Als CSV exportieren</button>
+  </div>
+  <input type="file" id="sdatei" accept=".csv,text/csv" class="hidden">
+  <p class="hinweis">Import: z. B. eine bisher von Hand geführte <code>Fehlersammlung.csv</code> oder der Export aus einem anderen Browser. Vorhandene Einträge bleiben unverändert.</p>
+  <p id="sinfo" class="meldung hidden"></p>
 </main>
 <script type="module" src="./main.js"></script>
 </body>

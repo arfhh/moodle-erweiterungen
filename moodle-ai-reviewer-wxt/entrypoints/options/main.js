@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { VORLAGEN, kiLaden, kiSpeichern, istLokal, ursprungMuster, basisNorm } from '../../lib/ki-direkt/einstellungen.js';
 import { kiNachricht, kiFehlerText } from '../../lib/ki-direkt/client.js';
+import { laden as sammlungLaden, alsCsv, csvImportieren } from '../../lib/fehlersammlung.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -109,5 +110,35 @@ $('probe').addEventListener('click', async () => {
     melde('info', `✓ Antwort nach ${(r.ms / 1000).toFixed(1)} s: ${String(r.text).trim().slice(0, 120)}`, true);
   } finally { b.disabled = false; }
 });
+
+/* ---- Fehlersammlung (2.1.1): Import/Export auch ohne Moodle ---- */
+async function sammlungStand() {
+  const alle = Object.values(await sammlungLaden());
+  $('sstand').textContent = alle.length
+    ? `${alle.length} Fälle gesammelt · ${alle.filter((z) => !z.Status || z.Status === 'offen').length} offen.`
+    : 'Noch keine Fälle gesammelt.';
+}
+$('simport').addEventListener('click', () => $('sdatei').click());
+$('sdatei').addEventListener('change', async () => {
+  const f = $('sdatei').files[0];
+  if (!f) return;
+  try {
+    const r = await csvImportieren(await f.text());
+    melde('sinfo', `✓ ${r.neu} Fälle übernommen, ${r.gesamt} insgesamt.`, true);
+    sammlungStand();
+  } catch (e) { melde('sinfo', 'Fehler: ' + e.message, false); }
+  $('sdatei').value = '';
+});
+$('sexport').addEventListener('click', async () => {
+  const d = await sammlungLaden();
+  if (!Object.keys(d).length) { melde('sinfo', 'Nichts zu exportieren – die Sammlung ist leer.', false); return; }
+  const url = URL.createObjectURL(new Blob([alsCsv(d)], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `Fehlersammlung-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  melde('sinfo', `✓ ${Object.keys(d).length} Fälle als CSV heruntergeladen.`, true);
+});
+sammlungStand();
 
 start();

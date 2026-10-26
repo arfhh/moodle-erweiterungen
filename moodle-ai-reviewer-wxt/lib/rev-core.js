@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.1.0
+/* Moodle AI Reviewer v2.1.1
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
