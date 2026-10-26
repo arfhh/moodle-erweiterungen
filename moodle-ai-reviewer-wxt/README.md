@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 1.7.2 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.0.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -18,8 +18,13 @@ Nach einem Kurztest mit Zufallsfragen vergibt Moodle bei frei getippten Antworte
 (Lückentext, Kurzantwort, Numerisch) oft 0 Punkte, obwohl die Antwort inhaltlich richtig
 war — nur eben nicht wortgleich mit der hinterlegten Musterlösung. Diese Erweiterung
 durchsucht den ganzen Test auf einmal, sammelt alle diese unerkannten Antworten und
-legt sie fertig zum Einfügen in einen KI-Chat vor. Die berechneten neuen Punkte trägt
-sie danach automatisch ein.
+legt sie fertig zum Einfügen in einen KI-Chat vor. Die Vorschläge der KI zeigt sie dir
+danach in einer **Vorschau**: Fälle, bei denen sie sich nicht sicher ist, entscheidest du
+mit einem Klick. Erst wenn du „In Moodle eintragen" klickst, werden die Punkte gespeichert.
+
+Wer möchte, kann statt des Kopierens auch **eine KI direkt anbinden** – eine lokale auf
+dem eigenen Rechner oder einen Cloud-Dienst mit eigenem API-Schlüssel. Das ist eine
+Zusatzoption; ohne sie funktioniert alles wie beschrieben.
 
 ### Wo taucht sie in Moodle auf?
 
@@ -157,7 +162,14 @@ Zusätzlich sitzt ihr Knopf (🔎, petrol) etwas tiefer als der des Graders (�
 5. **„Test durchsuchen"** klicken. Die Erweiterung lädt alle Fragen des Tests im
    Hintergrund und zeigt den Fortschritt. Bei ~110 Fragen dauert das ein bis zwei Minuten.
 6. Ergebnisliste prüfen, dann **„📋 Prompt + Daten kopieren"**.
+   (Mit eingerichteter „KI direkt" stattdessen **„⚡ Direkt bewerten"** – dann entfallen 7 und 8.)
 7. Den Block in ChatGPT oder Claude einfügen und abschicken.
+8. Die Antwort der KI (ein JSON-Block) kopieren und in Reiter **2 · Eintragen** einfügen.
+9. In der **Vorschau** die unklaren Fälle entscheiden, **„Weiter: Zusammenfassung"**,
+   dann **„In Moodle eintragen"**.
+
+Wer gar keine KI verwenden will: **„✋ Ohne KI selbst entscheiden"** öffnet die Vorschau
+direkt; nur die festen Regeln (siehe unten) machen Vorschläge.
 
 ---
 
@@ -387,13 +399,90 @@ mitgeschickt — genauso, wie es beim manuellen Speichern der Fall ist.
 
 ---
 
+## Vorschau: welche Fälle „unklar" sind (ab 2.0.0)
+
+Bevor eine KI etwas sieht, entscheidet die Erweiterung selbst nach zwei festen Regeln:
+
+- Die Antwort unterscheidet sich **nur in Groß-/Kleinschreibung** von einer richtigen
+  Lösung → bei Lückentyp SAC 90 %, bei SA 100 %.
+- Die Antwort steht **wörtlich** schon in den bekannten Varianten (im Fragetext oder in
+  deiner Fehlersammlung) → derselbe Wert wie damals.
+
+Diese Fälle gehen gar nicht erst an die KI. Für alle anderen schlägt die KI einen Wert
+und einen kurzen Grund vor. **Unklar** – und damit offen zur Entscheidung – ist ein Fall,
+wenn
+
+- es keine **ähnlich geschriebene** bekannte Variante mit demselben Wert gibt (Anker),
+- der Vorschlag **25 oder 50 %** ist,
+- der Vorschlag **100 % ohne Anker** ist (vielleicht ein Synonym, vielleicht nicht),
+- Regel und KI sich **widersprechen**.
+
+Das entscheidet die Erweiterung, nicht die KI – deshalb verhält sie sich mit jedem
+Sprachmodell gleich. Sichere Fälle stehen eingeklappt darunter und lassen sich ebenfalls
+ändern. Je mehr Fälle deine Fehlersammlung kennt, desto weniger bleibt unklar.
+
+**Feedback:** Die Feedback-Texte gehen standardmäßig mit KI-Hinweis direkt mit. Unter ⚙
+lässt sich **„Feedback vor dem Eintragen anzeigen"** einschalten – dann siehst und änderst
+du jeden Text in der Zusammenfassung.
+
+## Fehlersammlung (ab 2.0.0)
+
+Jeder Fall, den du über die Vorschau einträgst, landet in einer Sammlung in deinem Browser
+(Spalten wie `Fehlersammlung.csv`: Fragename, Lücke, Musterlösung, Schülerantwort,
+Bewertung, Fehlerkategorie, Anzahl, Status, Bemerkung „Lehrkraft" oder „KI: Grund").
+Wofür:
+
+- **Als Vergleich beim nächsten Test:** Varianten, die noch nicht in der Frage stehen,
+  dienen als Anker. Deine eigenen Entscheidungen gehen vor denen der KI.
+- **Zum Pflegen der Fragen:** ⚙ → **„⬇ Als CSV exportieren"** – die Datei enthält alle
+  neuen Varianten, die du gebündelt in die Cloze-Lücken übernehmen kannst.
+- **„⬆ CSV importieren"** übernimmt eine vorhandene Sammlung, etwa eine bisher von Hand
+  geführte `Fehlersammlung.csv` oder den Export aus einem anderen Browser. Vorhandene
+  Einträge bleiben unverändert.
+
+## KI direkt (optional, ab 2.0.0)
+
+Statt Prompt kopieren und Antwort einfügen kann die Erweiterung eine KI selbst fragen.
+**Standard: aus.** Einstellen: ⚙ im Panel → **„KI-Einstellungen öffnen"** (oder
+`chrome://extensions` → Moodle AI Reviewer → Details → **Erweiterungsoptionen**).
+
+| Art | Beispiel | Was du brauchst |
+|---|---|---|
+| **Lokal** – die Daten verlassen deinen Rechner nicht | LM Studio, Ollama, Bionic | das Programm mit einem geladenen Modell; kostenlos |
+| **Cloud** | OpenAI, Anthropic Claude | einen **API-Schlüssel** (ein ChatGPT-/Claude-Abo reicht nicht), Abrechnung nach Verbrauch, und die Klärung, ob das an deiner Schule erlaubt ist |
+
+So geht's:
+
+1. **Vorlage** wählen (füllt die Adresse vor) – oder eine eigene Adresse eintragen.
+   Jeder OpenAI-kompatible Server funktioniert (`…/v1`).
+2. **„Verbindung testen"** – bei einer neuen Adresse fragt der Browser einmal nach der
+   Erlaubnis. Danach erscheint die Liste der Modelle.
+3. Modell wählen, **„KI direkt verwenden"** ankreuzen, **Speichern**, gern
+   **„Probeanfrage"**.
+4. Moodle-Seite neu laden. Nach dem Auslesen erscheint **„⚡ Direkt bewerten"** – aber nur,
+   wenn der Server erreichbar ist. Sonst steht dort ein Hinweis, und der Weg über das
+   Kopieren funktioniert wie gewohnt.
+
+Die Anfragen laufen nacheinander in Paketen (Standard 20 Lücken). Unter **Erweitert**
+lassen sich Wartezeit, Paketgröße und Zusatzparameter ändern (bei Qwen & Co. schalten
+`reasoning_effort`/`enable_thinking` das laute Mitdenken ab). Ein lokales Modell muss
+nichts „freischalten" (kein CORS nötig) – die Anfrage kommt aus dem Hintergrund der
+Erweiterung, nicht aus der Moodle-Seite.
+
+---
+
 ## Datenschutz
 
 - Es werden **keine Schülernamen** ausgelesen oder kopiert. Zur Zuordnung dient
   ausschließlich die interne Moodle-Nummer des Versuchs (`qubaid`).
 - Die Erweiterung sendet nichts an fremde Server. Sie liest nur Seiten deiner
   eigenen Moodle-Instanz, mit deiner bestehenden Anmeldung.
-- Daten verlassen den Browser erst, wenn du selbst auf „JSON kopieren" klickst.
+- Daten verlassen den Browser erst, wenn du selbst auf „Prompt kopieren" klickst –
+  oder, nur wenn du **KI direkt** eingerichtet hast, beim Klick auf „⚡ Direkt bewerten"
+  an genau die Adresse, die du dort eingetragen hast. Bei einer lokalen KI bleibt alles
+  auf deinem Rechner.
+- Die Fehlersammlung und ein API-Schlüssel liegen nur in deinem Browser
+  (`storage.local`), nicht in Moodle und nicht beim Entwickler.
 
 ---
 
@@ -404,15 +493,37 @@ mitgeschickt — genauso, wie es beim manuellen Speichern der Fall ist.
 | Knopf erscheint nicht | Steht `includeauto=1` in der Adresszeile? Sonst „Automatisch bewertete Fragen anzeigen" klicken. |
 | „Keine Fragen-Tabelle gefunden" | Du bist auf einer Unterseite. Zurück zur Übersicht der Manuellen Bewertung. |
 | Einzelne Fragen fehlen | Meldung unten im Panel beachten; Durchlauf einfach wiederholen. |
+| „⚡ Direkt bewerten" fehlt | Ist „KI direkt" eingeschaltet und ein Modell gewählt? Läuft der KI-Server? Der Hinweis unter dem Ergebnis nennt den Grund. |
+| „Zeitüberschreitung" bei KI direkt | Unter Erweitert die Wartezeit erhöhen oder die Paketgröße verkleinern. |
+| Viele Fälle unklar | Normal bei neuen Fragen ohne bekannte Varianten – nimmt mit jeder eingetragenen Runde ab (Fehlersammlung). |
 | Suche dauert lange | Normal bei vielen Fragen — der Fortschrittsbalken läuft weiter, Tab offen lassen. |
 
 ---
 
-*Moodle AI Reviewer – Version 1.5.7 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.0.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.0.0 (26.10.2026)**
+
+- **Vorschau statt direktem Eintragen:** unklare Fälle zur Entscheidung (Satz, Muster,
+  Antwort, KI-Vorschlag mit Grund, Stufenknöpfe), sichere eingeklappt und änderbar,
+  danach Zusammenfassung und „In Moodle eintragen".
+- **Feste Regeln vor der KI** (`lib/regeln.js`): Groß-/Kleinschreibung, exakter Treffer in
+  bekannten Varianten; diese Fälle gehen nicht mehr an die KI. Ob ein Fall unklar ist,
+  entscheidet der Code.
+- **Prompt:** keine Tabelle und keine „ok"-Runde mehr – direkt ein JSON, je Lücke mit
+  `grund` und `kategorie`, auch für 0-%-Fälle.
+- **Fehlersammlung in der Erweiterung** (`lib/fehlersammlung.js`) mit Export und Import
+  im Aufbau von `Fehlersammlung.csv`; offene Varianten dienen als Anker.
+- **KI direkt (optional):** Baustein `lib/ki-direkt/` (wiederverwendbar für andere
+  Erweiterungen), Optionsseite, Hintergrund-Skript; Vorlagen Bionic, LM Studio, Ollama,
+  OpenAI, Anthropic, eigene Adresse. Berechtigung für localhost fest, alle anderen Adressen
+  nur auf Nachfrage.
+- Einstellung „Feedback vor dem Eintragen anzeigen" (Standard aus).
+- Knopf „✋ Ohne KI selbst entscheiden".
 
 **WXT-Umstellung (17.09.2026):** Ab dieser Fassung wird die Erweiterung mit **WXT**
 gebaut (siehe Skill `1-browser-wxt`) — eine Codebasis, drei Browser (Chrome, Firefox,

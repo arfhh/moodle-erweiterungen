@@ -1,4 +1,8 @@
-/* Moodle AI Reviewer v1.5.7
+/* Moodle AI Reviewer v2.0.0
+ *
+ * 2.0.0: Vorschau im Panel statt direktem Eintragen. Feste Regeln (lib/regeln.js)
+ *   entscheiden vor jeder KI und legen fest, welche Faelle unklar sind; die Vorschau
+ *   (lib/vorschau.js) ist der einzige Ort fuer Entscheidungen.
  *
  * Schritt 1 (Ernten, nur lesend): sammelt aus der Manuellen Bewertung alle
  *   Antworten ein, die Moodle als "incorrect" bewertet hat, obwohl der
@@ -16,6 +20,13 @@
  * (WXT legt public/icon/ als icon/ ab). Sonst zeilengleich mit v1.5.9.
  */
 import { browser } from 'wxt/browser';
+import { datenFuerKi, faelleBauen, zuBewertungen, zeigeVorschau, regelFaelle } from './vorschau.js';
+import { KATEGORIEN } from './regeln.js';
+import { faelleSpeichern, ankerAusSammlung, laden as sammlungLaden, alsCsv, csvImportieren,
+         leeren as sammlungLeeren } from './fehlersammlung.js';
+import { kiDirektBewerten } from './ki-bewertung.js';
+import { kiLaden, istLokal } from './ki-direkt/einstellungen.js';
+import { kiNachricht, kiFehlerText } from './ki-direkt/client.js';
 
 export function starteReviewer() {
   'use strict';
@@ -210,7 +221,10 @@ export function starteReviewer() {
     // Sprachmodell (auch ohne eigene Skills) sicher funktioniert. Bewusst pro Lehrkraft
     // per Haekchen einschaltbar, NICHT als Bedingung im Prompt selbst — ein Modell kann
     // nicht zuverlaessig pruefen, ob es die Skills wirklich hat.
-    kompaktPrompt: false
+    kompaktPrompt: false,
+    // 2.0.0: Feedback geht standardmaessig mit KI-Hinweis direkt mit. Wer die Texte
+    // vorher lesen und aendern will, schaltet das hier ein (gilt fuer alle Wege).
+    feedbackVorher: false
   };
   let optionen = { ...OPT_STANDARD };
 
@@ -496,7 +510,7 @@ Wichtig: Gib ausschließlich Prozentwerte an. Die Punkte berechnet die Erweiteru
 selbst — sie kennt den bisherigen Punktestand, die Maximalpunktzahl und die Anzahl
 der Lücken und rechnet damit zuverlässiger, als du es im Kopf könntest.
 
-Schreibe also nirgends eine Punktzahl hin. Weder in die Tabelle noch ins JSON.
+Schreibe also nirgends eine Punktzahl hin.
 
 Zum Verständnis, was mit deinem Prozentwert geschieht: Eine manuelle Bewertung gilt
 in Moodle immer für die GANZE Frage. Die Erweiterung rechnet
@@ -504,69 +518,39 @@ in Moodle immer für die GANZE Frage. Die Erweiterung rechnet
 sodass bereits erkannte Teilpunkte erhalten bleiben.
 
 ═══════════════════════════════════════════════════════
-SCHRITT 1 – TABELLE ZUR PRÜFUNG
+AUSGABE – NUR EIN JSON-BLOCK
 ═══════════════════════════════════════════════════════
 
-Gib zuerst alle Funde aus, **nach Frage gruppiert**. Schreibe je Frage zuerst eine
-Kopfzeile mit dem Satz, dann die Tabelle der Antworten dazu:
-
-**1.1.1-Abwaschen-Aufräumen · Lücke 1:** „Alle Geräte müssen [[L1]] werden."
-Hinterlegt: gereinigt · gesäubert · gesäubert werden · gewaschen werden · geputzt · weggeräumt
-
-| Nr | Antwort des Schülers | % | Begründung |
-|---|---|---|---|
-| 1 | müssen gesäubert werden | 100 | entspricht „gesäubert werden" |
-| 2 | Verstaut | 100 | entspricht „weggeräumt" |
-
-- In der Kopfzeile stehen der Satz aus „kontext" und die **vollständige** Liste aus
-  „loesungen.richtig" – alle Einträge, nicht die ersten zwei.
-- Kommen zu einer Frage mehrere Lücken vor, je Lücke eine eigene Kopfzeile mit Tabelle.
-- Bei „art": „kurzantwort" lässt du den Zusatz „· Lücke 1" in der Kopfzeile weg – dort
-  ist die Frage selbst die Lücke.
-- „Begründung": ein knapper Halbsatz, warum dieser Prozentwert – nicht mehr. Gibt es
-  zur Lücke „bekannte_varianten", nenne den Eintrag, an dem du dich orientiert hast,
-  zum Beispiel: „wie „Glassmüll" (75)".
-- Keine Punktespalte. Die Punkte rechnet die Erweiterung.
-- **Als „Nr" verwendest du die Zahl, die im Fund unter „nr" steht** – nicht deine
-  eigene Zählung. Nur damit lässt sich eine Zeile im Programm wiederfinden.
-- Steht bei einem Fund „kein_zugewinn": true, hat der Versuch schon die volle Punktzahl.
-  Bewerte ihn trotzdem ganz normal – die Antwort wird für die Pflege der Aufgabe
-  gebraucht –, und schreibe „(bereits voll)" in die Begründung.
-
-Halte danach an und gib NICHTS weiter aus. Schreibe:
-
-„Passt das so? Nenne mir die Nummern, die ich ändern soll, zum Beispiel: 3 auf 50, 7 auf 0.
-Wenn alles stimmt, antworte mit ok – dann gebe ich dir ein JSON aus, das du in der
-Erweiterung unter „2 · Eintragen" einfügst."
-
-Warte auf die Antwort. Bei Änderungswünschen: Werte anpassen, die geänderten Zeilen
-noch einmal zeigen und erneut fragen.
-
-═══════════════════════════════════════════════════════
-SCHRITT 2 – JSON ZUM EINTRAGEN
-═══════════════════════════════════════════════════════
-
-Erst nach „ok" gibst du das JSON aus – nichts davor.
+Gib nach der Begrüßung direkt EINEN JSON-Block aus – keine Tabelle, keine Rückfrage.
+Die Lehrkraft prüft deine Vorschläge in der Erweiterung; welche Fälle unklar sind,
+entscheidet die Erweiterung selbst und legt sie ihr dort vor.
 
 \`\`\`json
 {
   "bewertungen": [
-    { "frage": "1.1.4-Pistill", "qubaid": "2429453", "slot": "5",
-      "luecken": [ { "nr": 1, "prozent": 75 } ] }
+    { "nr": 1, "frage": "1.1.4-Pistill", "qubaid": "2429453", "slot": "5",
+      "luecken": [ { "nr": 1, "prozent": 75, "grund": "ein Buchstabe falsch, wie 'Mistill' (75)",
+                     "kategorie": "Tippfehler" } ] }
   ]
 }
 \`\`\`
 
-- **Ein Eintrag je Versuch, nicht je Lücke.** Hat ein Versuch mehrere unerkannte
-  Lücken, kommen sie alle in dessen „luecken"-Liste.
-- „qubaid" und „slot" übernimmst du unverändert aus den Daten unten. „nr" ist die
-  Lückennummer von dort.
+- **Ein Eintrag je Fund (Versuch), nicht je Lücke.** Alle Lücken des Funds kommen in
+  dessen „luecken"-Liste.
+- **Jeder Fund bekommt einen Eintrag – auch wenn alle Lücken 0 % bekommen.** Die
+  Erweiterung braucht jede Entscheidung.
+- „nr" (oben), „qubaid" und „slot" übernimmst du unverändert aus dem Fund. Das „nr" in
+  „luecken" ist die Lückennummer von dort.
 - „prozent" ist eine der sechs Stufen: 100, 90, 75, 50, 25 oder 0.
-- Versuche, bei denen alle Lücken 0 % bekommen, lässt du weg – da ändert sich nichts.
+- „grund": ein knapper Halbsatz, höchstens 12 Wörter, warum dieser Wert. Gibt es zur
+  Lücke „bekannte_varianten", nenne den Eintrag, an dem du dich orientiert hast, mit Wert.
+- „kategorie": genau eine aus dieser Liste: ${KATEGORIEN.join(', ')}.
+- Steht bei einem Fund „kein_zugewinn": true, bewerte ihn trotzdem ganz normal.
 - Keine Punktzahlen, kein „neu", kein „markfeld". Das ergänzt die Erweiterung.
+- In Textfeldern NIEMALS gerade doppelte Anführungszeichen – nimm 'einfache'.
 
 Schreibe unter das JSON einen Satz: „Kopiere diesen Block in die Erweiterung, Reiter
-„2 · Eintragen" — die Prüfung startet beim Einfügen von selbst." 
+„2 · Eintragen" — die Vorschau öffnet sich beim Einfügen von selbst."
 
 [FEEDBACK_BLOCK]
 ═══════════════════════════════════════════════════════
@@ -591,7 +575,7 @@ ${DATEN_PLATZHALTER}`;
   }
 
   const FEEDBACK_BLOCK = `═══════════════════════════════════════════════════════
-SCHRITT 3 – FEEDBACK FÜR SCHWACHE ANTWORTEN
+FEEDBACK FÜR SCHWACHE ANTWORTEN
 ═══════════════════════════════════════════════════════
 
 In den Daten steht zusätzlich ein Abschnitt \`feedback\`: Versuche mit wenigen Punkten
@@ -607,7 +591,7 @@ oder leeren Lücken. Schreibe dafür je Versuch einen kurzen Text.
   JSON-Textfeld verwenden – das ist dasselbe Zeichen wie die JSON-Begrenzung
   und macht das ganze JSON kaputt. Das ist schon mehrfach passiert.
 
-Gib das Feedback im selben Durchgang wie das Punkte-JSON aus:
+Gib das Feedback im selben JSON-Block wie die Bewertungen aus:
 
 \`\`\`json
 {
@@ -652,38 +636,26 @@ mehrere Tippfehler, mit Mühe erkennbar · 25 = nur Wortanfang/-stamm erkennbar 
 Punkte NICHT selbst ausrechnen, nur Prozentwerte angeben — das rechnet die Erweiterung.
 
 ═══════════════════════════════════════════════════════
-SCHRITT 1 – TABELLE ZUR PRÜFUNG
+AUSGABE – NUR EIN JSON-BLOCK
 ═══════════════════════════════════════════════════════
 
-Gib zuerst alle Funde aus, nach Frage gruppiert, je Lücke eine Kopfzeile mit Satz
-und vollständiger Lösungsliste, dann eine Tabelle:
-
-| Nr | Antwort des Schülers | % | Begründung |
-|---|---|---|---|
-
-„Nr“ ist die Zahl aus „nr“ im Fund. Keine Punktespalte. Halte danach an und frage:
-„Passt das so? Nenne mir die Nummern, die ich ändern soll, zum Beispiel: 3 auf 50,
-7 auf 0. Wenn alles stimmt, antworte mit ok.“ Warte auf die Antwort.
-
-═══════════════════════════════════════════════════════
-SCHRITT 2 – JSON ZUM EINTRAGEN
-═══════════════════════════════════════════════════════
-
-Erst nach „ok“ ausgeben:
+Keine Tabelle, keine Rückfrage – direkt ein JSON-Block (die Lehrkraft prüft in der
+Erweiterung):
 
 \`\`\`json
 {
   "bewertungen": [
-    { "frage": "1.1.4-Pistill", "qubaid": "2429453", "slot": "5",
-      "luecken": [ { "nr": 1, "prozent": 75 } ] }
+    { "nr": 1, "frage": "1.1.4-Pistill", "qubaid": "2429453", "slot": "5",
+      "luecken": [ { "nr": 1, "prozent": 75, "grund": "ein Buchstabe falsch", "kategorie": "Tippfehler" } ] }
   ]
 }
 \`\`\`
 
-Ein Eintrag je Versuch (nicht je Lücke), „qubaid“/„slot“ unverändert übernehmen,
-„prozent“ eine der sechs Stufen. Versuche mit 0 % bei allen Lücken weglassen. Keine
-Punktzahlen, kein „neu“, kein „markfeld“. Satz danach: „Kopiere diesen Block in die
-Erweiterung, Reiter „2 · Eintragen“ — die Prüfung startet beim Einfügen von selbst.“
+Ein Eintrag je Fund, auch bei 0 % in allen Lücken. „nr"/„qubaid"/„slot" unverändert
+übernehmen, „prozent" eine der sechs Stufen, „grund" höchstens 12 Wörter (Anker nennen),
+„kategorie" aus: ${KATEGORIEN.join(', ')}. Keine Punktzahlen. Keine geraden doppelten
+Anführungszeichen in Textfeldern. Satz danach: „Kopiere diesen Block in die Erweiterung,
+Reiter „2 · Eintragen" — die Vorschau öffnet sich beim Einfügen von selbst."
 
 [FEEDBACK_BLOCK]
 ═══════════════════════════════════════════════════════
@@ -701,7 +673,8 @@ ${DATEN_PLATZHALTER}`;
     const eigen = (optionen.promptOverride || '').trim();
     let vorlage = eigen || (optionen.kompaktPrompt ? kompaktPromptVorlage() : standardPrompt());
     vorlage = vorlage.replace('[FEEDBACK_BLOCK]', mitFeedback ? FEEDBACK_BLOCK : '');
-    const block = '```json\n' + JSON.stringify(daten, null, 1) + '\n```';
+    // Was eine Code-Regel entscheidet (Gross/Klein, exakter Anker), bekommt die KI nicht.
+    const block = '```json\n' + JSON.stringify(datenFuerKi(daten).daten, null, 1) + '\n```';
     return vorlage.includes(DATEN_PLATZHALTER)
       ? vorlage.replace(DATEN_PLATZHALTER, block)
       : vorlage + '\n\n' + block;
@@ -1246,8 +1219,11 @@ ${DATEN_PLATZHALTER}`;
       <div class="ce-progress ce-hidden"><div class="ce-bar"></div><span class="ce-ptext"></span></div>
       <div class="ce-result ce-hidden">
         <p class="ce-summary"></p>
+        <button class="ce-direkt ce-hidden">⚡ Direkt bewerten</button>
+        <p class="ce-direktinfo ce-hidden"></p>
         <button class="ce-copy">📋 Prompt + Daten kopieren</button>
         <button class="ce-copy2 ce-zweit">📋 nur JSON</button>
+        <button class="ce-ohneki ce-zweit">✋ Ohne KI selbst entscheiden</button>
         <p class="ce-groesse"></p>
         <div class="ce-list"></div>
       </div>
@@ -1255,19 +1231,22 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="ce-body ce-hidden" data-panel="eintrag">
-      <p class="ce-hinweis">Hier die Punkte-JSON von Claude einfügen. Das Eintragen entspricht
-      genau dem, was passiert, wenn du den Wert selbst ins Punktefeld tippst und speicherst.</p>
+      <p class="ce-hinweis">Hier die Antwort der KI einfügen. Danach öffnet sich die Vorschau:
+      unklare Fälle entscheidest du, eingetragen wird erst nach deinem Klick – genau so, als
+      tipptest du den Wert selbst ins Punktefeld und speichertest.</p>
       <textarea class="ce-json" rows="6" placeholder='{ "punkte": [ … ] }'></textarea>
       <label class="ce-check"><input type="checkbox" class="ce-ki" checked>
         KI-Hinweis ans Feedback anhängen</label>
       <p class="ce-kivorschau"></p>
       <button class="ce-pruef ce-hidden">🔍 Prüfen</button>
+      <div class="ce-vorschau ce-hidden"></div>
       <p class="ce-pinfo ce-hidden"></p>
+      <button class="ce-zurueck ce-zweit ce-hidden">← Vorschau ändern</button>
       <div class="ce-progress2 ce-hidden"><div class="ce-bar2"></div><span class="ce-ptext2"></span></div>
       <p class="ce-abschluss ce-hidden"></p>
       <div class="ce-log ce-hidden"></div>
       <div class="ce-schreibknoepfe ce-hidden">
-        <button class="ce-alle">Alle eintragen</button>
+        <button class="ce-alle">In Moodle eintragen</button>
       </div>
     </div>
 
@@ -1281,6 +1260,12 @@ ${DATEN_PLATZHALTER}`;
       <strong>Das verbraucht sehr viel mehr KI-Ressourcen</strong> – rund 2.000 Zeichen
       je Aufgabe. Nur einschalten, wenn du die vorhandenen Varianten wirklich brauchst.
       Wirkt nur bei Lückentext-Aufgaben; Kurzantwort-Fragen haben keinen Quelltext.</p>
+
+      <label class="ce-check"><input type="checkbox" class="ce-fbvorher">
+        Feedback vor dem Eintragen anzeigen</label>
+      <p class="ce-hinweis">Aus (Standard): Die Feedback-Texte der KI gehen mit dem
+      KI-Hinweis direkt mit. An: Du siehst jeden Text in der Zusammenfassung und kannst
+      ihn vor dem Eintragen ändern.</p>
 
       <label class="ce-check"><input type="checkbox" class="ce-kompakt">
         Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
@@ -1303,6 +1288,32 @@ ${DATEN_PLATZHALTER}`;
       <p class="ce-hinweis">Dieser Satz wird unter jedes Feedback gesetzt – kursiv und
       klein –, solange in Tab 2 das Häkchen gesetzt ist. Leer lassen setzt beim
       Speichern den Standardsatz wieder ein.</p>
+
+      <div class="ce-abschnitt">
+        <p class="ce-abschnittkopf">KI direkt (optional)</p>
+        <p class="ce-hinweis ce-kistand">…</p>
+        <p class="ce-hinweis">Statt Prompt kopieren und Antwort einfügen kann die Erweiterung eine
+        KI selbst fragen: eine <strong>lokale</strong> auf deinem Rechner (z. B. LM Studio, Ollama,
+        Bionic – die Daten verlassen den Rechner nicht) oder mit eigenem API-Schlüssel einen
+        <strong>Cloud-Dienst</strong>. Standard: aus. Ohne diese Einstellung funktioniert alles wie
+        gewohnt über das Kopieren.</p>
+        <button class="ce-kiopt ce-zweit">KI-Einstellungen öffnen</button>
+        <p class="ce-kioptinfo ce-sinfo ce-hidden"></p>
+      </div>
+
+      <div class="ce-abschnitt">
+        <p class="ce-abschnittkopf">Fehlersammlung</p>
+        <p class="ce-hinweis ce-sammelstand">…</p>
+        <p class="ce-hinweis">Jeder Fall, den du über die Vorschau einträgst, wird hier gesammelt
+        (nur in diesem Browser). Noch nicht in die Frage eingepflegte Varianten helfen beim nächsten
+        Test als Vergleich; deine eigenen Entscheidungen gehen dabei vor denen der KI. Der Export
+        hat denselben Aufbau wie Fehlersammlung.csv.</p>
+        <button class="ce-sexport ce-zweit">⬇ Als CSV exportieren</button>
+        <button class="ce-simport ce-zweit">⬆ CSV importieren</button>
+        <input type="file" class="ce-sdatei ce-hidden" accept=".csv,text/csv">
+        <button class="ce-sleeren ce-zweit">Sammlung leeren</button>
+        <p class="ce-sinfo ce-hidden"></p>
+      </div>
 
       <button class="ce-optsave">Speichern</button>
       <button class="ce-optvorlage ce-zweit">Standard einfügen</button>
@@ -1352,6 +1363,7 @@ ${DATEN_PLATZHALTER}`;
   optionenLaden().then(() => {
     $('.ce-voll').checked = !!optionen.vollstaendig;
     $('.ce-kompakt').checked = !!optionen.kompaktPrompt;
+    $('.ce-fbvorher').checked = !!optionen.feedbackVorher;
     $('.ce-prompt').value = optionen.promptOverride || '';
     $('.ce-kitext').value = optionen.kiHinweisText || KI_HINWEIS_STANDARD;
     $('.ce-fb').checked = optionen.feedbackSammeln !== false;
@@ -1401,6 +1413,7 @@ ${DATEN_PLATZHALTER}`;
     await optionenSpeichern({
       vollstaendig: $('.ce-voll').checked,
       kompaktPrompt: $('.ce-kompakt').checked,
+      feedbackVorher: $('.ce-fbvorher').checked,
       promptOverride: $('.ce-prompt').value.trim(),
       kiHinweisText: $('.ce-kitext').value.trim() || KI_HINWEIS_STANDARD
     });
@@ -1420,6 +1433,7 @@ ${DATEN_PLATZHALTER}`;
     await optionenSpeichern({ ...OPT_STANDARD });
     $('.ce-voll').checked = false;
     $('.ce-kompakt').checked = false;
+    $('.ce-fbvorher').checked = false;
     $('.ce-prompt').value = '';
     $('.ce-kitext').value = KI_HINWEIS_STANDARD;
     $('.ce-fb').checked = OPT_STANDARD.feedbackSammeln;
@@ -1430,6 +1444,93 @@ ${DATEN_PLATZHALTER}`;
   });
 
   $('.ce-ki').addEventListener('change', kiVorschau);
+
+  /* ---- KI direkt (2.0.0) ---- */
+  async function kiStandAnzeigen() {
+    const cfg = await kiLaden();
+    $('.ce-kistand').textContent = !cfg.an ? 'Aus.'
+      : `An: ${cfg.modell || '(kein Modell gewählt)'} · ${istLokal(cfg.basis) ? 'lokal' : 'Cloud'} · ${cfg.basis}`;
+  }
+  kiStandAnzeigen();
+  $('.ce-kiopt').addEventListener('click', async () => {
+    const r = await kiNachricht('optionen', {});
+    const i = $('.ce-kioptinfo');
+    i.textContent = r.ok ? '✓ Einstellungen in einem neuen Tab geöffnet. Danach diese Seite neu laden.'
+                         : kiFehlerText(r);
+    i.classList.remove('ce-hidden');
+    setTimeout(() => i.classList.add('ce-hidden'), 6000);
+  });
+
+  // Knopf nur zeigen, wenn eingeschaltet UND der Server antwortet — nie ein Haenger.
+  async function direktPruefen() {
+    const b = $('.ce-direkt'), info = $('.ce-direktinfo');
+    b.classList.add('ce-hidden'); info.classList.add('ce-hidden');
+    const cfg = await kiLaden();
+    if (!cfg.an) return;
+    const zeige = (t) => { info.textContent = t; info.classList.remove('ce-hidden'); };
+    if (!cfg.modell) { zeige('KI direkt ist eingeschaltet, aber kein Modell gewählt (⚙ → KI-Einstellungen).'); return; }
+    zeige('Prüfe Verbindung zur KI …');
+    const r = await kiNachricht('modelle', { cfg });
+    if (!r.ok) {
+      zeige('KI direkt nicht verfügbar: ' + kiFehlerText(r, cfg) + ' Der Weg über „Prompt kopieren" funktioniert weiter.');
+      return;
+    }
+    info.classList.add('ce-hidden');
+    b.textContent = `⚡ Direkt bewerten – ${cfg.modell} (${istLokal(cfg.basis) ? 'lokal' : 'Cloud'})`;
+    b.classList.remove('ce-hidden');
+  }
+
+  /* ---- Fehlersammlung (2.0.0) ---- */
+  async function sammlungAnzeigen() {
+    const d = await sammlungLaden();
+    const alle = Object.values(d);
+    const offen = alle.filter((z) => !z.Status || z.Status === 'offen').length;
+    const lk = alle.filter((z) => z._quelle === 'Lehrkraft').length;
+    $('.ce-sammelstand').textContent = alle.length
+      ? `${alle.length} Fälle gesammelt · ${offen} offen · ${lk} von dir entschieden.`
+      : 'Noch keine Fälle gesammelt.';
+  }
+  function sammelMeldung(t) {
+    const i = $('.ce-sinfo');
+    i.textContent = t; i.classList.remove('ce-hidden');
+    clearTimeout(sammelMeldung.uhr);
+    sammelMeldung.uhr = setTimeout(() => i.classList.add('ce-hidden'), 5000);
+  }
+  sammlungAnzeigen();
+  $('.ce-sexport').addEventListener('click', async () => {
+    const d = await sammlungLaden();
+    if (!Object.keys(d).length) { sammelMeldung('Nichts zu exportieren – die Sammlung ist leer.'); return; }
+    const url = URL.createObjectURL(new Blob([alsCsv(d)], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `Fehlersammlung-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    sammelMeldung(`✓ ${Object.keys(d).length} Fälle als CSV heruntergeladen.`);
+  });
+  $('.ce-simport').addEventListener('click', () => $('.ce-sdatei').click());
+  $('.ce-sdatei').addEventListener('change', async () => {
+    const f = $('.ce-sdatei').files[0];
+    if (!f) return;
+    try {
+      const r = await csvImportieren(await f.text());
+      sammelMeldung(`✓ ${r.neu} Fälle übernommen, ${r.gesamt} insgesamt. Vorhandene blieben unverändert.`);
+      sammlungAnzeigen();
+    } catch (e) { sammelMeldung('Fehler: ' + e.message); }
+    $('.ce-sdatei').value = '';
+  });
+  let leerenUhr = null;
+  $('.ce-sleeren').addEventListener('click', async () => {
+    const b = $('.ce-sleeren');
+    if (!leerenUhr) {
+      b.textContent = 'Wirklich leeren? Noch einmal klicken';
+      leerenUhr = setTimeout(() => { leerenUhr = null; b.textContent = 'Sammlung leeren'; }, 4000);
+      return;
+    }
+    clearTimeout(leerenUhr); leerenUhr = null; b.textContent = 'Sammlung leeren';
+    await sammlungLeeren();
+    sammlungAnzeigen();
+    sammelMeldung('Sammlung geleert.');
+  });
 
   knopf.addEventListener('click', () => panel.classList.toggle('ce-hidden'));
   $('.ce-close').addEventListener('click', () => panel.classList.add('ce-hidden'));
@@ -1467,6 +1568,19 @@ ${DATEN_PLATZHALTER}`;
         $('.ce-ptext').textContent = phase || `${fertig} / ${gesamt} Fragen · ${gefunden} Funde`;
       }, mitFeedback, schwelle, optionen.vollstaendig, $('.ce-bereits').checked);
 
+      // 2.0.0: noch nicht eingepflegte Faelle der eigenen Fehlersammlung als zusaetzliche
+      // Anker. Was schon im Cloze-Code steht, hat Vorrang (dort hat die Lehrkraft es eingetragen).
+      const sammlung = ankerAusSammlung(await sammlungLaden());
+      let sammelAnker = 0;
+      Object.values(res.fragen).forEach((fr) => (fr.loesungen || []).forEach((l) => {
+        const extra = sammlung[fr.qid + '|' + l.nr];
+        if (!extra) return;
+        const bek = l.bekannte_varianten || {};
+        const neu = [];
+        Object.entries(extra).forEach(([t, p]) => { if (!(t in bek)) { bek[t] = p; neu.push(t); } });
+        if (neu.length) { l.bekannte_varianten = bek; l.aus_sammlung = neu; sammelAnker += neu.length; }
+      }));
+
       ausgabe = {
         meta: {
           test: ctx.test, kurs: ctx.kurs, cmid: CMID, datum: new Date().toISOString().slice(0, 10),
@@ -1499,6 +1613,14 @@ ${DATEN_PLATZHALTER}`;
       }
 
       const promptText = bauePrompt(ausgabe, mitFeedback);
+      const regelAnz = regelFaelle(ausgabe).size;
+      if (sammelAnker) {
+        $('.ce-summary').textContent += ` ${sammelAnker} Variante(n) aus deiner Fehlersammlung dienen als Anker.`;
+      }
+      if (regelAnz) {
+        $('.ce-summary').textContent += ` ${regelAnz} Lücke(n) entscheidet die Erweiterung selbst `
+          + '(nur Groß-/Kleinschreibung oder schon bekannte Variante) – sie gehen nicht an die KI.';
+      }
       $('.ce-groesse').textContent =
         `Prompt: rund ${Math.round(promptText.length / 1000)}.000 Zeichen` +
         (optionen.vollstaendig ? ' (mit vollständigem Quelltext)' : '') +
@@ -1538,6 +1660,7 @@ ${DATEN_PLATZHALTER}`;
         $('.ce-error').classList.remove('ce-hidden');
       }
       $('.ce-result').classList.remove('ce-hidden');
+      direktPruefen();
     } catch (e) {
       $('.ce-error').textContent = 'Fehler: ' + e.message;
       $('.ce-error').classList.remove('ce-hidden');
@@ -1602,7 +1725,7 @@ ${DATEN_PLATZHALTER}`;
   // Nur die Rohdaten — fuer einen Chat, der die Auswertungsregeln schon kennt.
   $('.ce-copy2').addEventListener('click', async () => {
     if (!ausgabe) return;
-    await inZwischenablage('```json\n' + JSON.stringify(ausgabe, null, 1) + '\n```');
+    await inZwischenablage('```json\n' + JSON.stringify(datenFuerKi(ausgabe).daten, null, 1) + '\n```');
     quittung('.ce-copy2', '📋 nur JSON');
   });
 
@@ -1712,8 +1835,13 @@ ${DATEN_PLATZHALTER}`;
     });
   }
 
-  $('.ce-pruef').addEventListener('click', () => {
+  $('.ce-pruef').addEventListener('click', () => pruefen(null));
+
+  // vorgabe: fertige Daten aus der Vorschau. Ohne vorgabe wird das eingefuegte JSON gelesen;
+  // enthaelt es "bewertungen", geht es zuerst in die Vorschau statt direkt ans Eintragen.
+  function pruefen(vorgabe) {
     const info = $('.ce-pinfo');
+    $('.ce-vorschau').classList.add('ce-hidden');
     info.classList.remove('ce-hidden');
     $('.ce-schreibknoepfe').classList.add('ce-hidden');
     $('.ce-abschluss').classList.add('ce-hidden');
@@ -1723,13 +1851,17 @@ ${DATEN_PLATZHALTER}`;
     if (altFehlend) altFehlend.remove();
     punkte = null; kommentare = null;
     try {
-      const roh = $('.ce-json').value.replace(/^\s*```(?:json)?/, '').replace(/```\s*$/, '').trim();
-      if (!roh) throw new Error('Das Feld ist leer.');
-      if (!/^[{[]/.test(roh)) {
-        throw new Error('Das sieht nicht nach JSON aus — der Text muss mit { beginnen. '
-          + 'Ist beim Kopieren versehentlich etwas anderes in der Zwischenablage gelandet?');
+      let daten = vorgabe;
+      if (!daten) {
+        daten = jsonAusText($('.ce-json').value);
+        letzteFaelle = null;
+        if (Array.isArray(daten.bewertungen) && ernteIndex()) {
+          vorschauStarten(daten, 'Vorschläge aus dem KI-Chat');
+          return;
+        }
       }
-      const daten = JSON.parse(roh);
+      const fbAlt = panel.querySelector('.ce-fbliste');
+      if (fbAlt) fbAlt.remove();
       const rohKommentare = daten.kommentare || [];
       let pListe;
       let ausProzent = false;
@@ -1783,6 +1915,10 @@ ${DATEN_PLATZHALTER}`;
       }
       offeneRueckmeldungen = fehlendeRueckmeldungen;
 
+      if (!pListe.length && !kListe.length && vorgabe) {
+        throw new Error('Nichts einzutragen: keiner der entschiedenen Fälle bringt einen '
+          + 'Punktzuwachs, und es gibt keine Feedback-Texte. „← Vorschau ändern" führt zurück.');
+      }
       if (!pListe.length && !kListe.length) {
         throw new Error('Weder "bewertungen"/"punkte" noch "kommentare" mit Einträgen gefunden.');
       }
@@ -1864,16 +2000,113 @@ ${DATEN_PLATZHALTER}`;
         info.after(box);
       }
 
+      // Feedback vor dem Eintragen zeigen (Einstellung, Standard aus): jeder Text als
+      // Eingabefeld — eine Aenderung geht direkt in den Eintrag, der gleich gespeichert wird.
+      if (optionen.feedbackVorher && kListe.length) {
+        const fb = el('details', 'ce-fbliste');
+        fb.open = true;
+        fb.appendChild(el('summary', null, `${kListe.length} Feedback-Texte – vor dem Eintragen ansehen/ändern`));
+        kListe.forEach((k) => {
+          fb.appendChild(el('div', 'ce-fbkopf', k.frage));
+          const ta = el('textarea', 'ce-fbtext');
+          ta.rows = 3; ta.value = k.text || '';
+          ta.addEventListener('input', () => { k.text = ta.value; });
+          fb.appendChild(ta);
+        });
+        $('.ce-schreibknoepfe').before(fb);
+      }
+
+      $('.ce-zurueck').classList.toggle('ce-hidden', !letzteFaelle);
       $('.ce-schreibknoepfe').classList.remove('ce-hidden');
       info.scrollIntoView({ block: 'nearest' });
     } catch (e) {
       info.className = 'ce-pinfo ce-error';
       info.textContent = 'Fehler: ' + e.message;
+      $('.ce-zurueck').classList.toggle('ce-hidden', !(vorgabe && letzteFaelle));
     }
+  }
+
+  // JSON aus eingefuegtem Text: Codezaun weg, Pruefung mit klarer Meldung.
+  function jsonAusText(text) {
+    const roh = String(text || '').replace(/^\s*```(?:json)?/, '').replace(/```\s*$/, '').trim();
+    if (!roh) throw new Error('Das Feld ist leer.');
+    if (!/^[{[]/.test(roh)) {
+      throw new Error('Das sieht nicht nach JSON aus — der Text muss mit { beginnen. '
+        + 'Ist beim Kopieren versehentlich etwas anderes in der Zwischenablage gelandet?');
+    }
+    return JSON.parse(roh);
+  }
+
+  /* ---- Vorschau (2.0.0) ---- */
+
+  let letzteFaelle = null, letzteDaten = null;
+  function zusammenfassungVerbergen() {
+    ['.ce-pinfo', '.ce-schreibknoepfe', '.ce-abschluss', '.ce-log', '.ce-zurueck'].forEach((s) => $(s).classList.add('ce-hidden'));
+    ['.ce-rechnung', '.ce-fehlend', '.ce-fbliste'].forEach((s) => { const x = panel.querySelector(s); if (x) x.remove(); });
+  }
+  function vorschauStarten(daten, titel, faelle) {
+    zusammenfassungVerbergen();
+    punkte = null; kommentare = null;
+    letzteDaten = daten;
+    letzteFaelle = faelle || faelleBauen(ausgabe, daten.bewertungen || []);
+    const box = $('.ce-vorschau');
+    zeigeVorschau(box, letzteFaelle, {
+      titel,
+      link: (c) => versuchLink(c),
+      onWeiter: (f) => {
+        box.classList.add('ce-hidden');
+        pruefen({ ...letzteDaten, bewertungen: zuBewertungen(f) });
+      }
+    });
+    box.scrollIntoView({ block: 'nearest' });
+  }
+  $('.ce-zurueck').addEventListener('click', () => {
+    if (letzteFaelle) vorschauStarten(letzteDaten, 'erneut geöffnet', letzteFaelle);
+  });
+  $('.ce-direkt').addEventListener('click', async () => {
+    if (!ausgabe) return;
+    const b = $('.ce-direkt'), info = $('.ce-direktinfo');
+    const cfg = await kiLaden();
+    b.disabled = true;
+    info.classList.remove('ce-hidden');
+    info.textContent = 'Starte …';
+    try {
+      const r = await kiDirektBewerten(datenFuerKi(ausgabe).daten, cfg, (t) => { info.textContent = t; });
+      const teile = [`${r.sekunden} s`];
+      if (r.tokens.ein || r.tokens.aus) teile.push(`${r.tokens.ein + r.tokens.aus} Tokens`);
+      info.textContent = `✓ KI fertig (${teile.join(' · ')}).`
+        + (r.fehler.length ? ' ⚠ ' + r.fehler.join(' · ') + ' – betroffene Fälle erscheinen als unklar.' : '');
+      reiterZeigen('eintrag');
+      $('.ce-json').value = '';   // altes eingefuegtes JSON wuerde sonst verwirren
+      vorschauStarten({ bewertungen: r.bewertungen, kommentare: r.kommentare },
+        `KI direkt: ${cfg.modell}, ${teile.join(' · ')}`
+        + (r.fehler.length ? ` · ⚠ ${r.fehler.length} Paket(e) fehlgeschlagen` : ''));
+    } catch (e) {
+      info.textContent = 'Fehler: ' + e.message;
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  // Ohne KI: Regeln wenden sich an, alles andere legt die Vorschau ohne Vorschlag vor.
+  $('.ce-ohneki').addEventListener('click', () => {
+    if (!ausgabe) return;
+    reiterZeigen('eintrag');
+    vorschauStarten({ bewertungen: [] }, 'ohne KI');
   });
 
   async function schreibLauf(trocken) {
     if (!punkte && !kommentare) return;
+    // Fehlersammlung: alle in der Vorschau entschiedenen Faelle, sobald eingetragen wird.
+    let sammelInfo = '';
+    if (!trocken && letzteFaelle) {
+      const r = await faelleSpeichern(letzteFaelle, {
+        test: ctx.test, kurs: ctx.kurs, datum: new Date().toISOString().slice(0, 10) });
+      sammelInfo = r.ok
+        ? `Fehlersammlung: ${r.neu} neu, ${r.geaendert} geändert, ${r.gesamt} insgesamt (Export unter ⚙).`
+        : '⚠ Fehlersammlung konnte nicht gespeichert werden.';
+      sammlungAnzeigen();
+    }
     const log = $('.ce-log');
     const abschluss = $('.ce-abschluss');
     log.innerHTML = ''; log.classList.remove('ce-hidden');
@@ -1907,6 +2140,7 @@ ${DATEN_PLATZHALTER}`;
         ? `${r.ok} Felder gefunden · ${r.fehler} fehlen · ${r.gruppen} Seiten geprüft`
         : `${r.ok} eingetragen und geprüft · ${r.fehler} fehlgeschlagen · ${r.gruppen} Seiten`);
       log.prepend(kopf);
+      if (sammelInfo) kopf.after(el('div', 'ce-logzeile', sammelInfo));
       if (!r.ok && !r.fehler) schreibLog('Nichts zu tun.');
 
       abschluss.classList.remove('ce-hidden');

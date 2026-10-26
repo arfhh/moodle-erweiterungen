@@ -17,10 +17,16 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Reviewer',
-    version: '1.7.2',
+    version: '2.0.0',
     description:
       'Findet in Moodles Manueller Bewertung alle frei eingetippten Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die nicht erkannt wurden, trägt von einer KI berechnete Punkte ein und schreibt Feedback zu schwachen Antworten.',
     permissions: ['storage'],
+    // 2.0.0, Baustein "KI direkt": lokale KI-Server auf diesem Rechner. Muster ohne Port
+    // decken jeden Port ab (Bionic 1235, LM Studio 1234, Ollama 11434 …).
+    host_permissions: ['http://localhost/*', 'http://127.0.0.1/*'],
+    // Andere Adressen (Rechner im Netz, Cloud-API) erst auf Nachfrage in den
+    // KI-Einstellungen — keine Installationswarnung fuer alle Websites.
+    optional_host_permissions: ['http://*/*', 'https://*/*'],
     // Im Hand-Manifest gab es kein "action" — hier ergaenzt fuer einen
     // sprechenden Titel in der Symbolleiste, wie bei den anderen Erweiterungen.
     action: { default_title: 'Moodle AI Reviewer' },
@@ -29,8 +35,9 @@ export default defineConfig({
         id: 'moodle-ai-reviewer@spielhoff.de',
         strict_min_version: '142.0',
         // Mozilla verlangt seit 2025 eine ausdrueckliche Angabe. Die Erweiterung
-        // sammelt nichts: keine Telemetrie, kein Netzverkehr ausser zu Moodle
-        // selbst, alles bleibt lokal in browser.storage.local.
+        // sammelt nichts: keine Telemetrie. Netzverkehr nur zu Moodle selbst und —
+        // nur wenn die Lehrkraft "KI direkt" einschaltet — zu der KI-Adresse, die sie
+        // selbst eintraegt. Alles bleibt lokal in browser.storage.local.
         data_collection_permissions: { required: ['none'] },
       },
     },

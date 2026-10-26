@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="manifest.open_in_tab" content="true">
+  <title>Moodle AI Reviewer – KI direkt</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; color: #1e293b; background: #f8fafc; margin: 0; padding: 24px 16px; }
+    main { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; }
+    h1 { font-size: 19px; margin: 0 0 4px; color: #0f766e; }
+    .unter { color: #64748b; margin: 0 0 16px; }
+    label { display: block; margin: 14px 0 4px; font-weight: 600; }
+    label.check { font-weight: 400; display: flex; gap: 8px; align-items: center; }
+    input[type=text], input[type=password], input[type=number], select, textarea {
+      width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+    textarea { font-family: ui-monospace, monospace; font-size: 12px; }
+    .hinweis { font-size: 12.5px; color: #475569; margin: 4px 0 0; }
+    .warnung { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px 12px; margin: 12px 0; font-size: 13px; }
+    .zeile { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    button { padding: 8px 14px; border-radius: 6px; border: 1px solid #0f766e; background: #fff; color: #0f766e; font: inherit; cursor: pointer; }
+    button.haupt { background: #0f766e; color: #fff; }
+    button:disabled { opacity: .6; cursor: progress; }
+    .meldung { margin: 8px 0 0; font-size: 13px; }
+    .ok { color: #166534; } .fehler { color: #b91c1c; }
+    details { margin-top: 16px; } summary { cursor: pointer; color: #0f766e; font-weight: 600; }
+    .hidden { display: none; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; color: #e2e8f0; } main { background: #1e293b; border-color: #334155; }
+      input, select, textarea { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+      .hinweis, .unter { color: #94a3b8; } button { background: transparent; }
+      .warnung { background: #422006; border-color: #b45309; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>KI direkt ansprechen</h1>
+  <p class="unter">Moodle AI Reviewer · optional · ohne diese Einstellung funktioniert alles wie gewohnt über das Kopieren in einen KI-Chat.</p>
+
+  <label class="check"><input type="checkbox" id="an"> KI direkt verwenden</label>
+  <p class="hinweis">Dann erscheint nach dem Auslesen im Panel der Knopf „⚡ Direkt bewerten“. Die Entscheidung triffst du weiterhin in der Vorschau – gespeichert wird nie ohne deinen Klick.</p>
+
+  <label for="vorlage">Vorlage</label>
+  <select id="vorlage"></select>
+  <p class="hinweis">Füllt Adresse und Zusatzparameter vor. Jeder OpenAI-kompatible Server funktioniert.</p>
+
+  <label for="basis">Adresse (Basis-URL, endet meist auf /v1)</label>
+  <input type="text" id="basis" placeholder="http://127.0.0.1:1234/v1">
+
+  <div id="cloudwarnung" class="warnung hidden">
+    <strong>Cloud-Dienst:</strong> Die Schülerantworten (ohne Namen) werden an den Anbieter übertragen.
+    Kläre vorher, ob das an deiner Schule erlaubt ist (Datenschutz, Auftragsverarbeitung).
+    Ein ChatGPT- oder Claude-Abo reicht nicht – du brauchst einen API-Schlüssel; die Kosten werden
+    nach Verbrauch abgerechnet. Der Schlüssel bleibt nur in diesem Browser gespeichert.
+  </div>
+
+  <label for="schluessel">API-Schlüssel <span style="font-weight:400">(nur für Cloud-Dienste oder geschützte Server)</span></label>
+  <input type="password" id="schluessel" autocomplete="off">
+
+  <div class="zeile">
+    <button id="testen">Verbindung testen</button>
+  </div>
+  <p id="testinfo" class="meldung hidden"></p>
+
+  <label for="modell">Modell</label>
+  <select id="modell"><option value="">– erst „Verbindung testen“ –</option></select>
+  <p class="hinweis">Ein Sprachmodell wählen (Chat-Modell). Embedding-, Sprach- oder Bildmodelle eignen sich nicht.</p>
+
+  <details>
+    <summary>Erweitert</summary>
+    <label for="wartezeit">Wartezeit je Anfrage (Sekunden)</label>
+    <input type="number" id="wartezeit" min="10" max="900">
+    <label for="paket">Paketgröße (Lücken je Anfrage)</label>
+    <input type="number" id="paket" min="1" max="100">
+    <p class="hinweis">Standard 20. Kleinere Pakete bei langsamen Modellen oder Zeitüberschreitung.</p>
+    <label for="zusatz">Zusatzparameter (JSON, werden in jede Anfrage übernommen)</label>
+    <textarea id="zusatz" rows="3"></textarea>
+    <p class="hinweis">Bei Qwen &amp; Co. schaltet <code>reasoning_effort</code>/<code>enable_thinking</code> das laute Mitdenken ab. Bei Cloud-Diensten meist leer lassen: <code>{}</code></p>
+  </details>
+
+  <div class="zeile">
+    <button id="speichern" class="haupt">Speichern</button>
+    <button id="probe">Probeanfrage</button>
+  </div>
+  <p id="info" class="meldung hidden"></p>
+</main>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -499,3 +499,51 @@ a.ce-logzeile:hover { text-decoration: underline; }
   line-height: 1.4;
   color: #475569;
 }
+
+/* ---- ab 2.0.0: Vorschau ---- */
+
+.ce-vorschau { margin-top: 10px; }
+.ce-vkopf { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
+.ce-vok { margin: 6px 0; color: #166534; font-size: 13px; }
+.ce-vkarte {
+  border: 1px solid #f59e0b; border-left-width: 4px; border-radius: 6px;
+  background: #fffbeb; padding: 8px 10px; margin-bottom: 8px; font-size: 13px;
+}
+.ce-vkarte.ce-ventschieden { border-color: #0f766e; background: #f0fdfa; }
+.ce-vkarte.ce-vkompakt { border-color: #cbd5e1; background: #fff; padding: 6px 8px; }
+.ce-vkarte.ce-vkompakt.ce-ventschieden { border-color: #0f766e; background: #f0fdfa; }
+.ce-vober { display: block; font-weight: 600; color: #0f766e; text-decoration: none; margin-bottom: 4px; }
+a.ce-vober:hover { text-decoration: underline; }
+.ce-vkarte p { margin: 3px 0; line-height: 1.4; }
+.ce-vkontext { color: #334155; font-style: italic; }
+.ce-vluecke { background: #fde68a; padding: 0 3px; border-radius: 3px; font-style: normal; }
+.ce-vmuster, .ce-vbekannt { color: #475569; font-size: 12px; }
+.ce-vlabel { color: #64748b; }
+.ce-vki { color: #1e293b; }
+.ce-vgrund { color: #b45309; font-size: 12px; }
+.ce-stufen { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.ce-stufe {
+  flex: 1 1 0; min-width: 40px; padding: 5px 0; border: 1px solid #94a3b8; border-radius: 5px;
+  background: #fff; color: #1e293b; font-size: 13px; cursor: pointer;
+}
+.ce-stufe:hover { background: #f1f5f9; }
+.ce-stufe.ce-stufe-vorschlag { border-style: dashed; border-color: #0f766e; }
+.ce-stufe.ce-stufe-an { background: #0f766e; border-color: #0f766e; color: #fff; font-weight: 600; }
+.ce-vsicher { margin: 8px 0; font-size: 13px; }
+.ce-vsicher summary { cursor: pointer; color: #0f766e; margin-bottom: 6px; }
+.ce-vzaehler { font-size: 12px; color: #64748b; margin: 6px 0; }
+.ce-vweiter {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 12px; border: none; border-radius: 6px;
+  background: #0f766e; color: #fff; font-size: 14px; cursor: pointer;
+}
+.ce-vweiter:disabled { background: #94a3b8; cursor: not-allowed; }
+.ce-fbliste { margin: 8px 0; font-size: 13px; }
+.ce-fbliste summary { cursor: pointer; color: #0f766e; }
+.ce-fbkopf { font-weight: 600; margin-top: 6px; }
+.ce-fbtext { width: 100%; box-sizing: border-box; font-size: 13px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 5px; }
+.ce-abschnitt { margin: 14px 0 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+.ce-abschnittkopf { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: #0f766e; }
+.ce-sinfo, .ce-direktinfo { margin: 6px 0 0; font-size: 12px; color: #0f766e; line-height: 1.4; }
+.ce-direkt { display: block; width: 100%; margin-top: 8px; padding: 9px 12px; border: none;
+  border-radius: 6px; background: #7c3aed; color: #fff; font-size: 14px; cursor: pointer; }
+.ce-direkt:disabled { background: #a78bfa; cursor: progress; }
