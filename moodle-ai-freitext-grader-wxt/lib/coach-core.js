@@ -1,4 +1,4 @@
-/* Moodle AI Coach — Kern, aus content.js v1.8.10 uebernommen (WXT-Umzug 17.09.2026).
+/* Moodle AI Freitext Grader 1.2.0 (Kurztest-Weg; 1.2.0: Punkteverteilung in der Vorschau) — Kern, aus content.js v1.8.10 uebernommen (WXT-Umzug 17.09.2026).
  * Genau vier Aenderungen beim Umzug, wie beim Aufgaben-Grader:
  *  1. chrome.* -> browser.*        (Polyfill, Chrome UND Firefox)
  *  2. Skill-Verweis 1-chrome-mv3 -> 1-webext-robustheit
@@ -30,6 +30,7 @@ import { materialBlock } from './gemeinsam/horizont-bausteine.js';
 import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
 import { KI_HINWEIS_STANDARD, GEMEINSAME_OPTIONEN, GEMEINSAM_STANDARD, ohneQuellenTief } from './gemeinsam/feedback-optionen.js';
 import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
+import { verteilungSvg } from './gemeinsam/punkteverteilung.js';
 
 export function starteCoach(opts) {
   'use strict';
@@ -2316,6 +2317,10 @@ ${DATEN_PLATZHALTER}`;
         box.appendChild(z);
       });
       $('.co-vorschau').appendChild(box);
+      // 1.2.0: Punkteverteilung dieser Bewertung — faellt eine KI-Bewertung schief aus
+      // (fast alle 0 oder alle voll), sieht man es vor dem Eintragen.
+      const vt = verteilungKasten(raus);
+      if (vt) $('.co-vorschau').prepend(vt);
       $('.co-schreibknoepfe').classList.remove('co-hidden');
       // Die Knöpfe stehen jetzt direkt unter der Meldung, die lange Vorschau darunter.
       // Vorher lag „Alle eintragen" hinter 78 Zeilen und war nicht zu sehen.
@@ -2325,6 +2330,27 @@ ${DATEN_PLATZHALTER}`;
       info.textContent = 'Fehler: ' + e.message;
     }
   });
+
+  // Gleiche Hoechstpunktzahl: Punkte direkt. Verschiedene (Zufallsfragen mit 2 und 3 P):
+  // Anteil in Prozent, sonst mischen sich unvergleichbare Werte.
+  function verteilungKasten(liste) {
+    if (liste.length < 2) return null;
+    const maxe = new Set(liste.map((e) => Number(e.max)));
+    const gleich = maxe.size === 1;
+    const v = gleich
+      ? verteilungSvg(liste.map((e) => Number(e.punkte)), [...maxe][0], { wort: 'Antworten' })
+      : verteilungSvg(liste.map((e) => Math.round(Number(e.punkte) / Number(e.max) * 100)), 100,
+                      { schritt: 10, einheit: 'Prozent der Punkte', wort: 'Antworten' });
+    if (!v.n) return null;
+    const d = el('details', 'co-verteilung');
+    d.open = true;
+    d.appendChild(el('summary', null, '📊 Punkteverteilung dieser Bewertung'
+      + (gleich ? '' : ' (in % – Aufgaben mit verschiedener Höchstpunktzahl)')));
+    const inhalt = el('div', 'co-vtinhalt');
+    inhalt.innerHTML = v.svg;
+    d.appendChild(inhalt);
+    return d;
+  }
 
   function logSchreiber(logEl) {
     return (t, href) => {

@@ -15,13 +15,13 @@ export const farbe = (p) => (p < 35 ? ROT : p < 45 ? mix(ROT, GELB, (p - 35) / 1
 const komma = (v, n = 1) => Number(v).toFixed(n).replace('.', ',');
 const zahlText = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 
-/** Schrittweite so, dass hoechstens ~22 Balken entstehen; feinste Stufe aus den Daten. */
+/** Schrittweite: die groebste Stufe bis 1, in der alle Werte aufgehen (ganze Punkte -> 1,
+ *  halbe -> 0,5); bei sehr hoher Hoechstpunktzahl groebere Klassen, hoechstens ~22 Balken. */
 function schrittWahl(werte, max) {
-  for (const s of [0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50]) {
-    const passt = werte.every((w) => Math.abs(w / s - Math.round(w / s)) < 1e-6);
-    if ((passt || max / s <= 22) && max / s <= 22) return s;
-  }
-  return Math.max(1, Math.ceil(max / 20));
+  const passt = (s) => werte.every((w) => Math.abs(w / s - Math.round(w / s)) < 1e-6);
+  for (const s of [1, 0.5, 0.25]) if (passt(s) && max / s <= 22) return s;
+  for (const s of [0.5, 1, 2, 2.5, 5, 10, 20, 25, 50]) if (max / s <= 22) return s;
+  return Math.ceil(max / 20);
 }
 
 /**
@@ -48,7 +48,9 @@ export function verteilungSvg(werte, max, opt = {}) {
 
   const W = opt.breite || 400, H = opt.hoehe || 210, L = 30, R = 10, T = 12, B = 40;
   const bw = (W - L - R) / stufen.length;
-  const hmax = Math.max(2, ...anz);
+  // Hoehe auch fuer die Spitze der Gauss-Kurve, sonst wird sie oben abgeschnitten.
+  const spitze = streuung > 0 ? n * schritt / (streuung * Math.sqrt(2 * Math.PI)) : 0;
+  const hmax = Math.max(2, ...anz, Math.ceil(spitze));
   const x = (i) => L + bw * i + bw / 2;
   const y = (c) => T + (H - T - B) * (1 - c / hmax);
   const tick = hmax <= 6 ? 1 : hmax <= 12 ? 2 : 5;
@@ -76,7 +78,7 @@ export function verteilungSvg(werte, max, opt = {}) {
       const v = -schritt / 2 + (max + schritt) * k / 120;
       const g = n * schritt / (streuung * Math.sqrt(2 * Math.PI)) * Math.exp(-((v - mittel) ** 2) / (2 * streuung ** 2));
       const px = L + bw * (v / schritt) + bw / 2;
-      d += (k ? 'L' : 'M') + px.toFixed(1) + ',' + Math.max(T - 4, y(g)).toFixed(1);
+      d += (k ? 'L' : 'M') + px.toFixed(1) + ',' + y(g).toFixed(1);
     }
     s += `<path d="${d}" fill="none" stroke="#1e293b" stroke-width="1.6"/>`;
   }

@@ -253,3 +253,9 @@ textarea.co-hwunsch {
   border: 1px solid #93c5fd; border-radius: 6px; color: #1d4ed8; background: #fff; font-weight: 600; }
 .co-hzhinweis a { cursor: pointer; color: #1d4ed8; text-decoration: underline; }
 .co-hzregel { background: #eff6ff; border-left: 3px solid #2563eb; padding: 6px 8px; border-radius: 4px; }
+
+/* 1.2.0: Punkteverteilung */
+.co-verteilung { margin: 8px 0; font-size: 13px; }
+.co-verteilung summary { cursor: pointer; font-weight: 600; }
+.co-vtinhalt { margin-top: 6px; }
+.co-vtinhalt svg { display: block; }

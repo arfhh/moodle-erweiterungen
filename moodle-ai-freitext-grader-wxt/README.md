@@ -79,6 +79,11 @@ dem neuen Horizont und sagt das in ihrer Meldung.
    Aufgaben mit Status; Aufgaben ohne aktuellen Horizont werden gezählt und verlinkt.
 2. Bewertungsprompt kopieren, in die KI einfügen, Antwort zurück einfügen.
 3. Die Vorschau zeigt je Antwort bisherige und neue Punkte. Prüfen, dann eintragen.
+   Darüber steht (ab 1.2.0) die **Punkteverteilung dieser Bewertung** als Diagramm: 0 Punkte
+   links, Höchstpunktzahl rechts, Balken = Anzahl der Antworten, Linie = Normalverteilung.
+   Farben: unter 35 % der Punkte rot, um 50 % gelb, ab 65 % grün (mit Übergängen). Haben die
+   Aufgaben verschiedene Höchstpunktzahlen, zeigt es Prozent statt Punkte. Fällt die
+   Bewertung auffällig schief aus, sieht man es vor dem Eintragen.
 
 Eine einzelne Kurztest-Frage lässt sich auch auf ihrer eigenen Bewertungsseite bewerten –
 gleicher Prompt, gleiche Rechnung, nur für diese Frage.
