@@ -1,4 +1,7 @@
-/* Moodle AI Reviewer v2.0.0
+/* Moodle AI Reviewer v2.1.0
+ *
+ * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
+ *   aus der Ergebnisuebersicht des Tests (nur lesend).
  *
  * 2.0.0: Vorschau im Panel statt direktem Eintragen. Feste Regeln (lib/regeln.js)
  *   entscheiden vor jeder KI und legen fest, welche Faelle unklar sind; die Vorschau
@@ -25,6 +28,7 @@ import { KATEGORIEN } from './regeln.js';
 import { faelleSpeichern, ankerAusSammlung, laden as sammlungLaden, alsCsv, csvImportieren,
          leeren as sammlungLeeren } from './fehlersammlung.js';
 import { kiDirektBewerten } from './ki-bewertung.js';
+import { verteilungSvg } from './punkteverteilung.js';
 import { kiLaden, istLokal } from './ki-direkt/einstellungen.js';
 import { kiNachricht, kiFehlerText } from './ki-direkt/client.js';
 
@@ -1216,6 +1220,11 @@ ${DATEN_PLATZHALTER}`;
       </label>
       <p class="ce-schwelleinfo ce-fbschwelle ce-hidden"></p>
       <button class="ce-go">Test durchsuchen</button>
+      <details class="ce-verteilung">
+        <summary>📊 Punkteverteilung des Tests</summary>
+        <div class="ce-vtinhalt"></div>
+        <button class="ce-vtneu ce-zweit">↻ Neu laden</button>
+      </details>
       <div class="ce-progress ce-hidden"><div class="ce-bar"></div><span class="ce-ptext"></span></div>
       <div class="ce-result ce-hidden">
         <p class="ce-summary"></p>
@@ -1479,6 +1488,46 @@ ${DATEN_PLATZHALTER}`;
     b.textContent = `⚡ Direkt bewerten – ${cfg.modell} (${istLokal(cfg.basis) ? 'lokal' : 'Cloud'})`;
     b.classList.remove('ce-hidden');
   }
+
+  /* ---- Punkteverteilung (2.1.0) ---- */
+  // Gesamtpunkte je Versuch aus der Ergebnisuebersicht (mode=overview), nur lesend.
+  // Spalte ueber den Kopf "Bewertung/10,00" bzw. "Grade/10.00" gefunden, Klasse
+  // "sumgrades" als erste Wahl (flexible_table vergibt den Spaltennamen als Klasse).
+  async function gesamtpunkteLaden() {
+    const doc = await fetchDoc(`${BASE}?id=${CMID}&mode=overview&pagesize=5000`);
+    const table = doc.querySelector('table#attempts') || doc.querySelector('table.generaltable');
+    if (!table) throw new Error('Ergebnisübersicht nicht gefunden.');
+    const kopf = [...table.querySelectorAll('thead th')];
+    let idx = kopf.findIndex((th) => th.classList.contains('sumgrades'));
+    if (idx < 0) idx = kopf.findIndex((th) => /\/\s*[\d.,]+\s*$/.test(th.textContent.trim()));
+    if (idx < 0) throw new Error('Spalte mit den Gesamtpunkten nicht gefunden.');
+    const max = num((kopf[idx].textContent.match(/\/\s*([\d.,]+)\s*$/) || [])[1]);
+    const werte = [];
+    let ohne = 0;
+    table.querySelectorAll('tbody tr').forEach((tr) => {
+      if (!tr.querySelector('a[href*="review.php"]')) return;   // Durchschnittszeilen u. ae.
+      const zelle = tr.querySelector('td.sumgrades') || tr.children[idx];
+      const v = zelle ? num(zelle.textContent.replace(/[^\d.,-]/g, '')) : null;
+      if (v === null) ohne++; else werte.push(v);
+    });
+    return { werte, max, ohne };
+  }
+  async function verteilungZeigen() {
+    const box = $('.ce-vtinhalt');
+    box.textContent = 'Lade Ergebnisübersicht …';
+    try {
+      const r = await gesamtpunkteLaden();
+      if (!r.max) throw new Error('Höchstpunktzahl nicht erkannt.');
+      const v = verteilungSvg(r.werte, r.max);
+      if (!v.n) { box.textContent = 'Noch keine bewerteten Versuche.'; return; }
+      box.innerHTML = v.svg;
+      if (r.ohne) box.appendChild(el('p', 'ce-hinweis', `${r.ohne} Versuch(e) noch ohne Gesamtbewertung.`));
+    } catch (e) {
+      box.textContent = 'Konnte die Verteilung nicht laden: ' + e.message;
+    }
+  }
+  $('.ce-verteilung').addEventListener('toggle', () => { if ($('.ce-verteilung').open) verteilungZeigen(); });
+  $('.ce-vtneu').addEventListener('click', verteilungZeigen);
 
   /* ---- Fehlersammlung (2.0.0) ---- */
   async function sammlungAnzeigen() {

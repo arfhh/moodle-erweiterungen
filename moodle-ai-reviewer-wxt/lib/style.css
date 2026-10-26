@@ -547,3 +547,7 @@ a.ce-vober:hover { text-decoration: underline; }
 .ce-direkt { display: block; width: 100%; margin-top: 8px; padding: 9px 12px; border: none;
   border-radius: 6px; background: #7c3aed; color: #fff; font-size: 14px; cursor: pointer; }
 .ce-direkt:disabled { background: #a78bfa; cursor: progress; }
+.ce-verteilung { margin: 10px 0 4px; font-size: 13px; }
+.ce-verteilung summary { cursor: pointer; color: #0f766e; }
+.ce-vtinhalt { margin-top: 6px; }
+.ce-vtinhalt svg { display: block; }
