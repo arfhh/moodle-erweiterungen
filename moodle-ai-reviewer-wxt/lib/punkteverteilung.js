@@ -1,6 +1,6 @@
 /* Punkteverteilung als Diagramm (ab Reviewer 2.1.0) — wiederverwendbar, ohne DOM-Abhaengigkeit
- * ausser dem erzeugten SVG-Text. Waagerecht die Punkte (0 links, Maximum rechts), senkrecht
- * die Anzahl. Balken = echte Anzahl, darueber die Gauss-Kurve aus Mittelwert und Streuung.
+ * ausser dem erzeugten SVG-Text. Waagerecht die Punkte (Maximum links, 0 rechts), senkrecht
+ * die Anzahl. Volle Punktzahl LINKS, 0 rechts (Arne, 28.10.2026). Balken = echte Anzahl, darueber die Gauss-Kurve aus Mittelwert und Streuung.
  * Farbe nach Anteil an der Hoechstpunktzahl (Arne, 26.10.2026):
  *   < 35 % rot · 35–45 % rot→gelb · 45–55 % gelb · 55–65 % gelb→gruen · ab 65 % gruen
  * © 2026 A. Spielhoff, CC BY-SA 4.0
@@ -51,7 +51,8 @@ export function verteilungSvg(werte, max, opt = {}) {
   // Hoehe auch fuer die Spitze der Gauss-Kurve, sonst wird sie oben abgeschnitten.
   const spitze = streuung > 0 ? n * schritt / (streuung * Math.sqrt(2 * Math.PI)) : 0;
   const hmax = Math.max(2, ...anz, Math.ceil(spitze));
-  const x = (i) => L + bw * i + bw / 2;
+  // Gespiegelt: Stufe 0 ganz rechts, Hoechstpunktzahl ganz links.
+  const x = (i) => L + bw * (stufen.length - 1 - i) + bw / 2;
   const y = (c) => T + (H - T - B) * (1 - c / hmax);
   const tick = hmax <= 6 ? 1 : hmax <= 12 ? 2 : 5;
   const jedes = stufen.length > 12 ? 2 : 1;   // bei vielen Balken nur jede zweite Zahl
@@ -77,7 +78,7 @@ export function verteilungSvg(werte, max, opt = {}) {
     for (let k = 0; k <= 120; k++) {
       const v = -schritt / 2 + (max + schritt) * k / 120;
       const g = n * schritt / (streuung * Math.sqrt(2 * Math.PI)) * Math.exp(-((v - mittel) ** 2) / (2 * streuung ** 2));
-      const px = L + bw * (v / schritt) + bw / 2;
+      const px = L + bw * ((stufen[stufen.length - 1] - v) / schritt) + bw / 2;
       d += (k ? 'L' : 'M') + px.toFixed(1) + ',' + y(g).toFixed(1);
     }
     s += `<path d="${d}" fill="none" stroke="#1e293b" stroke-width="1.6"/>`;

@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.2.0 (Kurztest-Weg; 1.2.0: Punkteverteilung in der Vorschau) — Kern, aus content.js v1.8.10 uebernommen (WXT-Umzug 17.09.2026).
+/* Moodle AI Freitext Grader 1.2.1 (Kurztest-Weg; 1.2.0: Punkteverteilung in der Vorschau) — Kern, aus content.js v1.8.10 uebernommen (WXT-Umzug 17.09.2026).
  * Genau vier Aenderungen beim Umzug, wie beim Aufgaben-Grader:
  *  1. chrome.* -> browser.*        (Polyfill, Chrome UND Firefox)
  *  2. Skill-Verweis 1-chrome-mv3 -> 1-webext-robustheit

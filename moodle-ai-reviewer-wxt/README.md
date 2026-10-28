@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.1.1 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.1.2 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -428,7 +428,7 @@ du jeden Text in der Zusammenfassung.
 ## Punkteverteilung (ab 2.1.0)
 
 In Reiter **1 · Auslesen** zeigt **„📊 Punkteverteilung des Tests"** die Gesamtpunkte aller
-Versuche als Diagramm: 0 Punkte links, Höchstpunktzahl rechts, nach oben die Anzahl. Die
+Versuche als Diagramm: Höchstpunktzahl links, 0 Punkte rechts, nach oben die Anzahl. Die
 Balken zeigen die echte Anzahl, die Linie darüber die Normalverteilung (Gauß-Kurve) aus
 Durchschnitt und Streuung. Farben nach Anteil an der Höchstpunktzahl: unter 35 % rot,
 35–45 % rot→gelb, 45–55 % gelb, 55–65 % gelb→grün, ab 65 % grün. Die Daten kommen aus der
@@ -510,11 +510,15 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.1.1 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.1.2 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.1.2 (28.10.2026)**
+
+- Punkteverteilung gespiegelt: volle Punktzahl links, 0 Punkte rechts.
 
 **2.1.1 (26.10.2026)**
 
