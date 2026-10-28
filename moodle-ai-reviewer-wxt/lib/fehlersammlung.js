@@ -100,12 +100,51 @@ const csvFeld = (v) => {
   return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
 
+/**
+ * Aufnahmefilter beim Export (Skill 3-moodle-auswertung, ablage-und-filter.md): Rateversuche
+ * und Zeichenfolgen ohne Wortcharakter gehoeren nicht in den Cloze-Code. Gespeichert bleiben
+ * sie trotzdem — als Anker mit 0 % helfen sie beim naechsten Test.
+ */
+export function istRateversuch(z) {
+  const a = norm(z['Schülerantwort']);
+  const muster = norm(z['Musterlösung']);
+  // Kurze Antworten sind in Chemie oft richtig gemeint (e-, 0, 7) — nur ein einzelner
+  // Buchstabe bei einem langen Lösungswort gilt als Rateversuch.
+  return z.Fehlerkategorie === 'Rateversuch' || /^[%=]/.test(a) || !/[\p{L}\p{N}]/u.test(a)
+    || (a.length === 1 && /\p{L}/u.test(a) && muster.length > 3);
+}
+
+/** CSV fuer die Pflege der Fragen. Liefert { csv, n, uebersprungen }. */
 export function alsCsv(daten) {
-  const zeilen = Object.values(daten || {})
+  const alle = Object.values(daten || {});
+  const raus = alle.filter((z) => !istRateversuch(z));
+  const zeilen = raus
     .sort((a, b) => String(a.Fragename).localeCompare(String(b.Fragename))
       || (Number(a['Lücke']) - Number(b['Lücke'])))
     .map((z) => SPALTEN.map((s) => csvFeld(z[s])).join(';'));
-  return '﻿' + [SPALTEN.join(';'), ...zeilen].join('\r\n') + '\r\n';
+  return { csv: '\ufeff' + [SPALTEN.join(';'), ...zeilen].join('\r\n') + '\r\n',
+           n: raus.length, uebersprungen: alle.length - raus.length };
+}
+
+/**
+ * Eingepflegte Faelle entfernen: steht eine gesammelte Antwort inzwischen im Cloze-Code bzw.
+ * in der Antwortliste der Frage, ist sie eingepflegt und wird geloescht (Entscheidung: keine
+ * Historie). clozeTexte: { "qid|nr": [alle hinterlegten Antworttexte] } aus dem Auslesen.
+ */
+export async function eingepflegteEntfernen(clozeTexte) {
+  const daten = await laden();
+  let n = 0;
+  Object.entries(daten).forEach(([k, z]) => {
+    const texte = clozeTexte[z.qid + '|' + z['Lücke']];
+    if (!texte) return;
+    const sac = String(z['Lückentyp']).toUpperCase() === 'SAC';
+    const a = norm(z['Schülerantwort']);
+    if (texte.some((t) => (sac ? norm(t) === a : norm(t).toLowerCase() === a.toLowerCase()))) {
+      delete daten[k]; n++;
+    }
+  });
+  if (n) await sichern(daten);
+  return n;
 }
 
 // Einfacher CSV-Leser fuer das eigene Format (Semikolon, Anfuehrungszeichen verdoppelt).

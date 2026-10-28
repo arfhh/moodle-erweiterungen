@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.1.2 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.2.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -445,7 +445,11 @@ Wofür:
 - **Als Vergleich beim nächsten Test:** Varianten, die noch nicht in der Frage stehen,
   dienen als Anker. Deine eigenen Entscheidungen gehen vor denen der KI.
 - **Zum Pflegen der Fragen:** ⚙ → **„⬇ Als CSV exportieren"** – die Datei enthält alle
-  neuen Varianten, die du gebündelt in die Cloze-Lücken übernehmen kannst.
+  neuen Varianten, die du gebündelt in die Cloze-Lücken übernehmen kannst. Rateversuche
+  (Kategorie „Rateversuch", einzelner Buchstabe bei langem Lösungswort, Zeichen ohne
+  Buchstaben/Ziffern) bleiben im Export draußen, als Vergleich aber gespeichert.
+- **Räumt sich selbst auf:** Steht eine gesammelte Antwort beim nächsten Auslesen schon in
+  der Frage, ist sie eingepflegt und wird aus der Sammlung gelöscht.
 - **„⬆ CSV importieren"** (auch ohne Moodle: `chrome://extensions` → Moodle AI Reviewer → Details → **Erweiterungsoptionen**) übernimmt eine vorhandene Sammlung, etwa eine bisher von Hand
   geführte `Fehlersammlung.csv` oder den Export aus einem anderen Browser. Vorhandene
   Einträge bleiben unverändert.
@@ -510,11 +514,16 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.1.2 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.2.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.2.0 (28.10.2026)**
+
+- Fehlersammlung räumt sich selbst auf: beim Auslesen werden Fälle gelöscht, die inzwischen in der Frage stehen.
+- Export lässt Rateversuche weg und meldet, wie viele übersprungen wurden.
 
 **2.1.2 (28.10.2026)**
 

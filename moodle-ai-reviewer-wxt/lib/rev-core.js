@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.1.2
+/* Moodle AI Reviewer v2.2.0
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
@@ -25,7 +25,7 @@
 import { browser } from 'wxt/browser';
 import { datenFuerKi, faelleBauen, zuBewertungen, zeigeVorschau, regelFaelle } from './vorschau.js';
 import { KATEGORIEN } from './regeln.js';
-import { faelleSpeichern, ankerAusSammlung, laden as sammlungLaden, alsCsv, csvImportieren,
+import { faelleSpeichern, ankerAusSammlung, eingepflegteEntfernen, laden as sammlungLaden, alsCsv, csvImportieren,
          leeren as sammlungLeeren } from './fehlersammlung.js';
 import { kiDirektBewerten } from './ki-bewertung.js';
 import { verteilungSvg } from './punkteverteilung.js';
@@ -925,6 +925,9 @@ ${DATEN_PLATZHALTER}`;
     onProgress(zeilen.length, zeilen.length, funde.length + feedback.length,
                'Lösungen werden geladen …');
     const warteschlange = [...namen];
+    // 2.2.0: alle hinterlegten Antworttexte je Luecke — daran erkennt die Fehlersammlung,
+    // was inzwischen eingepflegt ist. Geht nicht in den Prompt.
+    const clozeTexte = {};
     await Promise.all(Array.from({ length: 4 }, async () => {
       while (warteschlange.length) {
         const name = warteschlange.shift();
@@ -939,6 +942,9 @@ ${DATEN_PLATZHALTER}`;
         // an den Einstufungen auszurichten, die die Lehrkraft schon vergeben hat.
         // Die 0,01-%-Marker bleiben draussen: sie sind ein technischer Eintrag im
         // Cloze-Quelltext, kein Bewertungswert, und wuerden die Skala verwaessern.
+        luecken.forEach((l) => {
+          clozeTexte[fragen[name].qid + '|' + l.nr] = (l.varianten || []).map((v) => v.text);
+        });
         fragen[name].loesungen = luecken.map((l) => {
           const eintrag = { nr: l.nr, typ: l.typ, richtig: l.richtig };
           const bekannt = {};
@@ -955,7 +961,7 @@ ${DATEN_PLATZHALTER}`;
     }));
 
     return {
-      zeilen: zeilen.length, funde, feedback, fragen, fehler,
+      zeilen: zeilen.length, funde, feedback, fragen, fehler, clozeTexte,
       ohneLoesung, mitLoesung: namen.length - ohneLoesung, uebersprungen
     };
   }
@@ -1549,12 +1555,14 @@ ${DATEN_PLATZHALTER}`;
   $('.ce-sexport').addEventListener('click', async () => {
     const d = await sammlungLaden();
     if (!Object.keys(d).length) { sammelMeldung('Nichts zu exportieren – die Sammlung ist leer.'); return; }
-    const url = URL.createObjectURL(new Blob([alsCsv(d)], { type: 'text/csv;charset=utf-8' }));
+    const ex = alsCsv(d);
+    const url = URL.createObjectURL(new Blob([ex.csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url; a.download = `Fehlersammlung-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    sammelMeldung(`✓ ${Object.keys(d).length} Fälle als CSV heruntergeladen.`);
+    sammelMeldung(`✓ ${ex.n} Fälle als CSV heruntergeladen`
+      + (ex.uebersprungen ? `, ${ex.uebersprungen} als Rateversuch übersprungen.` : '.'));
   });
   $('.ce-simport').addEventListener('click', () => $('.ce-sdatei').click());
   $('.ce-sdatei').addEventListener('change', async () => {
@@ -1619,6 +1627,8 @@ ${DATEN_PLATZHALTER}`;
 
       // 2.0.0: noch nicht eingepflegte Faelle der eigenen Fehlersammlung als zusaetzliche
       // Anker. Was schon im Cloze-Code steht, hat Vorrang (dort hat die Lehrkraft es eingetragen).
+      const eingepflegt = await eingepflegteEntfernen(res.clozeTexte || {});
+      if (eingepflegt) sammlungAnzeigen();
       const sammlung = ankerAusSammlung(await sammlungLaden());
       let sammelAnker = 0;
       Object.values(res.fragen).forEach((fr) => (fr.loesungen || []).forEach((l) => {
@@ -1665,6 +1675,9 @@ ${DATEN_PLATZHALTER}`;
       const regelAnz = regelFaelle(ausgabe).size;
       if (sammelAnker) {
         $('.ce-summary').textContent += ` ${sammelAnker} Variante(n) aus deiner Fehlersammlung dienen als Anker.`;
+      }
+      if (eingepflegt) {
+        $('.ce-summary').textContent += ` ${eingepflegt} Fall/Fälle aus der Fehlersammlung stehen inzwischen in den Fragen und wurden dort gelöscht.`;
       }
       if (regelAnz) {
         $('.ce-summary').textContent += ` ${regelAnz} Lücke(n) entscheidet die Erweiterung selbst `

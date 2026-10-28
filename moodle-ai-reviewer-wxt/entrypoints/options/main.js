@@ -132,12 +132,14 @@ $('sdatei').addEventListener('change', async () => {
 $('sexport').addEventListener('click', async () => {
   const d = await sammlungLaden();
   if (!Object.keys(d).length) { melde('sinfo', 'Nichts zu exportieren – die Sammlung ist leer.', false); return; }
-  const url = URL.createObjectURL(new Blob([alsCsv(d)], { type: 'text/csv;charset=utf-8' }));
+  const ex = alsCsv(d);
+  const url = URL.createObjectURL(new Blob([ex.csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url; a.download = `Fehlersammlung-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
-  melde('sinfo', `✓ ${Object.keys(d).length} Fälle als CSV heruntergeladen.`, true);
+  melde('sinfo', `✓ ${ex.n} Fälle als CSV heruntergeladen`
+    + (ex.uebersprungen ? `, ${ex.uebersprungen} als Rateversuch übersprungen.` : '.'), true);
 });
 sammlungStand();
 
