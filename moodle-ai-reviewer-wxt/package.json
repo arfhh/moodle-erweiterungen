@@ -1,7 +1,7 @@
 {
   "name": "moodle-ai-reviewer",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.2.1",
   "type": "module",
   "scripts": {
     "dev": "wxt -b chrom",
@@ -12,10 +12,10 @@
     "build-all": "npm run build:chrome && npm run build:firefox && npm run build:edge",
     "zip:chrome": "wxt zip -b chrom",
     "zip:firefox": "wxt zip -b firefox",
-    "lint": "web-ext lint --source-dir=Erweiterung/moodle-ai-reviewer-chrom && web-ext lint --source-dir=Erweiterung/moodle-ai-reviewer-firefox",
+    "lint": "web-ext lint --source-dir=\"Erweiterung/moodle-ai-reviewer-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\"",
     "postinstall": "wxt prepare",
     "paket": "bash scripts/paketieren.sh",
-    "sign:firefox": "web-ext sign --source-dir=Erweiterung/moodle-ai-reviewer-firefox --artifacts-dir=web-ext-artifacts --channel=unlisted"
+    "sign:firefox": "web-ext sign --source-dir=\"Erweiterung/moodle-ai-reviewer-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\" --artifacts-dir=web-ext-artifacts --channel=unlisted"
   },
   "devDependencies": {
     "wxt": "^0.21.4",

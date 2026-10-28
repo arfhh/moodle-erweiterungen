@@ -3,3 +3,4 @@ Erweiterung/
 node_modules/
 stats.html
 *.zip
+web-ext-artifacts/

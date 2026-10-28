@@ -1,0 +1,18 @@
+Quelltext von Moodle AI Reviewer (unveraendert, nicht gebuendelt/minifiziert).
+
+Bauen der Firefox-Fassung:
+1. Node.js 20 oder neuer installieren (https://nodejs.org)
+2. In diesem Ordner: npm install
+3. Dann: npm run build:firefox
+   (gleichwertig: npx wxt build -b firefox)
+4. Ergebnis liegt danach in Erweiterung/moodle-ai-reviewer-firefox/
+   (manifest.json, background.js, options.html, chunks/, content-scripts/, icon/)
+
+Quelltext der Erweiterung: entrypoints/content.ts, entrypoints/background.ts,
+entrypoints/options/ (index.html, main.js), lib/*.js, lib/ki-direkt/*.js, lib/style.css
+Gebaut mit WXT (https://wxt.dev). Kein externer Code zur Laufzeit. Netzverkehr nur zu der
+Moodle-Seite, auf der die Erweiterung laeuft, und – nur wenn die Lehrkraft die optionale
+Funktion "KI direkt" einschaltet – zu der KI-Adresse, die sie selbst eintraegt.
+Keine Telemetrie, keine Datensammlung durch den Entwickler.
+
+Lizenz CC BY-SA 4.0 – A. Spielhoff.

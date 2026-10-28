@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.2.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.2.1 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -514,11 +514,15 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.2.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.2.1 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.2.1 (28.10.2026)**
+
+- Firefox-Einreichung vorbereitet: `npm run paket` baut zusätzlich `…-firefox.zip` und `…-quellcode.zip` für addons.mozilla.org (Anleitung und Texte: `FIREFOX-EINREICHUNG.md`, `BAUANLEITUNG.txt`); `sign:firefox` und `lint` zeigen auf den richtigen Ordner.
 
 **2.2.0 (28.10.2026)**
 
