@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.3.1
+/* Moodle AI Reviewer v2.3.2
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
@@ -28,7 +28,7 @@ import { KATEGORIEN, sacWert, setzeSacWert } from './regeln.js';
 import { faelleSpeichern, ankerAusSammlung, eingepflegteEntfernen, laden as sammlungLaden, alsCsv, csvImportieren,
          leeren as sammlungLeeren } from './fehlersammlung.js';
 import { kiDirektBewerten } from './ki-bewertung.js';
-import { verteilungSvg } from './punkteverteilung.js';
+import { verteilungSvg, svgKnoten } from './punkteverteilung.js';
 import { kiLaden, istLokal } from './ki-direkt/einstellungen.js';
 import { kiNachricht, kiFehlerText } from './ki-direkt/client.js';
 
@@ -1547,7 +1547,8 @@ ${DATEN_PLATZHALTER}`;
       if (!r.max) throw new Error('Höchstpunktzahl nicht erkannt.');
       const v = verteilungSvg(r.werte, r.max);
       if (!v.n) { box.textContent = 'Noch keine bewerteten Versuche.'; return; }
-      box.innerHTML = v.svg;
+      box.textContent = '';
+      box.appendChild(svgKnoten(v.svg));
       if (r.ohne) box.appendChild(el('p', 'ce-hinweis', `${r.ohne} Versuch(e) noch ohne Gesamtbewertung.`));
     } catch (e) {
       box.textContent = 'Konnte die Verteilung nicht laden: ' + e.message;
