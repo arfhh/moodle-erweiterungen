@@ -551,3 +551,13 @@ a.ce-vober:hover { text-decoration: underline; }
 .ce-verteilung summary { cursor: pointer; color: #0f766e; }
 .ce-vtinhalt { margin-top: 6px; }
 .ce-vtinhalt svg { display: block; }
+
+/* ---- ab 2.4.0: schlankere Oberflaeche ---- */
+.ce-link { display: block; margin: 6px auto 0; padding: 2px 4px; border: none; background: none;
+  color: #0f766e; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+.ce-copyhinweis { margin: 4px 0 0; font-size: 12px; }
+.ce-mehr { margin-top: 10px; font-size: 13px; }
+.ce-mehr summary, .ce-was summary { cursor: pointer; color: #0f766e; font-size: 12.5px; }
+.ce-was { margin: 2px 0 8px; }
+.ce-abschnitt.ce-erster { margin-top: 0; padding-top: 0; border-top: none; }
+.ce-erweitert > summary { cursor: pointer; }

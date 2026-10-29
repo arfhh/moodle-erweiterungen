@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.3.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.3.1 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -154,14 +154,12 @@ Zusätzlich sitzt ihr Knopf (🔎, petrol) etwas tiefer als der des Graders (�
 1. In Moodle: **Test → Ergebnisse → Manuelle Bewertung**
 2. Auf **„Automatisch bewertete Fragen anzeigen"** klicken.
 3. Rechts erscheint der Knopf 🔎 — anklicken.
-4. **„Auch schwache Antworten fürs Feedback sammeln"** steht seit 1.5 vorbelegt auf
-   *an* und merkt sich deine Wahl. Die **Schwelle** darunter ist ein Prozentsatz der
-   erreichbaren Punkte (Standard 50 %), gilt also bei einer 1-Punkt- und einer
-   2-Punkte-Frage gleichermaßen. Unter dem Feld steht, was der Wert konkret bedeutet.
-   Leere Lücken werden immer mitgenommen, unabhängig von der Schwelle.
+4. (Einmalig, unter ⚙ → Bewertung:) **„Feedback für schwache Antworten schreiben lassen"**
+   ist vorbelegt. Die **Schwelle** ist ein Prozentsatz der erreichbaren Punkte (Standard
+   50 %). Leere Lücken werden immer mitgenommen.
 5. **„Test durchsuchen"** klicken. Die Erweiterung lädt alle Fragen des Tests im
    Hintergrund und zeigt den Fortschritt. Bei ~110 Fragen dauert das ein bis zwei Minuten.
-6. Ergebnisliste prüfen, dann **„📋 Prompt + Daten kopieren"**.
+6. **„📋 Prompt kopieren"** (die gefundenen Antworten lassen sich darunter aufklappen).
    (Mit eingerichteter „KI direkt" stattdessen **„⚡ Direkt bewerten"** – dann entfallen 7 und 8.)
 7. Den Block in ChatGPT oder Claude einfügen und abschicken.
 8. Die Antwort der KI (ein JSON-Block) kopieren und in Reiter **2 · Eintragen** einfügen.
@@ -195,8 +193,8 @@ Erweiterung Bescheid; dann gibst du die Fragen-XML zusätzlich mit in den Chat.
 
 | Knopf | Wann |
 |---|---|
-| **📋 Prompt + Daten kopieren** | Der Normalfall. Kopiert eine vollständige Arbeitsanweisung samt Daten — Bewertungsskala, Punkteberechnung, Ausgabeformat. Funktioniert in jedem KI-Chat, ohne Vorbereitung. |
-| **📋 nur JSON** | Für einen Chat, der die Auswertungsregeln schon kennt, etwa über ein eigenes Projekt oder Skill. Kopiert nur die Rohdaten. |
+| **📋 Prompt kopieren** (Reiter 1) | Der Normalfall. Kopiert eine vollständige Arbeitsanweisung samt Daten — Bewertungsskala, Punkteberechnung, Ausgabeformat. Funktioniert in jedem KI-Chat, ohne Vorbereitung. |
+| **📋 Nur die Daten kopieren** (⚙ → Erweitert) | Für einen Chat, der die Auswertungsregeln schon kennt, etwa über ein eigenes Projekt oder Skill. Kopiert nur die Rohdaten. |
 
 Unter den Knöpfen steht, wie lang der Prompt geworden ist. Bei sehr vielen Funden
 kann er die Länge erreichen, die ein Chat auf einmal annimmt — dann in zwei Durchgängen
@@ -267,6 +265,11 @@ Variante, die man beim Überarbeiten der Aufgabe brauchen kann.
 ---
 
 ## Einstellungen (⚙ im Panel)
+
+Seit 2.3.1 in vier Abschnitten: **Bewertung** (Groß-/Kleinschreibung, Feedback, KI-Hinweis,
+schon nachbewertete Versuche), **KI direkt**, **Fehlersammlung** und eingeklappt
+**Erweitert** (die drei folgenden Optionen und „Nur die Daten kopieren"). Reiter 1 enthält
+nur noch „Test durchsuchen" und den Weg zur KI.
 
 **Vollständigen Aufgaben-Quelltext mitgeben** — normalerweise bekommt die KI je Lücke
 nur die als richtig hinterlegten Antworten. Mit dieser Option geht zusätzlich der
@@ -368,7 +371,7 @@ Auswertung an anderer Stelle passiert.
    vergebenen Prozenten. Ein Klick auf die Zeile öffnet den Versuch in Moodle.
    Einträge, bei denen alle Lücken 0 % bekommen haben, werden dabei weggelassen und
    gezählt — sie würden in Moodle nichts ändern.
-2. **„Alle eintragen"**. Jeder Eintrag wird nach dem Speichern gegengeprüft; was nicht
+2. **„In Moodle eintragen"**. Jeder Eintrag wird nach dem Speichern gegengeprüft; was nicht
    ankommt, steht im Protokoll. (Der frühere Trockenlauf ist seit 1.6.0 entfallen.)
 
 Gab es keinen einzigen Fehler, meldet die Erweiterung „✓ Fertig" und schließt sich
@@ -515,11 +518,16 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.3.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.3.1 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.3.1 (29.10.2026)**
+
+- Schlankere Oberfläche: Reiter 1 nur noch „Test durchsuchen" und ein Hauptknopf (mit KI direkt „⚡ Direkt bewerten", sonst „Prompt kopieren"), Fundliste eingeklappt; alle Häkchen in ⚙ → Bewertung; ⚙ in Abschnitte mit „Was bedeutet …?"-Kästen, Sonderoptionen unter „Erweitert".
+- Texte fachneutral: Untertitel, Feedback-Prompt für KI direkt, Beispiele im Prompt aus mehreren Fächern.
 
 **2.3.0 (29.10.2026)**
 

@@ -17,7 +17,7 @@ Nur Groß-/Kleinschreibung falsch: bei Typ SAC genau ${sacWert()}, bei Typ SA 10
 Regeln: Vergleiche mit ALLEN richtigen Antworten. Beurteile das Wort für DIESE Lücke im Satz, nicht ob der Satz fachlich stimmt (Verneinungen!). Sind bekannte Varianten angegeben, verankere dich daran: eine ähnlich fehlerhafte Antwort bekommt denselben Wert. Nie 0,01.
 Antworte NUR mit JSON: {"bewertungen":[{"id":1,"prozent":75,"grund":"höchstens 12 Wörter","kategorie":"Tippfehler"}]} – für jede id genau ein Eintrag. kategorie aus: ${KATEGORIEN.join(', ')}. In Texten keine doppelten Anführungszeichen.`;
 
-const SYSTEM_FEEDBACK = `Du schreibst kurze Rückmeldungen an Schülerinnen und Schüler zu einem Chemie-Kurztest. Je Versuch EIN Text:
+const SYSTEM_FEEDBACK = `Du schreibst kurze Rückmeldungen an Schülerinnen und Schüler zu einem Kurztest. Je Versuch EIN Text:
 - Nenne das gesuchte Lösungswort (ausdrücklich erwünscht), bei mehreren Lücken getrennt: Lücke 1: … · Lücke 2: …
 - Jede leere Lücke mit ihrer Nummer nennen.
 - Bei Verwechslungsgefahr ein erklärender Satz, sonst nichts weiter. Direkt ansprechen (du), sachlich, ohne Floskeln.

@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.3.0
+/* Moodle AI Reviewer v2.3.1
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
@@ -470,11 +470,12 @@ BEWERTUNGSSKALA – VERBINDLICH
 Vergib je Lücke genau einen dieser sechs Werte. Keine Zwischenwerte.
 
 100 %  Richtig geschrieben, oder ein echtes gleichwertiges Synonym.
-       Beispiele: „Bunsenbrenner" statt „Gasbrenner"; „Stößel" statt „Pistill";
+       Beispiele: „Bunsenbrenner" statt „Gasbrenner"; „Fotosynthese" statt „Photosynthese";
+       „Erdteil" statt „Kontinent";
        eine andere gültige Wortform desselben Begriffs.
 
  90 %  Wort vollständig korrekt, NUR die Groß-/Kleinschreibung stimmt nicht.
-       Beispiel: „pistill" statt „Pistill".
+       Beispiel: „pistill" statt „Pistill", „äquator" statt „Äquator".
        ACHTUNG – diese Stufe gilt AUSSCHLIESSLICH bei Lücken vom Typ SAC
        (unterscheidet Groß-/Kleinschreibung). Bei Lücken vom Typ SA ignoriert
        Moodle die Groß-/Kleinschreibung ohnehin; dort ist so eine Antwort 100 %.
@@ -483,21 +484,22 @@ Vergib je Lücke genau einen dieser sechs Werte. Keine Zwischenwerte.
 
  75 %  Ein einzelner klarer Tippfehler – ein Buchstabe vertauscht, doppelt oder
        fehlend. Das Wort bleibt eindeutig erkennbar.
-       Beispiele: „Mistill" statt „Pistill"; „Bechergals" statt „Becherglas".
+       Beispiele: „Mistill" statt „Pistill"; „Äquatro" statt „Äquator"; „Mitochondrim" statt
+       „Mitochondrium".
 
  50 %  Mehrere Tippfehler oder eine stärkere Verschreibung. Das Wort ist noch mit
        Mühe erkennbar, man muss aber überlegen.
-       Beispiele: „Bechaglas" statt „Becherglas"; „Erlemayer" statt „Erlenmeyerkolben".
+       Beispiele: „Erlemayer" statt „Erlenmeyerkolben"; „Fotosyntes" statt „Fotosynthese".
 
  25 %  Nur Wortstamm oder Wortanfang erkennbar, starke Verkürzung.
-       Beispiele: „Becher" statt „Becherglas"; „Erlen" statt „Erlenmeyerkolben".
+       Beispiele: „Becher" statt „Becherglas"; „Mito" statt „Mitochondrium".
 
   0 %  Falsches Wort oder falscher Gegenstand – auch dann, wenn das Genannte
-       fachlich wirklich existiert. Wer statt des Messzylinders „Reagenzglas"
-       schreibt, hat das Gerät nicht erkannt: 0 %.
+       fachlich wirklich existiert. Wer statt des Messzylinders „Reagenzglas" oder
+       statt „Zellkern" „Zellwand" schreibt, hat den Begriff nicht erkannt: 0 %.
        Ebenso Rateversuche („A", „xyz"), sinnlose Eingaben und Wörter, die
        erkennbar aus dem Aufgabensatz abgeschrieben wurden.
-       ABGRENZUNG: Eine Verwechslung innerhalb derselben Gerätefamilie kann höher
+       ABGRENZUNG: Eine Verwechslung innerhalb derselben Begriffsfamilie kann höher
        liegen, wenn sie unter „bekannte_varianten" so hinterlegt ist – etwa
        „Kartuschenbrenner" statt „Gasbrenner" mit 50 %. Steht dort ein Wert, gilt
        er; nur wenn nichts hinterlegt ist, entscheidest du nach dieser Skala.
@@ -1207,7 +1209,7 @@ ${DATEN_PLATZHALTER}`;
     <div class="ce-head">
       <div class="ce-titelblock">
         <span class="ce-title">🔎 AI Reviewer <span class="ce-version"></span></span>
-        <span class="ce-untertitel">Unerkannte automatische Antworten nachbewerten</span>
+        <span class="ce-untertitel">Nicht erkannte Antworten nachbewerten</span>
       </div>
       <button class="ce-close" title="Schließen">✕</button>
     </div>
@@ -1219,42 +1221,33 @@ ${DATEN_PLATZHALTER}`;
 
     <div class="ce-body" data-panel="ernte">
       <p class="ce-meta"></p>
-      <label class="ce-check"><input type="checkbox" class="ce-fb">
-        Auch schwache Antworten fürs Feedback sammeln</label>
-      <label class="ce-check"><input type="checkbox" class="ce-bereits">
-        Auch schon nachbewertete Versuche noch einmal vorlegen</label>
-      <label class="ce-label ce-fbschwelle ce-hidden">Schwelle (% der erreichbaren Punkte)
-        <input type="text" class="ce-schwelle" value="50">
-      </label>
-      <p class="ce-schwelleinfo ce-fbschwelle ce-hidden"></p>
       <button class="ce-go">Test durchsuchen</button>
-      <details class="ce-verteilung">
-        <summary>📊 Punkteverteilung des Tests</summary>
-        <div class="ce-vtinhalt"></div>
-        <button class="ce-vtneu ce-zweit">↻ Neu laden</button>
-      </details>
       <div class="ce-progress ce-hidden"><div class="ce-bar"></div><span class="ce-ptext"></span></div>
       <div class="ce-result ce-hidden">
         <p class="ce-summary"></p>
         <button class="ce-direkt ce-hidden">⚡ Direkt bewerten</button>
         <p class="ce-direktinfo ce-hidden"></p>
-        <button class="ce-copy">📋 Prompt + Daten kopieren</button>
-        <button class="ce-copy2 ce-zweit">📋 nur JSON</button>
-        <button class="ce-ohneki ce-zweit">✋ Ohne KI selbst entscheiden</button>
-        <p class="ce-groesse"></p>
-        <div class="ce-list"></div>
+        <button class="ce-copy">📋 Prompt kopieren</button>
+        <p class="ce-hinweis ce-copyhinweis">In einen KI-Chat einfügen, die Antwort in Reiter 2 einfügen.</p>
+        <button class="ce-ohneki ce-link">oder ohne KI selbst entscheiden</button>
+        <details class="ce-mehr">
+          <summary>Gefundene Antworten anzeigen</summary>
+          <p class="ce-groesse"></p>
+          <div class="ce-list"></div>
+        </details>
       </div>
       <p class="ce-error ce-hidden"></p>
+      <details class="ce-verteilung">
+        <summary>📊 Punkteverteilung des Tests</summary>
+        <div class="ce-vtinhalt"></div>
+        <button class="ce-vtneu ce-zweit">↻ Neu laden</button>
+      </details>
     </div>
 
     <div class="ce-body ce-hidden" data-panel="eintrag">
-      <p class="ce-hinweis">Hier die Antwort der KI einfügen. Danach öffnet sich die Vorschau:
-      unklare Fälle entscheidest du, eingetragen wird erst nach deinem Klick – genau so, als
-      tipptest du den Wert selbst ins Punktefeld und speichertest.</p>
-      <textarea class="ce-json" rows="6" placeholder='{ "punkte": [ … ] }'></textarea>
-      <label class="ce-check"><input type="checkbox" class="ce-ki" checked>
-        KI-Hinweis ans Feedback anhängen</label>
-      <p class="ce-kivorschau"></p>
+      <p class="ce-hinweis">Antwort der KI hier einfügen – die Vorschau öffnet sich von selbst.
+      Gespeichert wird erst mit „In Moodle eintragen".</p>
+      <textarea class="ce-json" rows="5" placeholder="Antwort der KI hier einfügen"></textarea>
       <button class="ce-pruef ce-hidden">🔍 Prüfen</button>
       <div class="ce-vorschau ce-hidden"></div>
       <p class="ce-pinfo ce-hidden"></p>
@@ -1268,64 +1261,47 @@ ${DATEN_PLATZHALTER}`;
     </div>
 
     <div class="ce-body ce-hidden" data-panel="opt">
-      <label class="ce-check"><input type="checkbox" class="ce-voll">
-        Vollständigen Aufgaben-Quelltext mitgeben</label>
-      <p class="ce-hinweis">Normalerweise bekommt die KI je Lücke nur die als richtig
-      hinterlegten Antworten – das genügt für die Bewertung. Mit dieser Option geht
-      zusätzlich der komplette Quelltext jeder Aufgabe mit, also auch alle bereits
-      erfassten Fehlervarianten samt Prozentwerten.
-      <strong>Das verbraucht sehr viel mehr KI-Ressourcen</strong> – rund 2.000 Zeichen
-      je Aufgabe. Nur einschalten, wenn du die vorhandenen Varianten wirklich brauchst.
-      Wirkt nur bei Lückentext-Aufgaben; Kurzantwort-Fragen haben keinen Quelltext.</p>
+      <div class="ce-abschnitt ce-erster">
+        <p class="ce-abschnittkopf">Bewertung</p>
+        <label class="ce-label">Nur Groß-/Kleinschreibung falsch
+          <select class="ce-gksac">
+            <option value="100">100 %</option><option value="90">90 % (Standard)</option>
+            <option value="75">75 %</option><option value="50">50 %</option>
+            <option value="25">25 %</option><option value="0">0 %</option>
+          </select>
+        </label>
+        <details class="ce-was"><summary>Was bedeutet „Nur Groß-/Kleinschreibung falsch"?</summary>
+          <p class="ce-hinweis">Gilt für Lücken, die auf Groß-/Kleinschreibung achten (Typ SAC). Diese
+          Fälle entscheidet die Erweiterung selbst, ohne KI. Wie streng, hängt vom Fach ab: Zählt
+          nur das Wort, passt 90 %; ist die Schreibung selbst Lerngegenstand (z. B. Deutsch), eher
+          0 %. Bei Typ SA achtet Moodle ohnehin nicht auf Groß-/Kleinschreibung.</p></details>
 
-      <label class="ce-label">Nur Groß-/Kleinschreibung falsch (Lückentyp SAC)
-        <select class="ce-gksac">
-          <option value="100">100 %</option><option value="90">90 % (Standard)</option>
-          <option value="75">75 %</option><option value="50">50 %</option>
-          <option value="25">25 %</option><option value="0">0 %</option>
-        </select>
-      </label>
-      <p class="ce-hinweis">Diese Fälle entscheidet die Erweiterung selbst, ohne KI. Wie streng,
-      hängt vom Fach ab: In Chemie zählt meist das Wort (90 %), in Deutsch ist die Schreibung
-      oft der Lerngegenstand (0 %). Bei Lückentyp SA achtet Moodle ohnehin nicht auf
-      Groß-/Kleinschreibung.</p>
+        <label class="ce-check"><input type="checkbox" class="ce-fb">
+          Feedback für schwache Antworten schreiben lassen</label>
+        <label class="ce-label ce-fbschwelle ce-hidden">… bis zu wie viel % der Punkte
+          <input type="text" class="ce-schwelle" value="50">
+        </label>
+        <p class="ce-schwelleinfo ce-fbschwelle ce-hidden"></p>
 
-      <label class="ce-check"><input type="checkbox" class="ce-fbvorher">
-        Feedback vor dem Eintragen anzeigen</label>
-      <p class="ce-hinweis">Aus (Standard): Die Feedback-Texte der KI gehen mit dem
-      KI-Hinweis direkt mit. An: Du siehst jeden Text in der Zusammenfassung und kannst
-      ihn vor dem Eintragen ändern.</p>
+        <label class="ce-check"><input type="checkbox" class="ce-fbvorher">
+          Feedback vor dem Eintragen anzeigen und ändern können</label>
 
-      <label class="ce-check"><input type="checkbox" class="ce-kompakt">
-        Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
-      <p class="ce-hinweis">Verweist für die Bewertungslogik auf die Skills
-      „3-moodle-auswertung“ und „2-didaktik-bewertung“ statt sie komplett auszuschreiben
-      – spart pro Aufruf mehrere Tausend Zeichen. <strong>Nur einschalten, wenn du sicher
-      bist, dass die verwendete KI diese Skills wirklich kennt</strong> (z. B. dein eigener
-      Claude-Cowork-Zugang). Andere Lehrkräfte oder andere KI-Systeme lassen dieses
-      Häkchen aus – die bekommen automatisch den vollständigen Prompt.</p>
+        <label class="ce-check"><input type="checkbox" class="ce-ki" checked>
+          KI-Hinweis unter das Feedback setzen</label>
+        <p class="ce-kivorschau"></p>
+        <label class="ce-label">Text des KI-Hinweises
+          <textarea class="ce-kitext" rows="2"></textarea>
+        </label>
 
-      <label class="ce-label">Eigener Prompt (leer = Standard)
-        <textarea class="ce-prompt" rows="8" placeholder="Leer lassen, um den mitgelieferten Prompt zu verwenden."></textarea>
-      </label>
-      <p class="ce-hinweis">Der Platzhalter <code>[MOODLE_AI_REVIEWER_DATEN]</code> wird
-      durch die Daten aus Moodle ersetzt, <code>[FEEDBACK_BLOCK]</code> durch die
-      Feedback-Anweisungen. Fehlen sie, werden die Daten hinten angehängt.</p>
-      <label class="ce-label">KI-Hinweis unter dem Feedback
-        <textarea class="ce-kitext" rows="3"></textarea>
-      </label>
-      <p class="ce-hinweis">Dieser Satz wird unter jedes Feedback gesetzt – kursiv und
-      klein –, solange in Tab 2 das Häkchen gesetzt ist. Leer lassen setzt beim
-      Speichern den Standardsatz wieder ein.</p>
+        <label class="ce-check"><input type="checkbox" class="ce-bereits">
+          Schon nachbewertete Versuche noch einmal vorlegen</label>
+      </div>
 
       <div class="ce-abschnitt">
         <p class="ce-abschnittkopf">KI direkt (optional)</p>
         <p class="ce-hinweis ce-kistand">…</p>
-        <p class="ce-hinweis">Statt Prompt kopieren und Antwort einfügen kann die Erweiterung eine
-        KI selbst fragen: eine <strong>lokale</strong> auf deinem Rechner (z. B. LM Studio, Ollama,
-        Bionic – die Daten verlassen den Rechner nicht) oder mit eigenem API-Schlüssel einen
-        <strong>Cloud-Dienst</strong>. Standard: aus. Ohne diese Einstellung funktioniert alles wie
-        gewohnt über das Kopieren.</p>
+        <p class="ce-hinweis">Die Erweiterung fragt die KI selbst – kein Kopieren. Lokal auf deinem
+        Rechner (z. B. LM Studio, Ollama) oder mit eigenem API-Schlüssel bei einem Cloud-Dienst.</p>
         <button class="ce-kiopt ce-zweit">KI-Einstellungen öffnen</button>
         <p class="ce-kioptinfo ce-sinfo ce-hidden"></p>
       </div>
@@ -1333,10 +1309,12 @@ ${DATEN_PLATZHALTER}`;
       <div class="ce-abschnitt">
         <p class="ce-abschnittkopf">Fehlersammlung</p>
         <p class="ce-hinweis ce-sammelstand">…</p>
-        <p class="ce-hinweis">Jeder Fall, den du über die Vorschau einträgst, wird hier gesammelt
-        (nur in diesem Browser). Noch nicht in die Frage eingepflegte Varianten helfen beim nächsten
-        Test als Vergleich; deine eigenen Entscheidungen gehen dabei vor denen der KI. Der Export
-        hat denselben Aufbau wie Fehlersammlung.csv.</p>
+        <details class="ce-was"><summary>Was ist die Fehlersammlung?</summary>
+          <p class="ce-hinweis">Jeder Fall, den du einträgst, wird hier gesammelt (nur in diesem
+          Browser). Noch nicht in die Frage eingepflegte Varianten dienen beim nächsten Test als
+          Vergleich; deine Entscheidungen gehen vor denen der KI. Der Export enthält die neuen
+          Varianten zum Einpflegen in die Fragen; was dort angekommen ist, löscht die Erweiterung
+          beim nächsten Auslesen selbst.</p></details>
         <button class="ce-sexport ce-zweit">⬇ Als CSV exportieren</button>
         <button class="ce-simport ce-zweit">⬆ CSV importieren</button>
         <input type="file" class="ce-sdatei ce-hidden" accept=".csv,text/csv">
@@ -1344,9 +1322,27 @@ ${DATEN_PLATZHALTER}`;
         <p class="ce-sinfo ce-hidden"></p>
       </div>
 
+      <details class="ce-abschnitt ce-erweitert">
+        <summary class="ce-abschnittkopf">Erweitert</summary>
+        <label class="ce-check"><input type="checkbox" class="ce-voll">
+          Vollständigen Aufgaben-Quelltext mitgeben</label>
+        <p class="ce-hinweis">Nur für Sonderfälle – kostet rund 2.000 Zeichen je Aufgabe. Bekannte
+        Varianten gehen ohnehin mit.</p>
+        <label class="ce-check"><input type="checkbox" class="ce-kompakt">
+          Kompakter Prompt (nur für eine KI mit den passenden Skills)</label>
+        <p class="ce-hinweis">Verweist auf die Skills „3-moodle-auswertung" und
+        „2-didaktik-bewertung" statt die Regeln auszuschreiben. Ohne diese Skills aus lassen.</p>
+        <button class="ce-copy2 ce-zweit">📋 Nur die Daten kopieren (ohne Prompt)</button>
+        <label class="ce-label">Eigener Prompt (leer = Standard)
+          <textarea class="ce-prompt" rows="6" placeholder="Leer lassen, um den mitgelieferten Prompt zu verwenden."></textarea>
+        </label>
+        <p class="ce-hinweis"><code>[MOODLE_AI_REVIEWER_DATEN]</code> wird durch die Daten ersetzt,
+        <code>[FEEDBACK_BLOCK]</code> durch die Feedback-Anweisungen.</p>
+        <button class="ce-optvorlage ce-zweit">Standard-Prompt einfügen</button>
+      </details>
+
       <button class="ce-optsave">Speichern</button>
-      <button class="ce-optvorlage ce-zweit">Standard einfügen</button>
-      <button class="ce-optreset ce-zweit">Zurücksetzen</button>
+      <button class="ce-optreset ce-zweit">Alles zurücksetzen</button>
       <p class="ce-optinfo ce-hidden"></p>
     </div>`;
   document.body.appendChild(panel);
@@ -1430,7 +1426,7 @@ ${DATEN_PLATZHALTER}`;
     if (!$('.ce-ki').checked || !satz) { p.classList.add('ce-hidden'); return; }
     p.classList.remove('ce-hidden');
     p.textContent = 'Angehängt wird: „' + satz + '" (kursiv, kleine Schrift). '
-                  + 'Ändern unter ⚙.';
+                  + '';
   }
 
   function optInfo(text) {
@@ -1500,6 +1496,8 @@ ${DATEN_PLATZHALTER}`;
   async function direktPruefen() {
     const b = $('.ce-direkt'), info = $('.ce-direktinfo');
     b.classList.add('ce-hidden'); info.classList.add('ce-hidden');
+    $('.ce-copy').classList.remove('ce-zweit');
+    $('.ce-copyhinweis').classList.remove('ce-hidden');
     const cfg = await kiLaden();
     if (!cfg.an) return;
     const zeige = (t) => { info.textContent = t; info.classList.remove('ce-hidden'); };
@@ -1513,6 +1511,9 @@ ${DATEN_PLATZHALTER}`;
     info.classList.add('ce-hidden');
     b.textContent = `⚡ Direkt bewerten – ${cfg.modell} (${istLokal(cfg.basis) ? 'lokal' : 'Cloud'})`;
     b.classList.remove('ce-hidden');
+    // Ein Hauptweg: mit eingerichteter KI ist Kopieren nur noch die Alternative.
+    $('.ce-copy').classList.add('ce-zweit');
+    $('.ce-copyhinweis').classList.add('ce-hidden');
   }
 
   /* ---- Punkteverteilung (2.1.0) ---- */
@@ -1616,8 +1617,8 @@ ${DATEN_PLATZHALTER}`;
     t.addEventListener('click', (ev) => {
       if (ev.isTrusted && typeof weiterUhr !== 'undefined' && weiterUhr) {
         clearInterval(weiterUhr); weiterUhr = null;
-        $('.ce-copy').textContent = '📋 Prompt + Daten kopieren';
-        $('.ce-copy2').textContent = '📋 nur JSON';
+        $('.ce-copy').textContent = '📋 Prompt kopieren';
+        $('.ce-copy2').textContent = '📋 Nur die Daten kopieren (ohne Prompt)';
       }
       panel.querySelectorAll('.ce-tab').forEach((x) => x.classList.toggle('ce-aktiv', x === t));
       panel.querySelectorAll('[data-panel]').forEach((p) =>
@@ -1801,14 +1802,14 @@ ${DATEN_PLATZHALTER}`;
   $('.ce-copy').addEventListener('click', async () => {
     if (!ausgabe) return;
     await inZwischenablage(bauePrompt(ausgabe, feedbackAktiv));
-    quittung('.ce-copy', '📋 Prompt + Daten kopieren');
+    quittung('.ce-copy', '📋 Prompt kopieren');
   });
 
   // Nur die Rohdaten — fuer einen Chat, der die Auswertungsregeln schon kennt.
   $('.ce-copy2').addEventListener('click', async () => {
     if (!ausgabe) return;
     await inZwischenablage('```json\n' + JSON.stringify(datenFuerKi(ausgabe).daten, null, 1) + '\n```');
-    quittung('.ce-copy2', '📋 nur JSON');
+    quittung('.ce-copy2', '📋 Nur die Daten kopieren (ohne Prompt)');
   });
 
   /* ---- Tab 2 ---- */
