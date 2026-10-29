@@ -73,10 +73,11 @@ Entscheidungen als CSV, eine Punkteverteilung zeigt die Ergebnisse des Tests. Op
 KI direkt angesprochen werden – eine lokale auf dem eigenen Rechner oder ein Cloud-Dienst mit
 eigenem API-Schlüssel; standardmäßig ist das aus.
 
-**Versionshinweise 2.2.1:**
-Vorschau für unklare Fälle statt direktem Eintragen; feste Regeln vor der KI; Fehlersammlung mit
-Import/Export (räumt eingepflegte Fälle selbst auf); Punkteverteilung als Diagramm; optional
-„KI direkt" (lokal oder Cloud-API) mit Einstellungsseite.
+**Versionshinweise 2.3.0:**
+Vorschau für unklare Fälle statt direktem Eintragen; feste Regeln vor der KI; Wert für reine
+Groß-/Kleinschreibfehler einstellbar; Fehlersammlung mit Import/Export (räumt eingepflegte Fälle
+selbst auf); Punkteverteilung als Diagramm; optional „KI direkt" (lokal oder Cloud-API) mit
+Einstellungsseite.
 
 **Hinweis für die Prüfer (Notes to reviewer):**
 - Content Script nur auf `mod/quiz/report.php` (Moodle) und nur bei `mode=grading` und
