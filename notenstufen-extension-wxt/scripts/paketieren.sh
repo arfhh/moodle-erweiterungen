@@ -22,6 +22,20 @@ if [ -d "$FF" ]; then
   [ -d "$UNTER_ALT" ] && find "$UNTER_ALT" -maxdepth 1 -iname "*-quellcode.zip" -exec cp {} "$SICHERUNG/" \;
 fi
 
+# Bricht das Bauen ab (set -e), legt diese Falle die gesicherten .xpi selbst
+# zurueck in den Firefox-Ordner – sonst waeren sie nur noch in der temporaeren
+# Sicherung (Fehler vom 29.10.2026, als vite fehlte).
+xpi_zuruecklegen() {
+  rc=$?
+  if [ $rc -ne 0 ] && ls "$SICHERUNG"/*.xpi >/dev/null 2>&1; then
+    mkdir -p "$FF"
+    find "$SICHERUNG" -maxdepth 1 -iname "*.xpi" -exec cp -n {} "$FF/" \;
+    echo "✗ Bauen fehlgeschlagen – signierte .xpi wieder nach $FF gelegt." >&2
+  fi
+  rm -rf "$SICHERUNG"
+}
+trap xpi_zuruecklegen EXIT
+
 # Reste eines frueheren Durchlaufs ZUERST weg — die Builds schreiben direkt in
 # die benannten Ordner, ein Aufraeumen danach wuerde das frische Ergebnis loeschen.
 for b in chrom firefox edge; do rm -rf "$OUT/$NAME-$b"; done

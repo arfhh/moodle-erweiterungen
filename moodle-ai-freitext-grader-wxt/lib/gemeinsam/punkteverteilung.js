@@ -89,3 +89,13 @@ export function verteilungSvg(werte, max, opt = {}) {
     + `Ø ${komma(mittel)} · Streuung ${komma(streuung)} · ${n} ${wort}</text></svg>`;
   return { svg: s, mittel, streuung, n, schritt };
 }
+
+/**
+ * Das SVG als DOM-Knoten statt ueber innerHTML einsetzen (Mozilla-Pruefung: „Unsafe
+ * assignment to innerHTML"). Der Text stammt nur aus verteilungSvg, enthaelt also keine
+ * fremden Inhalte — der Parser-Weg ist trotzdem sauberer.
+ */
+export function svgKnoten(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  return document.importNode(doc.documentElement, true);
+}

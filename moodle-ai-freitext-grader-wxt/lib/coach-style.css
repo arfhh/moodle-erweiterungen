@@ -259,3 +259,13 @@ textarea.co-hwunsch {
 .co-verteilung summary { cursor: pointer; font-weight: 600; }
 .co-vtinhalt { margin-top: 6px; }
 .co-vtinhalt svg { display: block; }
+
+/* 1.3.0: ein Hinweiskasten, eine Kurzzeile „Für diese Bewertung", Fortgeschrittene */
+.co-hinweisbox:empty, .co-hinweisbox:not(:has(> :not(.co-hidden))) { display: none; }
+.co-hinweisbox { border: 1px solid #fcd34d; background: #fffbeb; border-radius: 6px; padding: 6px 10px; margin: 8px 0; }
+.co-hinweisbox .co-hinweis, .co-hinweisbox .co-zust, .co-hinweisbox .co-warn { margin: 4px 0; background: none; border: none; padding: 0; }
+.co-kastenzeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.co-body button.co-klein { width: auto; padding: 3px 10px; font-size: 12px; margin: 0; }
+.co-profi { margin-top: 12px; }
+.co-profi > summary { color: #64748b; }
+.co-schritt { font-weight: 600; margin: 12px 0 4px; }

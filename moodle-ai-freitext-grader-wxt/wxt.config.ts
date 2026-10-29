@@ -17,7 +17,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Moodle AI Freitext Grader',
-    version: '1.2.1',
+    version: '1.3.0',
     description:
       'Bewertet alle Freitextaufgaben in Moodle-Tests – Kurztests mit Zufallsfragen wie Klausuren mit Teilaufgaben. Hilft beim Anlegen der Frage, den Erwartungshorizont zu schreiben, und trägt Punkte samt Feedback ein.',
     permissions: ['storage'],
@@ -25,7 +25,7 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'moodle-ai-freitext-grader@spielhoff.de',
-        strict_min_version: '1.2.1',
+        strict_min_version: '142.0',
         // Mozilla verlangt seit 2025 eine ausdrueckliche Angabe. Die Erweiterung
         // sammelt nichts: keine Telemetrie, kein Netzverkehr ausser zu Moodle
         // selbst, alles bleibt lokal in browser.storage.local.

@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.2.1 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.3.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont
@@ -1439,9 +1439,21 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     </div>
 
     <div class="mag-inhalt" data-panel="horizont">
-      <details class="mag-details mag-hilfe mag-wozu">
-        <summary>Wozu dieser Reiter?</summary>
-        <p class="mag-hinweis">Hier entsteht der Erwartungshorizont dieser Aufgabe – der Maßstab, nach dem die KI später alle Antworten bewertet. Du kopierst einen Prompt, lässt die KI den Horizont schreiben und trägst ihn in die Aufgabe ein. Das geschieht einmal je Aufgabe; danach bleibt er in der Aufgabe gespeichert, auch beim Export.</p>
+      <details class="mag-details mag-hilfe mag-wozu" data-rolle="hhilfe">
+        <summary>So funktioniert's</summary>
+        <p class="mag-hinweis">Hier entsteht der Erwartungshorizont dieser Aufgabe – der Maßstab, nach dem
+        die KI später alle Antworten bewertet. Das geschieht einmal je Aufgabe; danach bleibt er in der
+        Aufgabe gespeichert, auch beim Export. Schülerinnen und Schüler sehen ihn nicht.</p>
+        <p class="mag-hinweis"><strong>1 · Horizont-Prompt kopieren:</strong> Die Erweiterung baut aus
+        Aufgabenstellung, Punkten und den Angaben unter „Diese Aufgabe" einen Prompt.</p>
+        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Verweist die
+        Aufgabe auf Material, fragt die KI danach. Sie zeigt den Horizont zuerst zum Lesen – prüfen, ggf.
+        ändern lassen, dann mit „ok" antworten. Danach gibt sie ihn in einem grauen Kasten aus: diesen
+        Kasten hier einfügen.</p>
+        <p class="mag-hinweis"><strong>3 · Eintragen:</strong> Der Horizont wird im Feld „Informationen für
+        Bewerter/innen" der Aufgabe gespeichert.</p>
+        <p class="mag-hinweis">Die Erweiterung hat bewusst keinen eigenen KI-Zugang: Du wählst die KI, und
+        die Aufgabe geht nur dorthin, wo du den Prompt einfügst.</p>
       </details>
       <div class="mag-status" data-rolle="hstatus"></div>
       <details class="mag-details" data-rolle="hbisher" hidden>
@@ -1450,15 +1462,13 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       </details>
       <div class="mag-modus" data-rolle="hmodus" hidden>
         <div class="mag-rahmen-titel">Diese Aufgabe</div>
-        <label>Modus</label>
+        <label>Art der Aufgabe</label>
         <select data-rolle="hmodussel">
-          <option value="kurztest">Kurztest – kurze Antworten, schnelle Bewertung</option>
-          <option value="klausur">Klausur – Teilaufgaben, Portionen, Review</option>
+          <option value="kurztest">Kurztest – kurze Antworten</option>
+          <option value="klausur">Klausur – mehrere Teilaufgaben</option>
         </select>
-        <div class="mag-hinweis" data-rolle="hmodushinweis"></div>
         <label>Feedbacklänge</label>
         <select data-rolle="hfeedbacksel"></select>
-        <div class="mag-hinweis" data-rolle="hfeedbackhinweis"></div>
         <div class="mag-zeile3">
           <div><label>Fach</label><input type="text" data-rolle="hfach" placeholder="z. B. Chemie"></div>
           <div><label>Jahrgang</label><select data-rolle="hjahrgang"></select></div>
@@ -1468,50 +1478,36 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
         </div>
         <div class="mag-hinweis" data-rolle="hrahmenhinweis"></div>
         <details class="mag-details mag-mehr">
-          <summary>Was gehört hierher – und was nicht?</summary>
+          <summary>Was bedeuten Art, Feedbacklänge, Fach, Jahrgang und Niveau?</summary>
+          <div class="mag-hinweis" data-rolle="hmodushinweis"></div>
+          <div class="mag-hinweis" data-rolle="hfeedbackhinweis"></div>
           <p class="mag-hinweis">Alles in diesem Kasten gehört <strong>zur Aufgabe</strong>: Es bestimmt, wie der
           Erwartungshorizont aussieht (z. B. welche Formulierungen für Jahrgang 9 als richtig gelten), und wird
-          zusammen mit dem Horizont in der Aufgabe gespeichert. So gilt es auch in Zufallspools, beim Export
-          und bei Kolleginnen und Kollegen.</p>
+          zusammen mit dem Horizont in der Aufgabe gespeichert – auch in Zufallspools, beim Export und bei
+          Kolleginnen und Kollegen.</p>
           <p class="mag-hinweis"><strong>Rechtschreibung, Punkteschritte und Anrede (Du/Sie)</strong> legst du
           erst <strong>beim Bewerten</strong> fest – sie gehören zur Bewertung einer Lerngruppe, nicht zur Aufgabe.</p>
         </details>
       </div>
-      <details class="mag-details mag-hilfe" data-rolle="hhilfe">
-        <summary>So funktioniert's</summary>
-        <p class="mag-hinweis">Der Erwartungshorizont sagt der KI später beim Bewerten, was eine
-        richtige Antwort ist. So entsteht er:</p>
-        <p class="mag-hinweis"><strong>1 · Horizont-Prompt kopieren:</strong> Die Erweiterung nimmt
-        Aufgabenstellung, Punkte und die Angaben unter „Diese Aufgabe" und baut daraus einen Prompt, mit dem die KI den
-        Erwartungshorizont schreibt. Mit den Antworten der Lernenden hat er nichts zu tun – die
-        kommen erst beim Bewerten.</p>
-        <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Verweist die
-        Aufgabe auf Material, fragt die KI danach. Sie zeigt den Horizont zuerst als lesbaren Text –
-        prüfen, ggf. ändern lassen, dann mit „ok" antworten. Erst dann kommt ein Codeblock: diesen hier einfügen.</p>
-        <p class="mag-hinweis"><strong>3 · Eintragen:</strong> Der Horizont wird im Feld
-        „Informationen für Bewerter/innen" dieser Aufgabe gespeichert. Schülerinnen und Schüler sehen ihn nicht.</p>
-      </details>
       <label data-rolle="hschritt1">1 · Prompt zum Erstellen des Erwartungshorizonts kopieren</label>
       <div class="mag-reihe">
         <button class="mag-btn mag-btn-primary" data-tu="hprompt">📋 Horizont-Prompt kopieren</button>
-        <button class="mag-btn mag-btn-rand" data-tu="hedit" title="Prompt anpassen">✏️</button>
       </div>
       <div class="mag-hinweis" data-rolle="hmaterial" hidden></div>
-      <label>2 · Erwartungshorizont der KI einfügen</label>
-      <div class="mag-hinweis">Die Erweiterung hat bewusst keinen eigenen KI-Zugang: Du wählst die KI,
-      und Aufgaben gehen nur dorthin, wo du sie einfügst. Den Codeblock der KI vollständig hier
-      einfügen – er wird sofort geprüft und angezeigt. Gespeichert wird erst in Schritt 3.
-      Den lesbaren Text vor dem „ok" brauchst du hier nicht, nur den Codeblock danach.</div>
-      <textarea data-rolle="hjson" rows="5" placeholder='{ "aufgaben": [ … ] }'></textarea>
+      <label>2 · Antwort der KI einfügen</label>
+      <div class="mag-hinweis">Den grauen Kasten am Ende der KI-Antwort hier einfügen – er wird sofort
+      geprüft und angezeigt. Gespeichert wird erst in Schritt 3.</div>
+      <textarea data-rolle="hjson" rows="5" placeholder="Antwort der KI hier einfügen"></textarea>
       <button class="mag-btn mag-btn-primary" data-tu="hpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-liste" data-rolle="hliste"></div>
       <div class="mag-protokoll" data-rolle="hlog" hidden></div>
       <label data-rolle="hschritt3" hidden>3 · In die Aufgabe eintragen</label>
       <div class="mag-reihe" data-rolle="hknoepfe" hidden></div>
-      <details class="mag-details">
-        <summary>Kein Bearbeitungsrecht? Horizont hier behalten</summary>
-        <p class="mag-hinweis">Wer Fragen nicht bearbeiten darf, klebt den fertigen Horizont
-        hierher. Er bleibt dann in der Erweiterung statt in der Frage.</p>
+      <details class="mag-details mag-profi">
+        <summary>Für Fortgeschrittene</summary>
+        <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="hedit">✏️ Horizont-Prompt anpassen</button>
+        <p class="mag-hinweis"><strong>Kein Bearbeitungsrecht für die Frage?</strong> Dann den fertigen
+        Horizont hier einfügen. Er bleibt in der Erweiterung statt in der Frage.</p>
         <textarea data-rolle="hlokal" rows="4" placeholder="Erwartungshorizont …"></textarea>
         <button class="mag-btn mag-btn-rand" data-tu="hlokalsichern">Hier speichern</button>
       </details>
@@ -1519,49 +1515,35 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
 
     <div class="mag-inhalt" data-panel="vorlage" hidden>
       <details class="mag-details mag-hilfe mag-wozu">
-        <summary>Wozu dieser Reiter?</summary>
-        <p class="mag-hinweis">Hier gestaltest du das Aussehen der Aufgabe für die Lernenden – ein
-        Zusatz nach Geschmack, für die Bewertung nicht nötig. Er erscheint, sobald die Aufgabe einen
-        Erwartungshorizont hat, weil Teilaufgaben, Anforderungsbereiche und Punkte von dort kommen.
-        Du kannst die Aufgabenstellung, die Antwortvorlage oder beides gestalten.</p>
-        <p class="mag-hinweis"><strong>Aufgabenstellung gestalten:</strong> Der Fragetext kommt in
-        farbige Karten – eine Karte je Teilaufgabe, vorn eine Marke (1, 2a, 2b; im Kurztest a, b),
-        hinten die Punkte. Eine Kurztest-Aufgabe ohne Teile bekommt eine Karte. Links steht der Anforderungsbereich, der Operator wird fett in der AFB-Farbe
-        hervorgehoben (AFB I grün, II orange, III rot). Der Wortlaut bleibt gleich.</p>
-        <p class="mag-hinweis"><strong>Antwortvorlage gestalten:</strong> Statt eines leeren weißen
-        Eingabefelds sehen die Lernenden einen Antwortkasten mit Kopfzeile – einen je Teilaufgabe, mit
-        derselben Marke wie in der Aufgabenstellung. So schreiben sie jede Antwort an die richtige Stelle, und die Erweiterung kann sie
-        beim Bewerten sicher zuordnen. Die Kopfzeile zählt beim Bewerten nicht als Schülertext.</p>
-        <p class="mag-hinweis"><strong>Nichts wird automatisch gespeichert.</strong> Die Erweiterung
-        fügt das Layout nur in das geöffnete Formular ein. Gefällt es dir, speicherst du mit
-        „Änderungen speichern". Sonst „Abbrechen" – dann bleibt die Aufgabe, wie sie war.</p>
+        <summary>So funktioniert's</summary>
+        <p class="mag-hinweis">Hier gestaltest du das Aussehen der Aufgabe für die Lernenden – ein Zusatz
+        nach Geschmack, für die Bewertung nicht nötig. Teilaufgaben, Anforderungsbereiche und Punkte kommen
+        aus dem Erwartungshorizont.</p>
+        <p class="mag-hinweis"><strong>Aufgabenstellung:</strong> Der Fragetext kommt in farbige Karten –
+        eine je Teilaufgabe, vorn eine Marke (1, 2a, 2b; im Kurztest a, b), hinten die Punkte, links der
+        Anforderungsbereich; der Operator wird hervorgehoben. Der Wortlaut bleibt gleich, Material (M1, M2 …)
+        bleibt außerhalb der Karten.</p>
+        <p class="mag-hinweis"><strong>Antwortvorlage:</strong> Statt eines leeren Eingabefelds gibt es einen
+        Antwortkasten je Teilaufgabe mit derselben Marke. So schreiben die Lernenden jede Antwort an die
+        richtige Stelle, und die Erweiterung kann sie beim Bewerten sicher zuordnen.</p>
+        <p class="mag-hinweis"><strong>Nichts wird automatisch gespeichert.</strong> Gefällt es dir,
+        speicherst du mit „Änderungen speichern", sonst „Abbrechen".</p>
       </details>
       <div class="mag-status" data-rolle="vstatus"></div>
       <label>Was möchtest du gestalten?</label>
       <label class="mag-haken"><input type="checkbox" data-opt="layoutAufgabe"> Aufgabenstellung</label>
       <label class="mag-haken"><input type="checkbox" data-opt="layoutAntwort"> Antwortvorlage</label>
-      <div class="mag-hinweis">Beides zusammen ist der Normalfall: Aufgabe und Antwortkasten tragen dann
-      dieselbe Marke (1, 2a, 2b …), dieselbe AFB-Farbe und dieselben Punkte.</div>
-
+      <label>Was soll zu sehen sein?</label>
+      <label class="mag-haken"><input type="checkbox" data-opt="afbFarben"> Farben nach Anforderungsbereich (I grün, II orange, III rot)</label>
+      <label class="mag-haken"><input type="checkbox" data-opt="vorlagePunkte"> Punkte je Teilaufgabe</label>
+      <label class="mag-haken"><input type="checkbox" data-opt="vorlageAfb"> Anforderungsbereich (z. B. „AFB II")</label>
+      <span data-rolle="lpunktezeile" hidden></span><span data-rolle="lpunktehinweis" hidden></span>
       <div data-rolle="lseca" hidden>
-        <div class="mag-hinweis">Der Fragetext kommt ins AFB-Kartendesign. Text und Bilder bleiben
-        erhalten, nur die Gestaltung ändert sich. Material (M1, M2 …) bleibt außerhalb der Karten.</div>
-        <label class="mag-haken" data-rolle="lpunktezeile"><input type="checkbox" data-opt="kartePunkte"> Punkte je Teilaufgabe anzeigen</label>
-        <div class="mag-hinweis" data-rolle="lpunktehinweis">Moodle zeigt nur die Gesamtpunktzahl der Aufgabe. Bei mehreren
-        Teilaufgaben sehen die Lernenden so, wie viel jede einzelne bringt.</div>
         <div class="mag-hinweis" data-rolle="lahinweise"></div>
         <label>Vorschau – so sieht die Aufgabe aus</label>
         <div class="mag-vorschau" data-rolle="lavorschau"></div>
       </div>
-
       <div data-rolle="lsecv" hidden>
-        <label class="mag-haken"><input type="checkbox" data-opt="afbFarben"> Farben nach Anforderungsbereich</label>
-        <div class="mag-hinweis">AFB I grün, AFB II orange, AFB III rot. Ohne Häkchen: neutrales Grau.</div>
-        <label class="mag-haken"><input type="checkbox" data-opt="vorlagePunkte"> Punkte anzeigen</label>
-        <div class="mag-hinweis">z. B. „(2 Punkte)" – die Lernenden sehen, wie ausführlich sie antworten sollten.</div>
-        <label class="mag-haken"><input type="checkbox" data-opt="vorlageAfb"> Anforderungsbereich anzeigen</label>
-        <div class="mag-hinweis">z. B. „AFB II" – nur, wenn er bekannt ist (Klausur: aus dem Horizont;
-        Kurztest: wenn „AFB …" in der Aufgabenstellung steht).</div>
         <div class="mag-hinweis" data-rolle="vformat" hidden></div>
         <label>Vorschau – so sieht das Eingabefeld aus</label>
         <div class="mag-vorschau" data-rolle="vvorschau"></div>
@@ -1574,30 +1556,27 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     </div>
 
     <div class="mag-inhalt" data-panel="korrektur" hidden>
-      <details class="mag-details mag-hilfe mag-wozu">
-        <summary>Wozu dieser Reiter?</summary>
-        <p class="mag-hinweis">Hier werden alle Antworten zu dieser Aufgabe mit KI-Hilfe bewertet und
-        danach mit Punkten und Rückmeldung in Moodle eingetragen. Maßstab ist der Erwartungshorizont
-        der Aufgabe (Reiter „Horizont").</p>
-      </details>
-      <details class="mag-details mag-hilfe" data-rolle="khilfe">
+      <details class="mag-details mag-hilfe mag-wozu" data-rolle="khilfe">
         <summary>So funktioniert's</summary>
-        <p class="mag-hinweis"><strong>1 · Bewertungsprompt kopieren:</strong> Die Erweiterung packt
-        Erwartungshorizont, die Angaben unter „Für diese Bewertung" und alle Antworten in einen Prompt. Namen gehen nicht mit –
-        die Antworten sind nur nummeriert.</p>
+        <p class="mag-hinweis">Hier werden alle Antworten zu dieser Aufgabe mit KI-Hilfe bewertet und danach
+        mit Punkten und Rückmeldung in Moodle eingetragen. Maßstab ist der Erwartungshorizont der Aufgabe.</p>
+        <p class="mag-hinweis"><strong>1 · Bewertungsprompt kopieren.</strong> Er enthält den Horizont und
+        alle Antworten – ohne Namen, nur nummeriert.</p>
         <p class="mag-hinweis"><strong>2 · In die KI einfügen</strong> (z. B. Claude, ChatGPT). Die KI fragt
         zuerst: <em>gemeinsam durchgehen</em> (Arbeit für Arbeit, du kannst jede ändern – empfohlen) oder
-        <em>automatisch</em>. Die KI beurteilt nur: Stufe je Aufgabe, Sprachfehler, Begründung,
-        Rückmeldung. Sie rechnet keine Punkte.</p>
-        <p class="mag-hinweis"><strong>3 · Antwort der KI hier einfügen.</strong> Die Erweiterung rechnet
-        Punkte und Rechtschreibabzug und zeigt jede Bewertung zur Kontrolle („bisher → neu").</p>
+        <em>automatisch</em>. Sie beurteilt nur; Punkte rechnet die Erweiterung.</p>
+        <p class="mag-hinweis"><strong>3 · Antwort der KI einfügen.</strong> Du siehst jede Bewertung mit
+        „bisher → neu".</p>
         <p class="mag-hinweis"><strong>4 · Eintragen.</strong> Gemeinsam besprochene Arbeiten lassen sich
-        direkt eintragen. Automatisch bewertete musst du einmal ansehen – überspringen geht nur mit
-        ausdrücklicher Bestätigung.</p>
+        direkt eintragen. Automatisch bewertete siehst du vorher einmal an – überspringen geht nur mit
+        Bestätigung.</p>
       </details>
       <div class="mag-status" data-rolle="kstatus"></div>
       <div class="mag-rahmen">
-        <div class="mag-rahmen-titel">Für diese Bewertung</div>
+        <div class="mag-kastenzeile"><span data-rolle="kkurz"></span>
+          <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="kaendern">ändern</button></div>
+        <div class="mag-hinweis fehler" data-rolle="kwarn" hidden></div>
+        <div data-rolle="kfelder" hidden>
         <label>Anrede im Feedback</label>
         <select data-rolle="kanrede">
           <option value="auto">Automatisch nach Jahrgang</option>
@@ -1610,47 +1589,48 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
           <option value="10">10 %</option><option value="15">15 %</option>
           <option value="20">20 %</option><option value="25">25 %</option><option value="30">30 %</option>
         </select>
-        <div class="mag-hinweis" data-rolle="rshinweis"></div>
         <label>Punkteschritte</label>
         <select data-opt="punkteschritte">
           <option value="0.25">0,25</option><option value="0.5">0,5</option><option value="1">1 – nur ganze Punkte</option>
         </select>
+        <div class="mag-rahmen-titel" style="margin-top:8px">Aus dem gespeicherten Horizont dieser Aufgabe</div>
+        <div data-rolle="krahmen"></div>
+        <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zuhorizont">im Reiter Horizont ändern</button>
         <details class="mag-details mag-mehr">
           <summary>Was bedeuten Anrede, Rechtschreibung, Punkteschritte und die Angaben aus dem Horizont?</summary>
           <p class="mag-hinweis"><strong>Anrede:</strong> „Automatisch" schreibt bis Jahrgang 10 „Du hast …",
           ab Jahrgang 11 „Sie haben …".</p>
           <p class="mag-hinweis"><strong>Rechtschreibung:</strong> So viel Prozent der Gesamtpunktzahl kann die
-          Sprache höchstens kosten. Die Erweiterung merkt sich einen Wert für die Sekundarstufe I (bis Jahrgang 10)
-          und einen für die Oberstufe. Auch bei 0 % bekommen die Lernenden eine Rückmeldung zur Sprache.</p>
+          Sprache höchstens kosten – getrennt für Sekundarstufe I und Oberstufe. Auch bei 0 % gibt es eine
+          Rückmeldung zur Sprache.</p>
+          <p class="mag-hinweis" data-rolle="rshinweis"></p>
           <p class="mag-hinweis"><strong>Punkteschritte:</strong> Auf diese Schritte wird die Punktzahl je Aufgabe gerundet.</p>
           <p class="mag-hinweis"><strong>Fach, Jahrgang, Niveau, Feedbacklänge:</strong> Der Horizont regelt die
-          Bewertung. Diese Angaben kommen aus dem gespeicherten Horizont der Aufgabe. Ändern heißt: im Reiter
-          Horizont einen neuen Horizont erstellen und eintragen.</p>
+          Bewertung. Ändern heißt: im Reiter Horizont einen neuen Horizont erstellen und eintragen.</p>
         </details>
-        <div class="mag-rahmen-titel" style="margin-top:8px">Aus dem gespeicherten Horizont dieser Aufgabe</div>
-        <div data-rolle="krahmen"></div>
-        <button class="mag-btn mag-btn-klein mag-btn-rand" data-tu="zuhorizont">im Reiter Horizont ändern</button>
+        </div>
       </div>
-      <label>Abgaben je Durchgang</label>
-      <select data-rolle="kgroesse"></select>
-      <div class="mag-hinweis" data-rolle="kgroessehinweis"></div>
-      <div class="mag-hinweis">Eine KI kann pro Antwort nur begrenzt viel Text schreiben. Bei vielen oder
-      langen Arbeiten bricht sie sonst mitten im Ergebnis ab oder wird ungenau. Deshalb teilt die
-      Erweiterung die Lerngruppe in Portionen – den Vorschlag rechnet sie aus der Textlänge. Geteilt
-      wird immer nach Personen, nie nach Aufgaben: Jede Arbeit wird als Ganzes bewertet.</div>
+      <div data-rolle="kgroessebox" hidden>
+        <label>Abgaben je Durchgang</label>
+        <select data-rolle="kgroesse"></select>
+        <div class="mag-hinweis" data-rolle="kgroessehinweis"></div>
+        <details class="mag-details mag-mehr">
+          <summary>Was bedeutet „Abgaben je Durchgang“?</summary>
+          <p class="mag-hinweis">Eine KI kann pro Antwort nur begrenzt viel Text schreiben. Bei vielen oder
+          langen Arbeiten bricht sie sonst mitten im Ergebnis ab oder wird ungenau. Deshalb teilt die
+          Erweiterung die Lerngruppe in mehrere Teile – den Vorschlag rechnet sie aus der Textlänge. Geteilt
+          wird immer nach Personen, nie nach Aufgaben: Jede Arbeit wird als Ganzes bewertet.</p>
+        </details>
+      </div>
       <label>1 · Bewertungsprompt mit allen Antworten kopieren</label>
       <div class="mag-reihe" data-rolle="kknoepfe"></div>
-      <div class="mag-reihe">
-        <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="kedit">✏️ Prompt anpassen</button>
-        <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="krohdaten">📋 Rohdaten</button>
-      </div>
-      <label>2 · Ergebnis der KI einfügen</label>
-      <div class="mag-hinweis">Hier den Codeblock einfügen, den die KI am Ende ausgibt – nicht den Text
-      davor. <strong>Bei mehreren Teilen:</strong> Teil 1 kopieren → in die KI → Ergebnis hier einfügen.
-      Dann Teil 2 im <em>selben</em> KI-Chat einfügen und sein Ergebnis <em>unter</em> das erste in dieses
-      Feld setzen – alle Teile untereinander. Die Erweiterung setzt sie zusammen und meldet, welche
-      Arbeiten noch fehlen.</div>
-      <textarea data-rolle="kjson" rows="5" placeholder='{ "bewertungen": [ … ] }'></textarea>
+      <label>2 · Antwort der KI einfügen</label>
+      <div class="mag-hinweis">Den grauen Kasten am Ende der KI-Antwort hier einfügen – nicht den Text davor.</div>
+      <div class="mag-hinweis" data-rolle="kteilehinweis" hidden><strong>In mehreren Teilen:</strong> Teil 1
+      kopieren → in die KI → Ergebnis hier einfügen. Dann Teil 2 im <em>selben</em> KI-Chat einfügen und sein
+      Ergebnis <em>unter</em> das erste in dieses Feld setzen. Die Erweiterung setzt die Teile zusammen und
+      meldet, welche Arbeiten noch fehlen.</div>
+      <textarea data-rolle="kjson" rows="5" placeholder="Antwort der KI hier einfügen"></textarea>
       <button class="mag-btn mag-btn-primary" data-tu="kpruefen" hidden>🔍 Prüfen</button>
       <div class="mag-hinweis" data-rolle="rsabgleich" hidden></div>
       <div class="mag-liste" data-rolle="kliste"></div>
@@ -1658,19 +1638,24 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       <div class="mag-reihe" data-rolle="keintragen" hidden>
         <button class="mag-btn mag-btn-ok" data-tu="kschreiben">Alle eintragen</button>
       </div>
+      <details class="mag-details mag-profi">
+        <summary>Für Fortgeschrittene</summary>
+        <div class="mag-reihe">
+          <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="kedit">✏️ Bewertungsprompt anpassen</button>
+          <button class="mag-btn mag-btn-rand mag-btn-klein" data-tu="krohdaten">📋 Nur die Antworten kopieren</button>
+        </div>
+      </details>
     </div>
 
     <div class="mag-inhalt" data-panel="einst" hidden>
       <details class="mag-details mag-hilfe mag-wozu">
-        <summary>Wozu dieser Reiter?</summary>
-        <p class="mag-hinweis">Hier steht nur, was für <strong>alle</strong> Aufgaben gleich ist. Alles andere
-        steht dort, wo es gebraucht wird: Fach, Jahrgang, Niveau, Modus und Feedbacklänge im Reiter
-        „Horizont" (gehören zur Aufgabe), Anrede, Rechtschreibung und Punkteschritte beim Bewerten im Reiter
-        „Bewerten" (gehören zur Bewertung einer Lerngruppe, nicht zur Aufgabe).</p>
+        <summary>So funktioniert's</summary>
+        <p class="mag-hinweis">Hier steht nur, was für <strong>alle</strong> Aufgaben gleich ist – es gilt
+        überall in der Erweiterung, auf der Bewertungsseite ebenso wie auf der Kurztest-Übersicht. Fach,
+        Jahrgang, Art und Feedbacklänge stehen im Reiter „Horizont", Anrede, Rechtschreibung und
+        Punkteschritte beim Bewerten.</p>
       </details>
       <div class="mag-status" data-rolle="estatus"></div>
-      <p class="mag-hinweis">Diese Einstellungen gelten überall in der Erweiterung – auf der
-      Bewertungsseite einer Aufgabe ebenso wie auf der Kurztest-Übersicht.</p>
       <label class="mag-haken"><input type="checkbox" data-opt="kiHinweis"> KI-Hinweis unter das Feedback</label>
       <label>Text des KI-Hinweises</label>
       <textarea data-opt="kiHinweisText" rows="3"></textarea>
@@ -1680,19 +1665,21 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
         <p class="mag-hinweis">Unter jedes eingetragene Feedback setzt die Erweiterung diesen Satz, kursiv
         und klein. Er kommt von der Erweiterung, nicht von der KI. Den Wortlaut kannst du ändern.</p>
       </details>
-      <label class="mag-haken"><input type="checkbox" data-opt="entferneQuellen"> Quellenangaben entfernen</label>
-      <details class="mag-details mag-mehr">
-        <summary>Was bedeutet „Quellenangaben entfernen“?</summary>
-        <p class="mag-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
-        entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
-      </details>
-      <label class="mag-haken"><input type="checkbox" data-opt="kompaktPrompt"> Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
-      <details class="mag-details mag-mehr">
-        <summary>Was bedeutet „Kompakter Prompt“?</summary>
-        <p class="mag-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
-        „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere Tausend
-        Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong> Den
-        Prompt selbst kannst du im Reiter Bewerten unter „✏️ Prompt anpassen" lesen und ändern.</p>
+      <details class="mag-details mag-profi">
+        <summary>Für Fortgeschrittene</summary>
+        <label class="mag-haken"><input type="checkbox" data-opt="entferneQuellen"> Quellenangaben entfernen</label>
+        <details class="mag-details mag-mehr">
+          <summary>Was bedeutet „Quellenangaben entfernen“?</summary>
+          <p class="mag-hinweis">Manche KI-Chats hängen Quellenmarken wie [1] oder 【4†source】 an. Mit Häkchen
+          entfernt die Erweiterung sie aus dem Feedback, bevor es eingetragen wird.</p>
+        </details>
+        <label class="mag-haken"><input type="checkbox" data-opt="kompaktPrompt"> Kompakter Prompt (nur für KI mit eigenen Skills, z. B. Claude)</label>
+        <details class="mag-details mag-mehr">
+          <summary>Was bedeutet „Kompakter Prompt“?</summary>
+          <p class="mag-hinweis">Der Bewertungsprompt verweist für die Bewertungslogik auf die Skills
+          „2-didaktik-bewertung" und „3-moodle-erweiterungen", statt sie auszuschreiben – spart mehrere
+          Tausend Zeichen. <strong>Nur einschalten, wenn die verwendete KI diese Skills wirklich kennt.</strong></p>
+        </details>
       </details>
       <div class="mag-reihe">
         <button class="mag-btn mag-btn-ok" data-tu="esichern">Speichern und zurück</button>
@@ -1805,7 +1792,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     sel.value = FEEDBACK;
     R('hfeedbackhinweis').textContent = MODUS === 'kurztest'
       ? 'Bei „Kurz" und „Mittel" passt die ganze Klasse meist in einen Durchgang.'
-      : 'Klausuren werden in Portionen bewertet; längeres Feedback heißt kleinere Portionen.';
+      : 'Feedbacklänge: Längeres Feedback heißt, dass die Klasse in mehr Teilen bewertet wird.';
   }
   let horizontKurztest = null;   // Kurztest-Horizont als Text, noch nicht geschrieben
 
@@ -1818,10 +1805,10 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     box.hidden = false;
     R('hmodussel').value = MODUS;
     R('hmodushinweis').textContent = MODUS === 'kurztest'
-      ? 'Kurztest: kurze Antworten, Horizont mit Kernaussage und „Auch richtig". Bewertet wird auf '
-        + 'der Übersicht, alle Kurztest-Aufgaben eines Tests zusammen. Layout-Vorlage: ein Kasten „Deine Antwort".'
-      : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und AFB, dazu eine Layout-Vorlage mit einem Kasten je Teilaufgabe. '
-        + 'Bewertet wird auf der Einzelseite der Aufgabe, in Portionen, mit Review vor dem Eintragen.';
+      ? 'Kurztest: kurze Antworten, Horizont mit Kernaussage und „Auch richtig". Bewertet wird auf der '
+        + 'Übersicht des Tests, alle Kurztest-Aufgaben zusammen – oder einzeln auf der Bewertungsseite.'
+      : 'Klausur: Horizont je Teilaufgabe mit Punkten, Operator und Anforderungsbereich. Bewertet wird auf der '
+        + 'Bewertungsseite der Aufgabe; jede Bewertung siehst du vor dem Eintragen einmal an.';
     feedbackAnzeigen();
     layoutAnzeigen();
     if (KONTEXT === 'bearbeiten') {
@@ -2037,6 +2024,20 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     return (r.fach || '') !== (b.fach || '') || String(r.jahrgang || '') !== String(b.jahrgang || '')
       || (r.niveau || 'G') !== (b.niveau || 'G') || fbLaenge() !== fbBew();
   }
+  function kurzzeileAktualisieren() {
+    const kk = R('kkurz'); if (!kk) return;
+    const r = rahmenBew();
+    const schritt = String(E.punkteschritte || '0.5').replace('.', ',');
+    kk.textContent = [anredeArt() === 'sie' ? 'Sie-Anrede' : 'Du-Anrede',
+      'Rechtschreibung bis ' + String(rsWert(r.jahrgang)).replace('.', ',') + ' %',
+      schritt === '1' ? 'ganze Punkte' : 'Punkte in ' + schritt + 'er-Schritten',
+      [r.fach, r.jahrgang && 'Jg. ' + r.jahrgang].filter(Boolean).join(', ') || 'Fach und Jahrgang fehlen'].join(' · ');
+    const kw = R('kwarn');
+    if (kw) {
+      const t = (R('krahmen') && R('krahmen').textContent.split('  –  ').slice(1).join(' ')) || '';
+      kw.textContent = t ? '⚠ ' + t : ''; kw.hidden = !t;
+    }
+  }
   function rahmenzeilenAktualisieren() {
     const k = R('krahmen');
     if (k) {
@@ -2068,6 +2069,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       hj.value = r.jahrgang || '';
     }
     const hn = R('hniveau'); if (hn) hn.value = r.niveau || 'G';
+    kurzzeileAktualisieren();
     const hh = R('hrahmenhinweis');
     if (hh) {
       const fehlt = einstellungenUnvollstaendig();
@@ -2389,6 +2391,10 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     const horizont = leseHorizontRoh() || E.horizontLokal;
     const groesse = parseInt(sel.value, 10) || 5;
     const teile = Math.ceil(abgaben.length / groesse) || 1;
+    // Nur zeigen, was gebraucht wird (1.3.0): Passt alles in einen Durchgang, bleibt die
+    // Auswahl samt Erklaerung weg – ebenso die Anleitung fuer mehrere Teile.
+    const gb = R('kgroessebox'); if (gb) gb.hidden = !(stapelVorschlag(abgaben) < abgaben.length || teile > 1);
+    const th = R('kteilehinweis'); if (th) th.hidden = teile <= 1;
     const box = R('kknoepfe'); box.innerHTML = '';
     for (let t = 0; t < teile; t++) {
       const von = t * groesse, bis = Math.min(von + groesse, abgaben.length);
@@ -2614,6 +2620,10 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
       formularAusEinstellungen(); status('estatus', '');
       quittung(letzterKnopf, 'Änderungen verworfen – die gespeicherten Einstellungen stehen wieder da.');
     },
+    kaendern: () => {
+      const f = R('kfelder'); f.hidden = !f.hidden;
+      const b = panel.querySelector('[data-tu="kaendern"]'); if (b) b.textContent = f.hidden ? 'ändern' : 'fertig';
+    },
     kistandard: () => {
       const t = panel.querySelector('[data-opt="kiHinweisText"]'); if (t) t.value = KI_HINWEIS_STANDARD;
       quittung(letzterKnopf, 'Standardtext eingesetzt. Mit „Speichern und zurück" übernehmen.');
@@ -2729,6 +2739,7 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     // Die Aussehen-Häkchen der Antwortvorlage wirken sofort auf die Vorschau.
     if (['afbFarben', 'vorlagePunkte', 'vorlageAfb', 'kartePunkte', 'layoutAufgabe', 'layoutAntwort', 'punkteschritte'].includes(f.dataset.opt)) {
       E[f.dataset.opt] = f.type === 'checkbox' ? f.checked : f.value;
+      if (f.dataset.opt === 'vorlagePunkte') E.kartePunkte = f.checked;   // eine Häkchenreihe für beides
       sichereEinstellungen();
       hinweiseAktualisieren();
       if (f.dataset.opt === 'punkteschritte') bewertungNeuRechnen();

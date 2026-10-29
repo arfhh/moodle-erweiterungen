@@ -206,3 +206,9 @@
   color: #256428; background: #eaf4ea; }
 .mag-quittung.fehler { color: #a02121; background: #fbe9e9; }
 .mag-btn.mag-bestaetigt { background: #256428 !important; color: #fff !important; border-color: #256428 !important; }
+
+/* 1.3.0: Kurzzeile „Für diese Bewertung", Fortgeschrittene */
+.mag-kastenzeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.mag-kastenzeile .mag-btn { flex: none; }
+.mag-profi { margin-top: 14px; }
+.mag-profi > summary { color: #64748b; }
