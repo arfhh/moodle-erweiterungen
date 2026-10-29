@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.2.1
+/* Moodle AI Reviewer v2.3.0
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
@@ -24,7 +24,7 @@
  */
 import { browser } from 'wxt/browser';
 import { datenFuerKi, faelleBauen, zuBewertungen, zeigeVorschau, regelFaelle } from './vorschau.js';
-import { KATEGORIEN } from './regeln.js';
+import { KATEGORIEN, sacWert, setzeSacWert } from './regeln.js';
 import { faelleSpeichern, ankerAusSammlung, eingepflegteEntfernen, laden as sammlungLaden, alsCsv, csvImportieren,
          leeren as sammlungLeeren } from './fehlersammlung.js';
 import { kiDirektBewerten } from './ki-bewertung.js';
@@ -226,6 +226,8 @@ export function starteReviewer() {
     // per Haekchen einschaltbar, NICHT als Bedingung im Prompt selbst — ein Modell kann
     // nicht zuverlaessig pruefen, ob es die Skills wirklich hat.
     kompaktPrompt: false,
+    // 2.3.0: Wert fuer reine Gross-/Kleinschreibfehler bei SAC (Chemie 90, Deutsch eher 0).
+    grossKleinSac: 90,
     // 2.0.0: Feedback geht standardmaessig mit KI-Hinweis direkt mit. Wer die Texte
     // vorher lesen und aendern will, schaltet das hier ein (gilt fuer alle Wege).
     feedbackVorher: false
@@ -455,9 +457,9 @@ ist fast immer eine Verneinung im Spiel. Halte dich dann an die hinterlegte List
 **4. Prüfe ZUERST auf einen reinen Groß-/Kleinschreibfehler.**
 Bevor du irgendetwas anderes überlegst: Unterscheidet sich die Antwort von einem
 hinterlegten Eintrag ausschließlich in der Groß-/Kleinschreibung? Dann ist sie bei
-Lückentyp SAC genau 90 % und bei Lückentyp SA genau 100 %. Diese Prüfung kommt vor
+Lückentyp SAC genau ${sacWert()} % und bei Lückentyp SA genau 100 %. Diese Prüfung kommt vor
 allen Überlegungen zu Synonymen, Tippfehlern und Inhalt.
-„Oben" bei hinterlegtem „oben" und Typ SAC ist 90 – nicht 100 und nicht 75.
+„Oben" bei hinterlegtem „oben" und Typ SAC ist ${sacWert()} – so hat es die Lehrkraft eingestellt.
 
 Diese vier Schritte sind die häufigste Fehlerquelle. Nimm sie ernst.
 
@@ -633,8 +635,8 @@ genauen Regeln (besonders die 90-%-Stufe nur bei Lückentyp SAC, und die
 Verneinungs-Falle) sind falsche Bewertungen wahrscheinlich.
 
 Kurzreferenz der Skala, nur zur Orientierung, ersetzt die Skill nicht:
-100 = korrekt oder echtes Synonym · 90 = nur Groß-/Kleinschreibung falsch UND
-Lückentyp SAC (bei SA: 100) · 75 = ein klarer Tippfehler, Wort erkennbar · 50 =
+100 = korrekt oder echtes Synonym · nur Groß-/Kleinschreibung falsch: bei
+Lückentyp SAC ${sacWert()}, bei SA 100 · 75 = ein klarer Tippfehler, Wort erkennbar · 50 =
 mehrere Tippfehler, mit Mühe erkennbar · 25 = nur Wortanfang/-stamm erkennbar ·
 0 = falsches Wort, Rateversuch oder aus dem Aufgabensatz abgeschrieben.
 Punkte NICHT selbst ausrechnen, nur Prozentwerte angeben — das rechnet die Erweiterung.
@@ -1276,6 +1278,18 @@ ${DATEN_PLATZHALTER}`;
       je Aufgabe. Nur einschalten, wenn du die vorhandenen Varianten wirklich brauchst.
       Wirkt nur bei Lückentext-Aufgaben; Kurzantwort-Fragen haben keinen Quelltext.</p>
 
+      <label class="ce-label">Nur Groß-/Kleinschreibung falsch (Lückentyp SAC)
+        <select class="ce-gksac">
+          <option value="100">100 %</option><option value="90">90 % (Standard)</option>
+          <option value="75">75 %</option><option value="50">50 %</option>
+          <option value="25">25 %</option><option value="0">0 %</option>
+        </select>
+      </label>
+      <p class="ce-hinweis">Diese Fälle entscheidet die Erweiterung selbst, ohne KI. Wie streng,
+      hängt vom Fach ab: In Chemie zählt meist das Wort (90 %), in Deutsch ist die Schreibung
+      oft der Lerngegenstand (0 %). Bei Lückentyp SA achtet Moodle ohnehin nicht auf
+      Groß-/Kleinschreibung.</p>
+
       <label class="ce-check"><input type="checkbox" class="ce-fbvorher">
         Feedback vor dem Eintragen anzeigen</label>
       <p class="ce-hinweis">Aus (Standard): Die Feedback-Texte der KI gehen mit dem
@@ -1379,6 +1393,8 @@ ${DATEN_PLATZHALTER}`;
     $('.ce-voll').checked = !!optionen.vollstaendig;
     $('.ce-kompakt').checked = !!optionen.kompaktPrompt;
     $('.ce-fbvorher').checked = !!optionen.feedbackVorher;
+    $('.ce-gksac').value = String(optionen.grossKleinSac ?? 90);
+    setzeSacWert(optionen.grossKleinSac ?? 90);
     $('.ce-prompt').value = optionen.promptOverride || '';
     $('.ce-kitext').value = optionen.kiHinweisText || KI_HINWEIS_STANDARD;
     $('.ce-fb').checked = optionen.feedbackSammeln !== false;
@@ -1429,10 +1445,12 @@ ${DATEN_PLATZHALTER}`;
       vollstaendig: $('.ce-voll').checked,
       kompaktPrompt: $('.ce-kompakt').checked,
       feedbackVorher: $('.ce-fbvorher').checked,
+      grossKleinSac: Number($('.ce-gksac').value),
       promptOverride: $('.ce-prompt').value.trim(),
       kiHinweisText: $('.ce-kitext').value.trim() || KI_HINWEIS_STANDARD
     });
     $('.ce-kitext').value = optionen.kiHinweisText;
+    setzeSacWert(optionen.grossKleinSac);
     kiVorschau();
     optInfo('Gespeichert ✓');
   });
@@ -1449,6 +1467,8 @@ ${DATEN_PLATZHALTER}`;
     $('.ce-voll').checked = false;
     $('.ce-kompakt').checked = false;
     $('.ce-fbvorher').checked = false;
+    $('.ce-gksac').value = '90';
+    setzeSacWert(90);
     $('.ce-prompt').value = '';
     $('.ce-kitext').value = KI_HINWEIS_STANDARD;
     $('.ce-fb').checked = OPT_STANDARD.feedbackSammeln;

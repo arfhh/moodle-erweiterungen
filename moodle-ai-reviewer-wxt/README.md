@@ -2,7 +2,7 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.2.1 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.3.0 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -404,7 +404,8 @@ mitgeschickt — genauso, wie es beim manuellen Speichern der Fall ist.
 Bevor eine KI etwas sieht, entscheidet die Erweiterung selbst nach zwei festen Regeln:
 
 - Die Antwort unterscheidet sich **nur in Groß-/Kleinschreibung** von einer richtigen
-  Lösung → bei Lückentyp SAC 90 %, bei SA 100 %.
+  Lösung → bei Lückentyp SAC der unter ⚙ eingestellte Wert (Standard 90 %; in Deutsch z. B.
+  0 %), bei SA 100 %.
 - Die Antwort steht **wörtlich** schon in den bekannten Varianten (im Fragetext oder in
   deiner Fehlersammlung) → derselbe Wert wie damals.
 
@@ -514,11 +515,16 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.2.1 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.3.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.3.0 (29.10.2026)**
+
+- Neue Einstellung ⚙ „Nur Groß-/Kleinschreibung falsch (Lückentyp SAC)": 100/90/75/50/25/0 %, Standard 90. Gilt für die feste Regel, den Prompt und KI direkt – je nach Fach verschieden.
+- KI-direkt-Prompt nennt kein Fach mehr („Kurztest" statt „Chemie-Kurztest").
 
 **2.2.1 (28.10.2026)**
 

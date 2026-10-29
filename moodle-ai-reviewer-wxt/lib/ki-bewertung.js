@@ -5,11 +5,11 @@
  * Ergebnis im selben Format wie das JSON aus dem Chat — beide Wege muenden in die Vorschau.
  */
 import { kiNachricht, kiFehlerText, jsonAusAntwort } from './ki-direkt/client.js';
-import { KATEGORIEN } from './regeln.js';
+import { KATEGORIEN, sacWert } from './regeln.js';
 
-const SYSTEM_BEWERTUNG = `Du bewertest Schülerantworten in Lücken eines Chemie-Kurztests gegen die hinterlegten richtigen Antworten. Vergib je Lücke genau einen Prozentwert:
+const systemBewertung = () => `Du bewertest Schülerantworten in Lücken eines Kurztests gegen die hinterlegten richtigen Antworten. Vergib je Lücke genau einen Prozentwert:
 100 = richtig oder gleichwertiges Synonym, andere gültige Wortform
-90 = NUR Groß-/Kleinschreibung falsch und Typ SAC (bei Typ SA: 100)
+Nur Groß-/Kleinschreibung falsch: bei Typ SAC genau ${sacWert()}, bei Typ SA 100
 75 = ein einzelner klarer Tippfehler, Wort eindeutig erkennbar
 50 = mehrere Tippfehler, Wort noch mit Mühe erkennbar
 25 = nur Wortstamm/Wortanfang erkennbar
@@ -80,7 +80,7 @@ export async function kiDirektBewerten(daten, cfg, onFortschritt) {
         + ` | richtig: ${(it.loes.richtig || []).map(q).join(' / ') || '(unbekannt)'}`
         + ` | Schülerantwort: ${q(it.l.antwort)}` + (bek ? ` | bekannte Varianten: ${bek}` : '');
     }).join('\n');
-    const r = await paketFragen(cfg, SYSTEM_BEWERTUNG, text, 60 * pk[i].length + 200);
+    const r = await paketFragen(cfg, systemBewertung(), text, 60 * pk[i].length + 200);
     if (!r.ok) {
       fehler.push(`Paket ${i + 1}: ${r.meldung}`);
       if (r.abbruch) break;

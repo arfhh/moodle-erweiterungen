@@ -12,6 +12,16 @@
 
 export const STUFEN = [100, 90, 75, 50, 25, 0];
 
+// Wert fuer "nur Gross-/Kleinschreibung falsch" bei Lueckentyp SAC — je Fach und Lehrkraft
+// verschieden (Chemie 90, Deutsch eher 0). Einstellung unter ⚙, Standard 90 (ab 2.3.0).
+// Bei SA ignoriert Moodle die Gross-/Kleinschreibung ohnehin; dort bleibt es bei 100.
+let SAC_WERT = 90;
+export function setzeSacWert(v) {
+  const n = Number(v);
+  SAC_WERT = STUFEN.includes(n) ? n : 90;
+}
+export const sacWert = () => SAC_WERT;
+
 export const KATEGORIEN = [
   'Tippfehler', 'Vertauschung', 'phonetisch', 'Groß-/Kleinschreibung',
   'Getrennt-/Zusammenschreibung', 'Auslassung', 'Doppelung', 'Endung', 'Wortstamm',
@@ -53,7 +63,7 @@ const istSac = (typ) => String(typ || '').toUpperCase() === 'SAC';
  *  1. Exakter Treffer in den bekannten Varianten (bei SAC mit, sonst ohne
  *     Gross-/Kleinschreibung) — die Lehrkraft hat diesen Fall schon entschieden.
  *  2. Antwort unterscheidet sich von einer richtigen Loesung NUR in der Gross-/
- *     Kleinschreibung: SAC 90, SA 100.
+ *     Kleinschreibung: SAC eingestellter Wert (Standard 90), SA 100.
  * loesung = { typ, richtig: [..], bekannte_varianten: { text: prozent } }
  */
 export function codeRegel(antwort, loesung) {
@@ -71,8 +81,8 @@ export function codeRegel(antwort, loesung) {
   for (const r of loesung.richtig || []) {
     if (String(r).includes('*')) continue;
     if (norm(r) !== a && klein(r) === klein(a)) {
-      return { prozent: sac ? 90 : 100, regel: 'grossklein', kategorie: 'Groß-/Kleinschreibung',
-               grund: sac ? 'nur Groß-/Kleinschreibung (SAC → 90)' : 'nur Groß-/Kleinschreibung (SA → 100)' };
+      return { prozent: sac ? SAC_WERT : 100, regel: 'grossklein', kategorie: 'Groß-/Kleinschreibung',
+               grund: sac ? `nur Groß-/Kleinschreibung (SAC → ${SAC_WERT}, Einstellung)` : 'nur Groß-/Kleinschreibung (SA → 100)' };
     }
   }
   return null;

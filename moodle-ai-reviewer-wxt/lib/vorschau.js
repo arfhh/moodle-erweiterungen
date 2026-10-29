@@ -119,7 +119,6 @@ function stufenKnoepfe(fall, beiKlick) {
   const knoepfe = STUFEN.map((s) => {
     const b = el('button', 'ce-stufe', String(s));
     b.type = 'button';
-    if (s === 90 && String(fall.typ).toUpperCase() !== 'SAC') b.title = '90 % nur bei Lückentyp SAC';
     if (fall.vorschlag === s) b.classList.add('ce-stufe-vorschlag');
     b.addEventListener('click', () => { beiKlick(s); markiere(); });
     zeile.appendChild(b);
