@@ -82,6 +82,41 @@ Die Aufgabe verweist auf Material (M1, Abbildung, Tabelle …).
     : '');
 }
 
+/* --- Offene Aufgaben (Erörterung, Stellungnahme, Urteil, Gestaltung …):
+ *     kein Richtig/Falsch, aber trotzdem zaehlbare Stufen. Gleiche Abschnitts-
+ *     namen wie sonst, damit Zerlegen und Bewerten unveraendert funktionieren. --- */
+const OFFENE_AUFGABEN = `OFFENE AUFGABEN
+Manche Aufgaben haben keine eine richtige Lösung: Es gibt mehrere vertretbare Positionen,
+Deutungen oder Lösungswege (typisch bei „Nimm Stellung", „Erörtere", „Beurteile",
+„Bewerte", „Diskutiere", „Setze dich auseinander", „Interpretiere", „Entwickle",
+„Gestalte", „Entwirf", „Begründe deine Meinung"). Entscheide je Aufgabe, ob sie offen
+ist. Wenn ja, behältst du die Abschnitte, füllst sie aber so:
+• KERNAUSSAGE: eine mögliche gelungene Antwort. Sie zeigt, wie eine gute Antwort
+  aufgebaut ist, nicht welche Meinung richtig ist. Beginne mit „Zum Beispiel:".
+• MUSS ENTHALTEN: die Qualitätsmerkmale, die die Aufgabe verlangt, als zählbare Kriterien
+  – etwa: eigene Position erkennbar · mindestens zwei Argumente, jedes mit Begründung
+  (Behauptung + weil/denn/Beispiel) · mindestens ein Gegenargument aufgegriffen und
+  entkräftet oder abgewogen · Urteil, das aus den Argumenten folgt · Bezug auf Fachbegriff,
+  Theorie, Text oder Material, wo die Aufgabe ihn verlangt. Nimm nur Kriterien, die die
+  Aufgabenstellung und ihr Operator wirklich fordern; bei Gestaltungsaufgaben die Vorgaben
+  der Aufgabe (Form, Adressat, Umfang, Inhaltselemente).
+• AUCH RICHTIG: mögliche Argumente bzw. Lösungsideen für VERSCHIEDENE Positionen, als
+  Beispiele (mindestens drei je Seite, wo es Seiten gibt). Schließe immer mit dem Satz:
+  „Jedes andere sachlich haltbare, auf die Aufgabe bezogene Argument zählt genauso."
+• INHALT (Stufen): zählt erfüllte Kriterien, nie die Richtung der Meinung. Beispiel:
+  100 — Position + zwei begründete Argumente + Gegenargument abgewogen + Urteil folgt
+  daraus · 75 — eins davon fehlt · 50 — Position mit einem begründeten Argument, keine
+  Abwägung · 25 — nur Meinung oder nur aufgezählte Argumente ohne Begründung · 0 — kein
+  Bezug zur Aufgabe.
+• REICHT NICHT: bloße Meinung ohne Begründung; aufgezählte Argumente ohne Urteil, wo ein
+  Urteil verlangt ist; nur eine Seite, wo der Operator eine Abwägung verlangt.
+• HÄUFIGER FEHLER: sachlich falsche Behauptungen als Argument (zählen nicht als
+  Argument), Wiederholung derselben Begründung als zweites Argument, Urteil ohne Bezug zu
+  den eigenen Argumenten.
+• GLEICHBEHANDLUNG: Prüfe zum Schluss: Zwei gleich gut begründete Antworten mit
+  entgegengesetzter Position landen in derselben Stufe. Kein Kriterium darf eine
+  bestimmte Meinung voraussetzen.`;
+
 /* --- Gemeinsame Regeln fuer jeden Horizont: machen die Grundregeln der
  *     Bewertung pro Aufgabe konkret. --- */
 export function horizontRegeln(jahrgang) {
@@ -111,9 +146,10 @@ export function horizontRegeln(jahrgang) {
   Bewertung es als fast richtig.
 • NICHT in den Horizont: Sprachregeln, Rechtschreibabzug, Feedback-Stil, Rolle,
   Punktzahlen, allgemeine Bewertungsregeln. Das steht im Bewertungsprompt der
-  Erweiterung. Im Horizont steht nur, was für DIESE Aufgabe gilt.`;
-}
+  Erweiterung. Im Horizont steht nur, was für DIESE Aufgabe gilt.
 
+${OFFENE_AUFGABEN}`;
+}
 export const HORIZONT_ZWECK = `WOZU DER HORIZONT DIENT
 Mit diesem Horizont bewertet später eine KI die Antworten einer ganzen Lerngruppe.
 Gleiche Antworten sollen immer dieselbe Stufe bekommen – egal welches Modell bewertet

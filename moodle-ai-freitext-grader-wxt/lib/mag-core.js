@@ -1,4 +1,4 @@
-/* Moodle AI Freitext Grader 1.3.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
+/* Moodle AI Freitext Grader 1.4.0 — Klausur-Weg und Frageneditor (aus Moodle AI Grader 3.2.2)
  *
  * Wirkt auf zwei Seiten:
  *   A) Bewertungsseite   mod/quiz/report.php               → Reiter Korrektur + Horizont

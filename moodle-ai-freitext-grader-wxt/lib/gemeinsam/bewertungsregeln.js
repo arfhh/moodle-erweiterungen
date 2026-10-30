@@ -38,5 +38,13 @@ GRUNDREGELN
   Tiefe hat. Anforderungsbereiche: AFB I = Reproduktion, AFB II = Reorganisation /
   Transfer, AFB III = Reflexion / Bewertung.
 • Teilpunkte entstehen nur über die Stufen des Horizonts. Punkte rechnet die
-  Erweiterung.`;
+  Erweiterung.
+• OFFENE AUFGABEN (Stellung nehmen, erörtern, beurteilen, interpretieren, gestalten …):
+  Bewertet wird, wie gut die Antwort die Kriterien des Horizonts erfüllt – nie, welche
+  Meinung sie vertritt. Gleich gut begründete Antworten bekommen dieselbe Stufe, auch
+  wenn sie zu entgegengesetzten Urteilen kommen. Die Argumente unter „Auch richtig" sind
+  Beispiele: Jedes andere sachlich haltbare, auf die Aufgabe bezogene Argument zählt
+  genauso. Ein Argument zählt nur mit Begründung; eine bloße Behauptung ist keines. Die
+  Rückmeldung nennt das fehlende Kriterium (z. B. „Das Gegenargument wird genannt, aber
+  nicht abgewogen"), nicht ein bestimmtes Argument, das gefehlt habe.`;
 }
