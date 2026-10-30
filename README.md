@@ -144,11 +144,11 @@ Erweiterung* geladen. Jedes ZIP enthält **drei fertige Ordner**, einen je Brows
    Platz bleibt.
 
 **Firefox:**
-1. `about:debugging#/runtime/this-firefox` öffnen.
-2. **„Temporäres Add-on laden…"** klicken und eine Datei im `-firefox`-Ordner auswählen
-   (z. B. `manifest.json`).
-3. Gilt bis zum nächsten Firefox-Neustart — für Dauerbetrieb braucht Firefox eine
-   Signierung durch Mozilla oder den Entwicklermodus.
+1. Die `.xpi`-Datei im `-firefox`-Ordner per Doppelklick öffnen (oder in ein offenes
+   Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterungen sind von Mozilla signiert und bleiben dauerhaft installiert,
+   auch nach einem Firefox-Neustart. Update: die neue `.xpi` genauso öffnen.
 
 Mehrere Erweiterungen lassen sich gleichzeitig laden; sie kommen sich nicht in die
 Quere. Freitext Grader und Reviewer liegen zwar auf derselben Moodle-Seite, zeigen ihr
@@ -224,9 +224,9 @@ benutzen. Näheres in der README des Autofill.
 - Um die hinterlegten richtigen Antworten mitzulesen, braucht man das Recht,
   **Fragen zu bearbeiten**. Fehlt es, arbeiten die Erweiterungen ohne diese Angaben
   weiter, die KI beurteilt dann aber blind.
-- **Firefox verlangt für Dauerbetrieb eine Signierung durch Mozilla** oder den
-  Entwicklermodus. Ohne das gilt eine über „Temporäres Add-on laden" installierte
-  Fassung nur bis zum nächsten Firefox-Neustart.
+- **Firefox:** Die Download-ZIPs enthalten von Mozilla signierte `.xpi`-Dateien, die
+  dauerhaft installiert bleiben. Wer selbst baut, muss neu signieren lassen – eine über
+  „Temporäres Add-on laden" geladene Fassung gilt nur bis zum nächsten Firefox-Neustart.
 
 ---
 

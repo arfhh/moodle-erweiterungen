@@ -60,9 +60,15 @@ einschalten → **Entpackte Erweiterung laden** → den Ordner `moodle-namen-ver
 wählen. Beim Update: Ordner ersetzen und in der Liste **↺ neu laden**; danach offene Moodle-Seiten
 einmal neu laden.
 
-**Firefox:** `about:debugging` → *Dieser Firefox* → *Temporäres Add-on laden* → die `manifest.json`
-im Ordner `moodle-namen-verbergen-firefox` wählen (gilt bis zum Neustart; dauerhaft geht nur mit
-signierter `.xpi`).
+**Firefox:**
+1. Die `.xpi`-Datei im Ordner `moodle-namen-verbergen-firefox` per Doppelklick öffnen
+   (oder in ein offenes Firefox-Fenster ziehen).
+2. Firefox fragt nach der Installationsberechtigung — mit **Hinzufügen** bestätigen.
+3. Fertig. Die Erweiterung ist von Mozilla signiert und bleibt dauerhaft installiert,
+   auch nach einem Firefox-Neustart.
+
+**Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
+Version automatisch.
 
 ## Datenschutz
 
