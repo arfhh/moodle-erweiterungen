@@ -4,8 +4,8 @@
 
 Version 1.11.0 · Lizenz: CC BY-SA 4.0
 
-> Anders als die übrigen Erweiterungen dieser Familie (Grader, Reviewer, Coach — alle für
-> Testfragen) bewertet der Abgabengrader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
+> Anders als die übrigen Erweiterungen dieser Familie (Freitext Grader und Reviewer — beide für
+> Testfragen) bewertet der Aufgaben-Grader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
 > PDF-Arbeitshefte, Berichte und Ähnliches. Er löst den bisher manuellen
 > Moodle-Download/-Upload ab.
 

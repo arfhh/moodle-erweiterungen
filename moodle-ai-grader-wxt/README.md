@@ -1,5 +1,7 @@
 # Moodle AI Grader
 
+> ⚠ **Abgelöst durch den Moodle AI Freitext Grader** (`moodle-ai-freitext-grader-wxt/`). Kein Download mehr; dieser Ordner bleibt nur als Quelltext im Repo. Wer den Grader noch installiert hat, deaktiviert ihn, bevor der Freitext Grader geladen wird — sonst erscheinen zwei Panels.
+
 **Version 3.2.2** · Browser-Erweiterung (Manifest V3) für **Chrome, Firefox und Edge**
 Entwickelt von **T. Henken & A. Spielhoff** · Lizenz **CC BY-SA 4.0**
 
