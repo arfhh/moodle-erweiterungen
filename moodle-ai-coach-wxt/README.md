@@ -1,9 +1,11 @@
 # Moodle AI Coach
 
+> ⚠ **Abgelöst durch den Moodle AI Freitext Grader** (`moodle-ai-freitext-grader-wxt/`). Kein Download mehr; dieser Ordner bleibt nur als Quelltext im Repo. Wer den Coach noch installiert hat, deaktiviert ihn, bevor der Freitext Grader geladen wird — sonst erscheinen zwei Panels.
+
 Bewertet **kurze Freitextantworten** (ein bis drei Sätze) in Moodles Manueller
 Bewertung — Punkte **und** Sprachfeedback.
 
-Version 1.9.1 · vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
+Version 1.9.1 (letzte Fassung) · früher vierte Erweiterung neben *Moodle AI Grader*, *Moodle AI Reviewer* und
 *Notenstufen Autofill* · Lizenz: CC BY-SA 4.0 · A. Spielhoff
 
 ---

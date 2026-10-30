@@ -87,7 +87,7 @@ Auf der Kategorieansicht der Fragensammlung:
 `…/question/edit.php?cmid=…`
 
 Rechts erscheint ein gelber runder Knopf. Die anderen Erweiterungen arbeiten auf
-anderen Seiten (Grader, Reviewer und Coach auf der Manuellen Bewertung, Notenstufen auf
+anderen Seiten (Freitext Grader und Reviewer auf der Manuellen Bewertung, Notenstufen auf
 der Notenstufen-Seite, Aufgaben-Grader im Aufgabenmodul), es gibt also keine
 Überschneidung.
 

@@ -2,10 +2,10 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
-Version 2.3.2 · Schwester-Erweiterung zum *Moodle AI Grader* · für Chrome, Firefox und
+Version 2.3.2 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
-> Der **Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
+> Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
 > frei eingetippten Antworten übersehen hat — in Cloze-Lücken wie in Kurzantwort-Fragen.
 
 ---
@@ -88,7 +88,7 @@ vergleicht. Genau diese Fragetypen sammelt die Erweiterung ein:
 | **Numerisch** | **ja** (seit 1.2) | Zahl gegen Antwortliste mit Toleranz |
 | Cloze-Lücken zum Anklicken (MC, MR, Dropdowns) | nein | Auswahl aus Vorgegebenem — es *kann* keine unerkannte Variante geben |
 | Multiple Choice, Wahr/Falsch, Zuordnung, Drag&Drop, Reihenfolge | nein | dieselbe Begründung |
-| **Freitext (Essay)** | nein | wird von Moodle gar nicht automatisch bewertet — dafür ist der *Moodle AI Grader* da |
+| **Freitext (Essay)** | nein | wird von Moodle gar nicht automatisch bewertet — dafür ist der *Moodle AI Freitext Grader* da |
 
 Bei einer **Kurzantwort-Frage** ist die ganze Frage die eine Lücke. Sie trägt in den
 Daten immer die Lückennummer 1, und unter `art` steht `"kurzantwort"` statt `"cloze"`.
@@ -136,7 +136,7 @@ Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 **Update:** die neue `.xpi`-Datei genauso öffnen wie oben — Firefox ersetzt die alte
 Version automatisch.
 
-Der *Moodle AI Grader* bleibt davon unberührt und läuft parallel weiter.
+Der *Moodle AI Freitext Grader* bleibt davon unberührt und läuft parallel weiter.
 
 ### Warum sich die beiden nicht in die Quere kommen
 
