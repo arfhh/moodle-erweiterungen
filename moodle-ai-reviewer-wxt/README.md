@@ -2,6 +2,8 @@
 
 **Findet Schülerantworten, die inhaltlich richtig sind, aber von Moodle mit 0 Punkten bewertet wurden.**
 
+**📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 Version 2.3.2 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 

@@ -56,6 +56,8 @@ rm -rf "$SICHERUNG"
 
 # README ist im Repo verfolgt (Erweiterung/ selbst ist gitignored, siehe .gitignore)
 cp "README.md" "$OUT/README.md"
+# Handbuch (PDF) liegt im Projektordner und wandert mit ins Zip
+for f in Handbuch-*.pdf; do [ -e "$f" ] && cp "$f" "$OUT/"; done
 
 # zip kann nicht immer in einen gemounteten Ordner schreiben (Temp-Datei + Umbenennen);
 # deshalb ausserhalb bauen und hineinkopieren.

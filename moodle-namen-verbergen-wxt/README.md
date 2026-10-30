@@ -2,6 +2,8 @@
 
 *Version 1.0.4 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
+**📘 Handbuch:** [Handbuch-Moodle-Namen-verbergen.pdf](Handbuch-Moodle-Namen-verbergen.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 **Idee: Andreas Schenkel** — [moodle-textblock-blurmode_controller](https://github.com/andreasschenkel/moodle-textblock-blurmode_controller).
 
 > Author/Copyright des Originals: *Andreas Schenkel based on code and ideas from

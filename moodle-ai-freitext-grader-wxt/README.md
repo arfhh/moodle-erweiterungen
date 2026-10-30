@@ -2,6 +2,8 @@
 
 Version 1.3.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
+**📘 Handbuch:** [Handbuch-Moodle-AI-Freitext-Grader.pdf](Handbuch-Moodle-AI-Freitext-Grader.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 Bewertet alle Freitextaufgaben (Essay-Fragen) in Moodle-Tests mit KI-Unterstützung –
 Kurztests mit Zufallsfragen ebenso wie Klausuren mit Teilaufgaben. Die Erweiterung
 greift selbst nicht auf eine KI zu: Sie baut die Prompts, du gibst sie in die KI deiner

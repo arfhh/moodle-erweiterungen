@@ -77,6 +77,8 @@ werden".
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
 | **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
 
+**📘 Handbücher (PDF)** mit Bildern, Schritt für Schritt: [Freitext Grader](moodle-ai-freitext-grader-wxt/Handbuch-Moodle-AI-Freitext-Grader.pdf) · [Reviewer](moodle-ai-reviewer-wxt/Handbuch-Moodle-AI-Reviewer.pdf) · [Namen verbergen](moodle-namen-verbergen-wxt/Handbuch-Moodle-Namen-verbergen.pdf) · [Notenstufen Autofill](notenstufen-extension-wxt/Handbuch-Moodle-Notenstufen-Autofill.pdf). Sie liegen auch im jeweiligen Download-ZIP.
+
 ### Was du nach der Installation konkret siehst
 
 - **Moodle AI Freitext Grader** — beim Anlegen oder Bearbeiten einer Freitextfrage öffnet

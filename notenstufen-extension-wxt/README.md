@@ -2,6 +2,8 @@
 
 *Version 2.8.0 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
 
+**📘 Handbuch:** [Handbuch-Moodle-Notenstufen-Autofill.pdf](Handbuch-Moodle-Notenstufen-Autofill.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 Eine kleine Browser-Erweiterung, die die Notenstufen-Tabelle eines
 Moodle-Kurses automatisch ausfüllt, statt sie Zeile für Zeile per
 Hand einzutragen. Sie läuft in **jedem Moodle**, unabhängig davon,
