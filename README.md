@@ -4,10 +4,9 @@ Kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen �
 Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen. Alle sind
 mit **WXT** aus **einer** Codebasis für Chrome, Firefox und Edge gebaut.
 
-> **Neu: Moodle AI Freitext Grader.** Er vereint **Moodle AI Coach** (Kurztests) und
-> **Moodle AI Grader** (Klausuren) in einer Erweiterung und löst beide ab. Coach und Grader
-> gibt es deshalb nicht mehr zum Download. Wer sie noch installiert hat, deaktiviert sie
-> vor dem Umstieg — bitte nicht beide Generationen gleichzeitig aktivieren.
+> **Moodle AI Freitext Grader** hat die früheren Erweiterungen **Moodle AI Coach**
+> (Kurztests) und **Moodle AI Grader** (Klausuren) abgelöst; beide sind aus dem Repo entfernt.
+> Wer sie noch installiert hat, deaktiviert sie vor dem Umstieg — sonst erscheinen zwei Panels.
 
 Alle laufen **ausschließlich im Browser**. Keine Erweiterung schickt Daten an einen
 Server, keine hat einen eigenen KI-Zugang und keine braucht einen API-Schlüssel.
@@ -68,10 +67,8 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.3.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
-| ~~Moodle AI Grader~~ · [Quelltext](moodle-ai-grader-wxt/) | 3.2.2 | — | ⚠ **Abgelöst durch den Freitext Grader**, kein Download mehr. **Klausuren** mit mehreren Aufgaben in einer Freitextfrage: legt Erwartungshorizont und Antwortvorlage in der Frage an, erzeugt Bewertungs-Prompts, rechnet die Punkte und trägt sie mit begründetem Feedback zurück |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
 | **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.3.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| ~~Moodle AI Coach~~ · [Quelltext](moodle-ai-coach-wxt/) | 1.9.1 | — | ⚠ **Abgelöst durch den Freitext Grader**, kein Download mehr. **Kurze Freitextantworten** (2–3 Sätze): liest den Erwartungshorizont aus der Frage, bewertet und gibt Sprachfeedback |
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
@@ -301,6 +298,6 @@ dem Bildschirm passiert ist (oder eben nicht).
 **CC BY-SA 4.0** — Weitergabe und Bearbeitung erlaubt, mit Namensnennung, und unter
 denselben Bedingungen. Siehe [LICENSE](LICENSE).
 
-Entwickelt von **A. Spielhoff** für den eigenen Unterricht — den **Moodle AI Grader**
+Entwickelt von **A. Spielhoff** für den eigenen Unterricht — den früheren **Moodle AI Grader**
 und den daraus hervorgegangenen **Moodle AI Freitext Grader** zusammen mit **T. Henken**.
 Bei beiden müssen beide Namen genannt bleiben, wer sie weiterverbreitet oder bearbeitet.
