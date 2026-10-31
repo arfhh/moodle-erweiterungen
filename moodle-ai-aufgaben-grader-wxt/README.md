@@ -1,5 +1,7 @@
 # Moodle AI Aufgaben-Grader
 
+**📘 Handbuch:** [Handbuch-Moodle-AI-Aufgaben-Grader.pdf](Handbuch-Moodle-AI-Aufgaben-Grader.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
 Version 1.11.0 · Lizenz: CC BY-SA 4.0
