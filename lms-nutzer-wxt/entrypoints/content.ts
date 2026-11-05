@@ -12,6 +12,12 @@ type Row = {
 };
 type Treffer = { id: number; username: string; email: string; vorname: string; nachname: string; gesperrt: boolean; schule: string; exakt: boolean; aehnlich: boolean };
 
+// Firefox-tauglich: kein innerHTML-Setzen (AMO-Linter), HTML wird über DOMParser eingesetzt.
+function setHtml(el: Element | ShadowRoot, html: string): void {
+  const d = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  el.replaceChildren(...Array.from(d.body.childNodes));
+}
+
 const SCHULEN = schulenRaw as Schule[];
 const K_ROWS = 'nua_rows', K_Q = 'nua_queue', K_SUB = 'nua_submitting';
 const K_KURS = 'nua_kurs', K_RET = 'nua_kurs_ret', K_KAUTO = 'nua_kurs_auto', K_KSUB = 'nua_kurs_sub';
@@ -174,7 +180,7 @@ function beschreibung(html: string) {
   const t = setInterval(() => { // TinyMCE-Rahmen lädt später
     const fr = document.querySelector<HTMLIFrameElement>('iframe.tox-edit-area__iframe, iframe[id*="description_editor"]');
     const b = fr?.contentDocument?.body;
-    if (b && b.isContentEditable !== false) { b.innerHTML = html; b.dispatchEvent(new Event('input', { bubbles: true })); clearInterval(t); }
+    if (b && b.isContentEditable !== false) { setHtml(b, html); b.dispatchEvent(new Event('input', { bubbles: true })); clearInterval(t); }
     else if (++n > 25) clearInterval(t);
   }, 300);
 }
@@ -182,7 +188,7 @@ function banner(html: string, extra?: (b: HTMLElement) => void) {
   document.getElementById('nua-banner')?.remove();
   const b = document.createElement('div'); b.id = 'nua-banner';
   b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#e7f1ff;border:1px solid #0d6efd;border-radius:6px;padding:10px 14px;margin:8px 0;font:14px system-ui;color:#052c65';
-  b.innerHTML = html; (document.querySelector('#region-main') || document.body).prepend(b); extra?.(b);
+  setHtml(b, html); (document.querySelector('#region-main') || document.body).prepend(b); extra?.(b);
 }
 function stopQueue() { ss.del(K_Q); ss.del(K_SUB); }
 
@@ -367,8 +373,8 @@ function rahmen(aktiv: Reiter) {
   const reiter: [Reiter, string][] = [];
   if (istKursSeite()) reiter.push(['kurs', 'Kurs befüllen']);
   if (istAdmin()) reiter.push(['anlegen', 'Nutzer anlegen']);
-  root.innerHTML = `<style>${CSS}</style><div class="p"><header><div class="ttl">${ICON} LMS Nutzer <span class="v">v${browser.runtime.getManifest().version}</span></div><button id="x" title="Schließen">×</button></header>
-  ${reiter.length > 1 ? `<nav>${reiter.map(([k, t]) => `<button data-r="${k}" class="${k === aktiv ? 'on' : ''}">${t}</button>`).join('')}</nav>` : ''}<div class="body" id="body"></div></div>`;
+  setHtml(root, `<style>${CSS}</style><div class="p"><header><div class="ttl">${ICON} LMS Nutzer <span class="v">v${browser.runtime.getManifest().version}</span></div><button id="x" title="Schließen">×</button></header>
+  ${reiter.length > 1 ? `<nav>${reiter.map(([k, t]) => `<button data-r="${k}" class="${k === aktiv ? 'on' : ''}">${t}</button>`).join('')}</nav>` : ''}<div class="body" id="body"></div></div>`);
   root.querySelector<HTMLButtonElement>('#x')!.onclick = schliessen;
   root.querySelectorAll<HTMLButtonElement>('nav button').forEach((b) => (b.onclick = () => (b.dataset.r === 'kurs' ? kursPanel() : oeffnen())));
   return { root, body: root.querySelector<HTMLElement>('#body')! };
@@ -381,12 +387,12 @@ async function kopieren(btn: HTMLButtonElement, text: string) {
 
 function oeffnen(_zeigeEnde = false, autoPr = false) {
   const { root, body } = rahmen('anlegen');
-  body.innerHTML = `${HILFE_ANLEGEN}
+  setHtml(body, `${HILFE_ANLEGEN}
   <section><h4><span class="n">1</span>Liste vorbereiten</h4><p class="m">Anfrage-Mail mit dem Prompt an ChatGPT oder Claude geben, das JSON aus der Antwort unten einfügen.</p><button id="pa">KI-Prompt kopieren</button></section>
   <section><h4><span class="n">2</span>Liste einfügen</h4><textarea id="t" placeholder="JSON hier einfügen"></textarea>
   <div class="bar"><button id="ok" class="${ss.get(K_ROWS, []).length ? '' : 'pri'}">Einlesen</button><button id="leer" class="lnk">Liste löschen</button></div>
   <div class="bar m">Such-Kurs-ID <input id="kurs" size="8" value="${kursId() || ''}"></div></section>
-  <section id="s3"><h4><span class="n">3</span>Prüfen und anlegen</h4><div id="tab"></div></section>`;
+  <section id="s3"><h4><span class="n">3</span>Prüfen und anlegen</h4><div id="tab"></div></section>`);
   const $ = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
   $<HTMLButtonElement>('#pa').onclick = (e) => kopieren(e.currentTarget as HTMLButtonElement, PROMPT_ANLEGEN);
   $<HTMLInputElement>('#kurs').onchange = (e) => { try { localStorage.setItem('nua_course', String(Number((e.target as HTMLInputElement).value) || 0)); } catch { /* egal */ } ss.del('nua_enrol'); };
@@ -397,12 +403,12 @@ function oeffnen(_zeigeEnde = false, autoPr = false) {
     const geprueft = rows.length > 0 && rows.every((r) => r.status !== 'offen');
     $('#s3').style.display = rows.length ? '' : 'none';
     $('#s3').style.display = rows.length ? '' : 'none';
-    $('#tab').innerHTML = !rows.length ? '' : `<div class="bar"><button id="pr" class="${geprueft ? '' : 'pri'}">Alle prüfen</button><button id="go" class="${geprueft && zaehl('neu') ? 'pri' : ''}" ${zaehl('neu') ? '' : 'disabled'}>Neue anlegen (${zaehl('neu')}) – nacheinander</button><button id="cp">Bericht kopieren</button><button class="del">🗑 Liste löschen</button>
+    setHtml($('#tab'), !rows.length ? '' : `<div class="bar"><button id="pr" class="${geprueft ? '' : 'pri'}">Alle prüfen</button><button id="go" class="${geprueft && zaehl('neu') ? 'pri' : ''}" ${zaehl('neu') ? '' : 'disabled'}>Neue anlegen (${zaehl('neu')}) – nacheinander</button><button id="cp">Bericht kopieren</button><button class="del">🗑 Liste löschen</button>
     <span class="m">neu ${zaehl('neu')} · vorhanden ${zaehl('vorhanden')} · gesperrt ${zaehl('gesperrt')} · fertig ${zaehl('fertig')}</span></div>
     ${rows.map((r, i) => `<div class="c" data-i="${i}"><div><b>${esc(r.vorname)} ${esc(r.nachname)}</b> <span class="s ${r.status}">${r.status}</span></div>
     <div class="m">${esc(r.email)}<br>${esc(r.schoolno)} ${esc(r.schoolname)} · ${esc(r.persona)} · <code>${esc(r.username)}</code></div>
     ${r.bemerkung ? `<div class="m">Mail: ${esc(r.bemerkung)}</div>` : ''}${r.hinweis ? `<div class="m">${esc(r.hinweis)}</div>` : ''}
-    ${r.treffer.filter((t) => t.exakt || t.aehnlich).map((t) => `<div class="m">${t.aehnlich ? '<i>ähnlich:</i> ' : ''}<a href="/user/profile.php?id=${t.id}" target="_blank">${esc(t.vorname)} ${esc(t.nachname)}</a> · ${esc(t.username)} · ${esc(t.email)} · ${esc(t.schule)}${t.gesperrt ? ` · <b>gesperrt</b> <button class="ent" data-id="${t.id}">Entsperren</button>` : ''} <a href="/user/editadvanced.php?id=${t.id}" target="_blank">bearbeiten</a></div>`).join('')}</div>`).join('')}`;
+    ${r.treffer.filter((t) => t.exakt || t.aehnlich).map((t) => `<div class="m">${t.aehnlich ? '<i>ähnlich:</i> ' : ''}<a href="/user/profile.php?id=${t.id}" target="_blank">${esc(t.vorname)} ${esc(t.nachname)}</a> · ${esc(t.username)} · ${esc(t.email)} · ${esc(t.schule)}${t.gesperrt ? ` · <b>gesperrt</b> <button class="ent" data-id="${t.id}">Entsperren</button>` : ''} <a href="/user/editadvanced.php?id=${t.id}" target="_blank">bearbeiten</a></div>`).join('')}</div>`).join('')}`);
     const pr = root.querySelector<HTMLButtonElement>('#pr');
     if (pr) pr.onclick = async () => {
       pr.disabled = true;
@@ -430,7 +436,7 @@ function knopf(titel: string, klick: () => void) {
   if (document.getElementById('nua-btn')) return;
   const b = document.createElement('button');
   b.id = 'nua-btn'; b.type = 'button'; b.title = titel;
-  b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>';
+  setHtml(b, '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>');
   b.className = 'btn btn-icon icon-size-3';
   b.style.cssText = 'color:#0d6efd;background:transparent;border:2px solid #0d6efd;border-radius:50%;width:38px;height:38px;padding:0;margin-right:6px;display:inline-flex;align-items:center;justify-content:center';
   b.onclick = klick;
@@ -610,7 +616,7 @@ async function dialogBefuellen(rows: KRow[], roleId: number, rollenName: string)
     if (opt) { opt.click(); await warte(250); } else fehlt.push(`${r.vorname} ${r.nachname}`);
   }
   const n = sel.selectedOptions.length;
-  info.innerHTML = `<b>${n} Person(en) eingetragen</b> als <b>${esc(rollenName)}</b>.${fehlt.length ? ` Nicht übernommen: ${esc(fehlt.join(', '))}.` : ''} Bitte prüfen und unten auf <b>„…einschreiben“</b> klicken.`;
+  setHtml(info, `<b>${n} Person(en) eingetragen</b> als <b>${esc(rollenName)}</b>.${fehlt.length ? ` Nicht übernommen: ${esc(fehlt.join(', '))}.` : ''} Bitte prüfen und unten auf <b>„…einschreiben“</b> klicken.`);
   const btn = [...modal.querySelectorAll<HTMLButtonElement>('.modal-footer button')].find((b) => /einschreiben/i.test(b.textContent || ''));
   btn?.addEventListener('click', () => {
     ss.set(K_KSUB, true);
@@ -632,20 +638,20 @@ async function kursPanel(auto = false) {
   st.enrolid = seite.enrolid;
   const save = () => ss.set(K_KURS, st);
   const { root, body } = rahmen('kurs');
-  body.innerHTML = `${HILFE_KURS}
+  setHtml(body, `${HILFE_KURS}
   <section><h4><span class="n">1</span>Liste vorbereiten</h4><p class="m">Liste in einer Mail oder einem Dokument? Prompt kopieren, mit der Liste in ChatGPT oder Claude einfügen, das JSON aus der Antwort unten einfügen.</p><button id="pk">KI-Prompt kopieren</button></section>
   <section><h4><span class="n">2</span>Liste einfügen</h4>
   <div class="bar" style="margin:0 0 8px"><span class="m">Einschreiben als</span><select id="rolle"><option>lädt …</option></select></div>
   <textarea id="t" placeholder="JSON oder CSV hier einfügen&#10;z. B. email;vorname;nachname"></textarea>
   <div class="bar"><button id="ok" class="${st.rows.length ? '' : 'pri'}">Einlesen</button><input type="file" id="f" accept=".csv,.json,.txt" class="m" style="border:0;padding:0;max-width:190px"><button id="leer" class="lnk">Liste löschen</button></div></section>
-  <section id="s3"><h4><span class="n">3</span>Prüfen und einschreiben</h4><div id="tab"></div></section>`;
+  <section id="s3"><h4><span class="n">3</span>Prüfen und einschreiben</h4><div id="tab"></div></section>`);
   const $ = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
   $<HTMLButtonElement>('#pk').onclick = (e) => kopieren(e.currentTarget as HTMLButtonElement, PROMPT_KURS);
   let rollen: { id: number; name: string; def: boolean }[] = [];
   try { rollen = await kursRollen(st.enrolid); } catch { /* unten Hinweis */ }
   if (!st.rid) st.rid = rollen.find((r) => r.def)?.id || rollen[0]?.id || 5;
   const rName = (id: number) => rollen.find((r) => r.id === id)?.name || `Rolle ${id}`;
-  $('#rolle').innerHTML = rollen.length ? rollen.map((r) => `<option value="${r.id}" ${r.id === st!.rid ? 'selected' : ''}>${esc(r.name)}</option>`).join('') : '<option>Rollen nicht lesbar</option>';
+  setHtml($('#rolle'), rollen.length ? rollen.map((r) => `<option value="${r.id}" ${r.id === st!.rid ? 'selected' : ''}>${esc(r.name)}</option>`).join('') : '<option>Rollen nicht lesbar</option>');
   $<HTMLSelectElement>('#rolle').onchange = (e) => { st!.rid = Number((e.target as HTMLSelectElement).value); save(); draw(); };
   let kursIds = new Set<number>();
   const zielRolle = (r: KRow) => (r.rid > 0 ? r.rid : st!.rid);
@@ -658,7 +664,7 @@ async function kursPanel(auto = false) {
     rows.filter((r) => r.status === 'gefunden').forEach((r) => { const k = zielRolle(r); gruppen.set(k, [...(gruppen.get(k) || []), r]); });
     const fehlend = rows.filter((r) => r.status === 'fehlt');
     $('#s3').style.display = rows.length ? '' : 'none';
-    $('#tab').innerHTML = !rows.length ? '' : `<div class="bar"><button id="pr" class="${geprueft ? '' : 'pri'}">${geprueft ? 'Neu prüfen' : 'Prüfen'}</button>
+    setHtml($('#tab'), !rows.length ? '' : `<div class="bar"><button id="pr" class="${geprueft ? '' : 'pri'}">${geprueft ? 'Neu prüfen' : 'Prüfen'}</button>
       ${[...gruppen].map(([rid, g]) => `<button class="ein ${geprueft ? 'pri' : ''}" data-rid="${rid}">Einschreiben als ${esc(rName(rid))} (${g.length})</button>`).join('')}</div>
       <div class="m">gefunden ${z('gefunden')} · schon im Kurs ${z('imkurs')} · unklar ${z('unklar')} · nicht im System ${z('fehlt')}</div>
       ${geprueft && !gruppen.size && !z('unklar') && !fehlend.length ? '<div class="done">✓ Fertig – alle Personen sind im Kurs.</div>' : ''}
@@ -670,7 +676,7 @@ async function kursPanel(auto = false) {
         <div class="m">${esc(r.email)} · ${esc(r.rid > 0 ? rName(r.rid) : r.rid === -1 ? `Rolle? (${r.rolle})` : rName(st!.rid))}${r.id ? ` · <a href="/user/profile.php?id=${r.id}" target="_blank">Profil</a>` : ''}</div>
         ${r.hinweis ? `<div class="m">${esc(r.hinweis)}</div>` : ''}
         ${r.gesperrt && admin ? `<div class="m"><button class="k ent" data-id="${r.id}">Entsperren</button></div>` : ''}
-        ${r.status === 'unklar' ? r.treffer.map((t) => `<div class="m"><a href="/user/profile.php?id=${t.id}" target="_blank">${esc(t.fullname)}</a> · ${esc(t.email)}${kursIds.has(t.id) ? ' · <b>im Kurs</b>' : ''} <button class="k nimm" data-i="${i}" data-id="${t.id}">dieses Konto</button></div>`).join('') + (r.rid !== -1 ? `<div class="m"><button class="k fehl" data-i="${i}">als fehlend markieren</button></div>` : '') : ''}</div>`).join('')}`;
+        ${r.status === 'unklar' ? r.treffer.map((t) => `<div class="m"><a href="/user/profile.php?id=${t.id}" target="_blank">${esc(t.fullname)}</a> · ${esc(t.email)}${kursIds.has(t.id) ? ' · <b>im Kurs</b>' : ''} <button class="k nimm" data-i="${i}" data-id="${t.id}">dieses Konto</button></div>`).join('') + (r.rid !== -1 ? `<div class="m"><button class="k fehl" data-i="${i}">als fehlend markieren</button></div>` : '') : ''}</div>`).join('')}`);
     const pr = root.querySelector<HTMLButtonElement>('#pr');
     if (pr) pr.onclick = () => pruefeAlle(pr);
     root.querySelectorAll<HTMLButtonElement>('.ein').forEach((b) => (b.onclick = async () => {

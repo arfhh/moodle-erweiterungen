@@ -2,7 +2,7 @@
 
 Browser-Erweiterung (Chrome, Firefox, Edge) für das LMS Hamburg (lms.lernen.hamburg). Sie nimmt eine Liste von Personen als JSON, prüft, ob es die Personen schon gibt, und füllt für alle neuen Personen nacheinander das Formular „Nutzer/in anlegen“ aus. Das Speichern bleibt bei dir: Die Erweiterung klickt nie selbst auf „Nutzer/in erstellen“.
 
-**Version:** 1.0.0 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
+**Version:** 1.0.1 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
 
 ## Warum es sie gibt
 
@@ -20,7 +20,7 @@ Das Download-ZIP enthält je einen Ordner pro Browser.
 **Firefox**
 1. Im Ordner `lms-nutzer-firefox` die `.xpi`-Datei in ein Firefox-Fenster ziehen und die Installation bestätigen.
 
-Nach jeder neuen Fassung: Ordner ersetzen bzw. neue `.xpi` installieren, die Erweiterung neu laden und danach die LMS-Seite neu laden. Im Panel-Kopf steht die geladene Version („v1.0.0“).
+Nach jeder neuen Fassung: Ordner ersetzen bzw. neue `.xpi` installieren, die Erweiterung neu laden und danach die LMS-Seite neu laden. Im Panel-Kopf steht die geladene Version („v1.0.1“).
 
 Die Erweiterung wird nur aktiv, wenn du im LMS als Administrator angemeldet bist (sie erkennt das am Link zur Website-Administration).
 
@@ -102,6 +102,7 @@ Bauen: `npm install`, danach `npm run build-all` (Ergebnis in `Erweiterung/lms-n
 
 ## Versionen
 
+- **1.0.1** Firefox: HTML wird ohne innerHTML eingesetzt (keine Warnungen mehr beim Signieren).
 - **1.0.0** Erste öffentliche Fassung: Chrome, Firefox und Edge aus einer Codebasis (WXT), Download-ZIP im Repo. Keine voreingestellte Such-Kurs-ID mehr – sie muss einmal eingetragen werden.
 - **0.5.10** Fix Abgleich „schon im Kurs“: Teilnehmer kommen jetzt über die Moodle-Schnittstelle (vorher störte ein gespeicherter Filter der Teilnehmerseite); gleiche Erkennungsregeln (Dienstkonto, abweichender Vorname) auch für Eingeschriebene; bereits zugeordnete Konten werden wiedererkannt.
 - **0.5.8** Nach dem Einschreiben: roter Hinweis „Nächster Schritt“ und roter Knopf „Fehlende anlegen“ (Admin) bzw. „Fehlende als CSV“; grüner Hinweis, wenn alle im Kurs sind.
