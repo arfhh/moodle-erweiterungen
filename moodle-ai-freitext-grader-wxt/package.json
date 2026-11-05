@@ -15,6 +15,7 @@
     "lint": "web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-chrom && web-ext lint --source-dir=Erweiterung/moodle-ai-freitext-grader-firefox",
     "postinstall": "node node_modules/wxt/bin/wxt.mjs prepare",
     "paket": "bash scripts/paketieren.sh",
+    "test": "node --test tests/*.test.mjs",
     "sign:firefox": "web-ext sign --source-dir=\"Erweiterung/moodle-ai-freitext-grader-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\" --artifacts-dir=web-ext-artifacts --channel=unlisted"
   },
   "devDependencies": {

@@ -22,6 +22,18 @@ for p in $PROJECTS; do
       echo "Warnung: $p/node_modules fehlt — ZIP wird NICHT automatisch aktualisiert (erst 'npm install' in $p nachholen)." >&2
       continue
     fi
+    # Rechentests zuerst (node --test, ohne Zusatzpakete) — rechnet etwas falsch,
+    # wird weder gebaut noch committet.
+    if ls "$p"/tests/*.test.mjs >/dev/null 2>&1; then
+      if ! (cd "$p" && node --test tests/*.test.mjs) >/tmp/tests-$$.log 2>&1; then
+        echo "✗ Rechentests von $p fehlgeschlagen — Commit abgebrochen:" >&2
+        grep -E "^not ok|expected|actual|Error" /tmp/tests-$$.log >&2
+        rm -f /tmp/tests-$$.log
+        exit 1
+      fi
+      rm -f /tmp/tests-$$.log
+      echo "✓ Rechentests $p bestanden"
+    fi
     echo "→ $p geaendert, baue ZIP neu…"
     LOG="$(mktemp)"
     if ! (cd "$p" && npm run paket) >"$LOG" 2>&1; then

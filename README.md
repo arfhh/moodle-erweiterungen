@@ -366,6 +366,10 @@ Fehler, Verbesserungen und Erfahrungen aus anderen Moodle-Installationen sind
 willkommen — am liebsten als Issue mit Moodle-Version, Browser, Theme und dem, was auf
 dem Bildschirm passiert ist (oder eben nicht).
 
+**Rechentests:** Freitext Grader (Rechtschreibabzug) und Reviewer (feste Regeln vor der KI)
+haben kleine Tests in `tests/` – `npm test` im jeweiligen Ordner, ohne Zusatzpakete. Der
+Pre-Commit-Hook führt sie vor dem ZIP-Bau automatisch aus und bricht bei einem Fehler ab.
+
 **Kontakt:** Fehler, Fragen und Hinweise – auch zu Datenschutz oder Urheberrecht – bitte über die
 [GitHub-Issues](https://github.com/arfhh/moodle-erweiterungen/issues). Ich schaue regelmäßig
 hinein und korrigiere Fehler so schnell wie möglich.
