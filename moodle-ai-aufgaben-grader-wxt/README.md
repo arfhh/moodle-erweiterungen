@@ -4,7 +4,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.11.1 · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
+Version 1.11.2 · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Freitext Grader und Reviewer — beide für
 > Testfragen) bewertet der Aufgaben-Grader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -155,7 +155,9 @@ Downloads am selben Tag „ (1)" an.
   dienstlich freigegebene KI nutzen. „Bewertungsübersicht mitladen" nur einschalten, wenn
   nötig.
 - Im Browser (`storage.local`) liegen Einstellungen, Maßstab und je Aufgabe der
-  Abgabestand (Moodle-Nutzernummer, Dateinamen, Prüfsummen).
+  Abgabestand (Moodle-Nutzernummer, Dateinamen, Prüfsummen). Der Abgabestand verfällt 90 Tage
+  nach dem letzten Download (danach lädt der nächste Download wieder alles); sofort löschen:
+  Einstellungen → „Gespeicherten Stand aller Aufgaben löschen“.
 
 Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../README.md#datenschutz).
 

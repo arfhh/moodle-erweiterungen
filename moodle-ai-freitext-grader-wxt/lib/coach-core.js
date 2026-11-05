@@ -31,6 +31,7 @@ import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './
 import { KI_HINWEIS_STANDARD, GEMEINSAME_OPTIONEN, GEMEINSAM_STANDARD, ohneQuellenTief } from './gemeinsam/feedback-optionen.js';
 import { rundgangSpeichern, einzelseiteUrl } from './gemeinsam/rundgang.js';
 import { verteilungSvg, svgKnoten } from './gemeinsam/punkteverteilung.js';
+import { merken, aufraeumen, allesLoeschen } from './ablauf.js';
 
 export function starteCoach(opts) {
   'use strict';
@@ -1671,6 +1672,11 @@ ${DATEN_PLATZHALTER}`;
           übersprungen. Das Häkchen betrifft nur Aufgaben ohne diese Kennzeichnung: aus (Standard) werden
           sie bewertet, wenn ihr Horizont wie ein Kurztest aussieht; an bleiben sie liegen.</p>
         </details>
+        <button class="co-datenweg co-zweit">Gespeicherte Antworten löschen</button>
+        <p class="co-hinweis">Damit ein Neuladen der Seite nichts kostet, merkt sich die Erweiterung die
+        zuletzt ausgelesenen Antworten je Test (ohne Namen, nur in diesem Browser). Sie verfallen 90 Tage
+        nach dem letzten Auslesen von selbst; dieser Knopf löscht sie sofort für alle Tests.
+        Einstellungen bleiben.</p>
         <button class="co-optreset co-zweit">Alles auf Standard zurücksetzen</button>
       </details>
       <button class="co-optsave">Speichern und zurück</button>
@@ -1688,7 +1694,9 @@ ${DATEN_PLATZHALTER}`;
   const ERNTE_KEY = 'coachErnte_' + CMID + (EINZEL ? '_slot' + EINZEL.slot : '');
   function ernteSichern() {
     try { browser.storage.local.set({ [ERNTE_KEY]: ausgabe }); } catch (e) { /* egal */ }
+    merken(ERNTE_KEY);
   }
+  aufraeumen(['coachErnte_']);
   try {
     browser.storage.local.get([ERNTE_KEY], (r) => {
       const d = r && r[ERNTE_KEY];
@@ -1862,6 +1870,11 @@ ${DATEN_PLATZHALTER}`;
     knopf.textContent = text;
     setTimeout(() => (knopf.textContent = urText), 2000);
   }
+  $('.co-datenweg').addEventListener('click', async () => {
+    const n = await allesLoeschen(['coachErnte_']);
+    kurzQuittung($('.co-datenweg'), n < 0 ? 'Löschen hat nicht geklappt' : `✓ ${n} Test(s) gelöscht`,
+      'Gespeicherte Antworten löschen');
+  });
   $('.co-promptstd').addEventListener('click', () => {
     $('.co-prompt').value = vorlageAktiv();
     kurzQuittung($('.co-promptstd'), '✓ eingefügt', 'Standard einfügen');

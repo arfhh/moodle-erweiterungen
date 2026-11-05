@@ -6,6 +6,7 @@
 //  4. Versionsnummer per textContent statt Einsetzung ins innerHTML
 // Sonst ist die Datei zeilengleich mit der bewaehrten Fassung.
 import { browser } from 'wxt/browser';
+import { merken, aufraeumen, allesLoeschen } from './ablauf.js';
 
 /*
  * Moodle AI Aufgaben-Grader — content.js
@@ -1170,10 +1171,13 @@ export function starteGrader() {
       <div class="abg-hinweis">Werden automatisch aus den Klarnamen gebildet: Vorname- und Nachname-Initiale plus eine aus dem vollen Namen berechnete Zahl (z. B. „KM-42") — immer, auch wenn die Initialen gerade eindeutig sind. So ändert sich das Kürzel nicht mehr nachträglich, wenn später ein zweiter KM in die Klasse kommt. Rein aus dem Namen berechnet — es gibt nichts zu sichern oder einzulesen.</div>
       <button class="abg-sekundaer" id="abg-reset">Stand dieser Aufgabe zurücksetzen</button>
       <div class="abg-hinweis">Vergisst, was beim letzten Download schon geladen war — der nächste Durchgang holt dann wieder alle Abgaben. Nötig, wenn der Output-Ordner verloren gegangen ist.</div>
+      <button class="abg-sekundaer" id="abg-datenweg">Gespeicherten Stand aller Aufgaben löschen</button>
+      <div class="abg-hinweis" id="abg-datenweg-info">Je Aufgabe merkt sich die Erweiterung, was schon geladen war (Moodle-Nutzernummer, Dateinamen, Prüfsummen — nur in diesem Browser). Das verfällt 90 Tage nach dem letzten Download von selbst; danach holt der nächste Download wieder alle Abgaben. Dieser Knopf löscht es sofort für alle Aufgaben.</div>
       <button class="abg-sekundaer" id="abg-einst-speichern">Einstellungen speichern</button>
       <div class="abg-hinweis">Speichert alle Angaben dieses Reiters. Sie gelten ab dem nächsten Download bzw. Prompt.</div>
     `;
     body.appendChild(panelEinstellungen);
+    aufraeumen(['abgStand_']);
     panelEinstellungen.querySelector('#abg-skill').value = einst.skill || '';
     panelEinstellungen.querySelector('#abg-dupl').checked = !!einst.duplikate;
     panelEinstellungen.querySelector('#abg-loes').checked = !!einst.loesungen;
@@ -1185,6 +1189,14 @@ export function starteGrader() {
     panelEinstellungen.querySelector('#abg-reset').addEventListener('click', async () => {
       await storageRemove(['abgStand_' + cmid]);
       logZeile(body, 'Stand zurückgesetzt — der nächste Download holt wieder alle Abgaben.', 'ok');
+    });
+
+    panelEinstellungen.querySelector('#abg-datenweg').addEventListener('click', async () => {
+      const n = await allesLoeschen(['abgStand_']);
+      const b = panelEinstellungen.querySelector('#abg-datenweg');
+      const alt = b.textContent;
+      b.textContent = n < 0 ? 'Löschen hat nicht geklappt' : `✓ Stand von ${n} Aufgabe(n) gelöscht`;
+      setTimeout(() => { b.textContent = alt; }, 3000);
     });
 
     panelEinstellungen.querySelector('#abg-einst-speichern').addEventListener('click', async () => {
@@ -1880,6 +1892,7 @@ export function starteGrader() {
       neuerStand[t.userid] = { dateien: eigene };
     }
     await storageSet({ [standKey]: { sus: neuerStand, stand: Date.now() } });
+    merken(standKey);
     logZeile(body, `Abgleich mit dem letzten Lauf: ${zaehler.neu} neu, ${zaehler.geaendert} geändert, ${zaehler.unveraendert} unverändert`
       + (zaehler.uebersprungen ? ` (davon ${zaehler.uebersprungen} nicht geladen).` : '.'));
 

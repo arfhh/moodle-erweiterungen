@@ -4,7 +4,7 @@
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
-Version 2.4.1 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
+Version 2.4.2 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -524,6 +524,8 @@ an der Schule.
   auf deinem Rechner.
 - Die Fehlersammlung und ein API-Schlüssel liegen nur in deinem Browser
   (`storage.local`), nicht in Moodle und nicht beim Entwickler.
+- Die zuletzt ausgelesenen Funde je Test verfallen 90 Tage nach dem letzten Auslesen; sofort
+  löschen: ⚙ → „Gespeicherte Testdaten löschen“. Die Fehlersammlung bleibt, bis du sie leerst.
 
 ---
 
@@ -541,11 +543,15 @@ an der Schule.
 
 ---
 
-*Moodle AI Reviewer – Version 2.4.1 · Entwickelt von A. Spielhoff · Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.4.2 · Entwickelt von A. Spielhoff · Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.4.2 (05.11.2026)**
+
+- Gespeicherte Schülerdaten verfallen nach 90 Tagen; neuer Knopf zum sofortigen Löschen (⚙ → „Gespeicherte Testdaten“). Die Fehlersammlung ist nicht betroffen.
 
 **2.4.1 (05.11.2026)**
 

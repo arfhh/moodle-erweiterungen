@@ -67,9 +67,9 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
-| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.4.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
+| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.4.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
+| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
 | **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.5 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
@@ -334,7 +334,10 @@ Nur an zwei Stellen, und beide Male durch deinen Klick:
 
 ### Was im Browser gespeichert wird
 
-Nur lokal in deinem Browser, nicht in Moodle und nicht beim Entwickler. Was im Speicher der
+Nur lokal in deinem Browser, nicht in Moodle und nicht beim Entwickler. **Ausgelesene
+Schülerdaten verfallen 90 Tage nach dem letzten Speichern** von selbst und lassen sich in den
+Einstellungen jeder Erweiterung sofort löschen (Freitext Grader, Reviewer, Aufgaben-Grader).
+Was im Speicher der
 Erweiterung liegt, löscht der Browser beim Entfernen der Erweiterung mit. Kleine
 Zwischenstände von Cloze Autofill, Notenstufen Autofill und LMS Nutzer liegen dagegen im
 Speicher der Moodle-Seite und bleiben, bis du die Websitedaten von Moodle löschst.

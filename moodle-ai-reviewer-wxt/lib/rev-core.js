@@ -31,6 +31,7 @@ import { kiDirektBewerten } from './ki-bewertung.js';
 import { verteilungSvg, svgKnoten } from './punkteverteilung.js';
 import { kiLaden, istLokal } from './ki-direkt/einstellungen.js';
 import { kiNachricht, kiFehlerText } from './ki-direkt/client.js';
+import { merken, aufraeumen, allesLoeschen } from './ablauf.js';
 
 export function starteReviewer() {
   'use strict';
@@ -1322,6 +1323,15 @@ ${DATEN_PLATZHALTER}`;
         <p class="ce-sinfo ce-hidden"></p>
       </div>
 
+      <div class="ce-abschnitt">
+        <p class="ce-abschnittkopf">Gespeicherte Testdaten</p>
+        <p class="ce-hinweis">Damit ein Neuladen der Seite nichts kostet, merkt sich die Erweiterung die
+        zuletzt ausgelesenen Funde je Test (ohne Namen, nur in diesem Browser). Sie verfallen 90 Tage
+        nach dem letzten Auslesen von selbst. Die Fehlersammlung ist davon nicht betroffen.</p>
+        <button class="ce-datenweg ce-zweit">Gespeicherte Testdaten löschen</button>
+        <p class="ce-dinfo ce-hinweis ce-hidden"></p>
+      </div>
+
       <details class="ce-abschnitt ce-erweitert">
         <summary class="ce-abschnittkopf">Erweitert</summary>
         <label class="ce-check"><input type="checkbox" class="ce-voll">
@@ -1405,7 +1415,9 @@ ${DATEN_PLATZHALTER}`;
   const ERNTE_KEY = 'reviewerErnte_' + CMID;
   function ernteSichern() {
     try { browser.storage.local.set({ [ERNTE_KEY]: ausgabe }); } catch (e) { /* egal */ }
+    merken(ERNTE_KEY);
   }
+  aufraeumen(['reviewerErnte_']);
   try {
     browser.storage.local.get([ERNTE_KEY], (r) => {
       const d = r && r[ERNTE_KEY];
@@ -1609,6 +1621,14 @@ ${DATEN_PLATZHALTER}`;
     await sammlungLeeren();
     sammlungAnzeigen();
     sammelMeldung('Sammlung geleert.');
+  });
+
+  $('.ce-datenweg').addEventListener('click', async () => {
+    const n = await allesLoeschen(['reviewerErnte_']);
+    const i = $('.ce-dinfo');
+    i.textContent = n < 0 ? 'Löschen hat nicht geklappt.' : `✓ Gespeicherte Daten von ${n} Test(s) gelöscht.`;
+    i.classList.remove('ce-hidden');
+    setTimeout(() => i.classList.add('ce-hidden'), 5000);
   });
 
   knopf.addEventListener('click', () => panel.classList.toggle('ce-hidden'));
