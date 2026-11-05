@@ -10,7 +10,7 @@
  * "mnv-aktiv" traegt. Umschalten heisst nur, diese Klasse zu setzen — nachgeladene Inhalte
  * (Moodle laedt viel per Ajax) sind damit automatisch mit erfasst.
  *
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 import { ladeEinstellung, speichereEinstellung, SCHLUESSEL, STANDARD } from './speicher.js';
@@ -174,7 +174,7 @@ function baueUi() {
       <p class="mnv-hinweis">Idee: <a href="https://github.com/andreasschenkel/moodle-textblock-blurmode_controller" target="_blank" rel="noopener noreferrer">Andreas Schenkel</a>,
       nach Code und Ideen von <a href="https://github.com/mattgig" target="_blank" rel="noopener noreferrer">Matthias Giger</a>
       und <a href="https://github.com/fdagner" target="_blank" rel="noopener noreferrer">Florian Dagner</a>.
-      Umsetzung: A. Spielhoff · CC BY-SA 4.0. Die Einstellung wird im Browser gemerkt.</p>
+      Umsetzung: A. Spielhoff · MIT-Lizenz. Die Einstellung wird im Browser gemerkt.</p>
     </div>
     <div id="mnv-leiste">
       <button type="button" id="mnv-toggle"></button>

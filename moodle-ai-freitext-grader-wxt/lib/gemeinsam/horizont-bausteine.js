@@ -2,7 +2,7 @@
  * Zwei Grundprompts (Kurztest, Klausur) + je Feedbacklaenge ein Stufenblock.
  * Wichtig: Die Feedbacklaenge aendert nur das Material fuer die Rueckmeldung,
  * nie die Schaerfe der Bewertungsstufen.
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 
 const STUFE_KURZTEST = {

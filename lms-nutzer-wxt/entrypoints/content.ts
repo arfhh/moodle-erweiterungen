@@ -1,4 +1,4 @@
-// © 2026 A. Spielhoff – CC BY-SA 4.0
+// © 2026 A. Spielhoff – MIT-Lizenz
 // LMS Nutzer – Content Script (nur lesend + Formular vorausfüllen; Speichern macht die Lehrkraft)
 import schulenRaw from '../schulen.json';
 

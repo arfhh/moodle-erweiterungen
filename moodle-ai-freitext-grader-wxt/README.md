@@ -1,6 +1,6 @@
 # Moodle AI Freitext Grader
 
-Version 1.3.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
+Version 1.4.1 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Freitext-Grader.pdf](Handbuch-Moodle-AI-Freitext-Grader.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -193,6 +193,8 @@ Version automatisch.
 
 ## Versionshinweise
 
+**1.4.1 (05.11.2026)** — Lizenz: Code jetzt unter MIT, Handbuch und Doku weiter CC BY-SA 4.0.
+
 **1.3.0 (29.10.2026)** — Einfachere Oberfläche: gleicher Aufbau in beiden Wegen (Reiter,
 Schritte 1–3, Speichern/Verwerfen), „Für diese Bewertung" als Kurzzeile mit [ändern],
 je Reiter ein Kasten „So funktioniert's", Selten Gebrauchtes unter „Für Fortgeschrittene",
@@ -215,4 +217,4 @@ Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../R
 
 ## Lizenz
 
-© 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
+© 2026 T. Henken & A. Spielhoff — Code unter der [MIT-Lizenz](../LICENSE), Handbuch und Doku unter CC BY-SA 4.0. Beide Namen müssen genannt bleiben.

@@ -4,8 +4,8 @@
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
-Version 2.4.0 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
-Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
+Version 2.4.1 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
+Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
 > frei eingetippten Antworten übersehen hat — in Cloze-Lücken wie in Kurzantwort-Fragen.
@@ -541,11 +541,15 @@ an der Schule.
 
 ---
 
-*Moodle AI Reviewer – Version 2.4.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.4.1 · Entwickelt von A. Spielhoff · Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.4.1 (05.11.2026)**
+
+- Lizenz: Code jetzt unter MIT, Handbuch und Doku weiter CC BY-SA 4.0.
 
 **2.4.0 (05.11.2026)**
 

@@ -3,7 +3,7 @@
  * die Anzahl. Volle Punktzahl LINKS, 0 rechts (Arne, 28.10.2026). Balken = echte Anzahl, darueber die Gauss-Kurve aus Mittelwert und Streuung.
  * Farbe nach Anteil an der Hoechstpunktzahl (Arne, 26.10.2026):
  *   < 35 % rot · 35–45 % rot→gelb · 45–55 % gelb · 55–65 % gelb→gruen · ab 65 % gruen
- * © 2026 A. Spielhoff, CC BY-SA 4.0
+ * © 2026 A. Spielhoff, MIT-Lizenz
  */
 const ROT = '#dc2626', GELB = '#eab308', GRUEN = '#16a34a';
 const mix = (a, b, t) => '#' + [1, 3, 5].map((i) =>

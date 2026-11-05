@@ -1,6 +1,6 @@
 # Moodle Namen verbergen
 
-*Version 1.0.4 · Entwickelt von A. Spielhoff · Lizenz: CC BY-SA 4.0*
+*Version 1.0.5 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 **📘 Handbuch:** [Handbuch-Moodle-Namen-verbergen.pdf](Handbuch-Moodle-Namen-verbergen.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -87,6 +87,7 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.0.5** (05.11.2026) — Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.
 - **1.0.4** (25.09.2026) — Die Fehlerbehebung aus 1.0.3 war durch einen Übertragungsfehler nicht im Code angekommen; jetzt tatsächlich enthalten.
 - **1.0.3** (25.09.2026) — Fehlerbehebung zu 1.0.2: Bei gespeichertem „an" lief die Markierung schon vor dem Aufbau der Seite (noch ohne `<body>`), warf einen Fehler und verhinderte damit den Knopf; die Markierung prüft jetzt `<body>` und kann den Aufbau der Oberfläche nicht mehr blockieren.
 - **1.0.2** (25.09.2026) — E-Mail-Adressen und Benutzernamen in Tabellen (Testauswertung „Übersicht" und „Antworten", Teilnehmerliste) werden über den Spaltenkopf erkannt und verwischt; ebenso Elemente, die nur aus einer Adresse bestehen. Neu nachgeladene Tabellen werden mit erfasst.

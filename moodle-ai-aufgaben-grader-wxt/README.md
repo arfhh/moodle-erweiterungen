@@ -4,7 +4,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.11.0 · Lizenz: CC BY-SA 4.0
+Version 1.11.1 · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Freitext Grader und Reviewer — beide für
 > Testfragen) bewertet der Aufgaben-Grader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -218,4 +218,4 @@ Lizenz: CC BY 4.0. Quelle und weitere Zusatzpakete:
 
 ---
 
-Entwickler: Arne Spielhoff · Lizenz: CC BY-SA 4.0
+Entwickler: Arne Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0

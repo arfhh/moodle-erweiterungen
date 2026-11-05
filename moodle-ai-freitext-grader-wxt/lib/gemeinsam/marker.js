@@ -7,7 +7,7 @@
  * Der Marker wird IMMER von der Erweiterung gesetzt, nie von der KI, und geht nie
  * in einen Prompt.
  *
- * © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
+ * © 2026 T. Henken & A. Spielhoff — MIT-Lizenz
  */
 
 export const MARKER_KURZTEST = '[moodle-ai-freitext: kurztest]';

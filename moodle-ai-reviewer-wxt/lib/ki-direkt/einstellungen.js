@@ -5,7 +5,7 @@
  * (Datenschutz). Alles OpenAI-kompatibel
  * (POST <basis>/chat/completions, GET <basis>/models). Standard: AUS.
  * Nichts ist fest verdrahtet: Adresse und Modell sind frei einstellbar.
- * © 2026 A. Spielhoff, CC BY-SA 4.0
+ * © 2026 A. Spielhoff, MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 

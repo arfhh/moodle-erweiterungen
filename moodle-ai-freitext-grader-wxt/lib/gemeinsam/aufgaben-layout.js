@@ -4,7 +4,7 @@
  * Design (abgestimmt 16.10.2026): AFB-Kartendesign v2 ohne Icon; Marke als weisser
  * Kreis mit dunklem Rand und schwarzer Schrift (1, 2a, 2b; Kurztest a, b); jede
  * Teilaufgabe eine eigene Karte; Punkte immer am Ende.
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 
 export const KARTEN_FARBEN = {

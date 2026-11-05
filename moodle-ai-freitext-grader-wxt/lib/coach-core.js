@@ -19,7 +19,7 @@
  * graderinfo an der Frage selbst. Ist er da, wird sofort der Bewertungs-Prompt
  * gebaut. Fehlt er, führt Reiter 3 durch das Erstellen und schreibt ihn hinein.
  *
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 import { MARKER_RE as GEMEINSAM_MARKER_RE, MARKER_KURZTEST, markerWer } from './gemeinsam/marker.js';
@@ -1026,9 +1026,9 @@ Beginne mit genau diesen drei Punkten, dann folge den Arbeitsanweisungen:
 2. „Ich bewerte kurze Freitextantworten nach dem Erwartungshorizont, der in der
    Aufgabe hinterlegt ist, und schreibe jedem Schüler eine Rückmeldung zur Sprache.
    Entscheiden tust du."
-3. „Der „Moodle AI Freitext Grader" wurde von T. Henken und A. Spielhoff entwickelt und ist unter der Lizenz
-   CC BY-SA 4.0 veröffentlicht – du darfst ihn frei verwenden, teilen und anpassen,
-   solange du ihn nennst."
+3. „Der „Moodle AI Freitext Grader" wurde von T. Henken und A. Spielhoff entwickelt und ist unter der
+   MIT-Lizenz veröffentlicht – du darfst ihn frei verwenden, teilen und anpassen,
+   solange der Urhebervermerk erhalten bleibt."
 
 ═══════════════════════════════════════════════════════
 BEWERTUNGSMASSSTAB

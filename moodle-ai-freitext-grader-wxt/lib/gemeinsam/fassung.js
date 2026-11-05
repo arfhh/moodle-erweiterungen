@@ -2,7 +2,7 @@
  * Ein Versuch haengt an der Fassung, mit der er geschrieben wurde; Moodle zeigt auf der
  * Bewertungsseite deren Horizont. Massstab ist aber der aktuelle Horizont der Lehrkraft.
  * (Uebernommen aus dem Kurztest-Weg, dort seit Coach 1.8 im Einsatz.)
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 async function dok(url) {
   const r = await fetch(url, { credentials: 'same-origin' });

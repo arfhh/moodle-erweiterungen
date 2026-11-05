@@ -2,7 +2,7 @@ import { defineConfig } from 'wxt';
 
 // LMS Nutzer – Version steht hier (Quelle der Wahrheit).
 // Aufbau wie bei den anderen Erweiterungen dieses Repos (siehe moodle-namen-verbergen-wxt).
-// © 2026 A. Spielhoff – CC BY-SA 4.0
+// © 2026 A. Spielhoff – MIT-Lizenz
 export default defineConfig({
   outDir: 'Erweiterung',
   // Schreibweise "chrom" wie bei den anderen: Chrome leitet die ID einer entpackten
@@ -11,7 +11,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'LMS Nutzer',
-    version: '1.0.1',
+    version: '1.0.2',
     description:
       'Prüft Nutzer im LMS Hamburg auf Vorhandensein und füllt das Anlegeformular nacheinander vor. Speichern bleibt bei der Lehrkraft.',
     permissions: [],

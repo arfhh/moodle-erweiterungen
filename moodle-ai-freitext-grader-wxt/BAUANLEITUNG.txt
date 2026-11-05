@@ -12,4 +12,4 @@ Quelltext der Erweiterung: entrypoints/content.ts, lib/*.js, lib/gemeinsam/*.js,
 Gebaut mit WXT (https://wxt.dev). Kein externer Code zur Laufzeit, kein Netzverkehr ausser
 zu der Moodle-Seite, auf der die Erweiterung laeuft. Keine Datensammlung.
 
-Lizenz CC BY-SA 4.0 – T. Henken und A. Spielhoff.
+Lizenz: Code MIT, Handbuch CC BY-SA 4.0 – T. Henken und A. Spielhoff.

@@ -15,4 +15,4 @@ Moodle-Seite, auf der die Erweiterung laeuft, und – nur wenn die Lehrkraft die
 Funktion "KI direkt" einschaltet – zu der KI-Adresse, die sie selbst eintraegt.
 Keine Telemetrie, keine Datensammlung durch den Entwickler.
 
-Lizenz CC BY-SA 4.0 – A. Spielhoff.
+Lizenz: Code MIT, Handbuch CC BY-SA 4.0 – A. Spielhoff.

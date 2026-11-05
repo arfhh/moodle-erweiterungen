@@ -6,7 +6,7 @@
  * Abgedeckt: TinyMCE (iframe <id>_ifr), Atto (div <id>editable), reines Textfeld.
  * Kein Zugriff auf Seiten-JavaScript noetig — nur DOM.
  *
- * © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
+ * © 2026 T. Henken & A. Spielhoff — MIT-Lizenz
  */
 // HTML sicher in einen Editor-Koerper setzen (seit 1.1.4): ueber DOMParser statt innerHTML,
 // Skripte, eingebettete Objekte und on…-Handler werden vorher entfernt. Mozillas Pruefung

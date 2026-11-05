@@ -1,5 +1,5 @@
 /* Baustein "KI direkt" — Aufrufe aus Content Script oder Optionsseite.
- * © 2026 A. Spielhoff, CC BY-SA 4.0
+ * © 2026 A. Spielhoff, MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 

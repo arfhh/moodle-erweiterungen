@@ -33,7 +33,7 @@ npm run lint
    (siehe Prüfer-Hinweis unten), Fehler dürfen keine kommen.
 4. Frage „Verwenden Sie Code-Generatoren, Minifizierer …?" → **Ja** → `…-quellcode.zip`
    hochladen.
-5. Versionshinweise und Prüfer-Hinweis aus Abschnitt 4 eintragen, Lizenz **CC BY-SA 4.0**,
+5. Versionshinweise und Prüfer-Hinweis aus Abschnitt 4 eintragen, Lizenz **MIT License**,
    absenden.
 6. Nach der Signierung (meist Minuten) die `.xpi` herunterladen und als
    `Moodle AI Reviewer-<version>.xpi` in `Erweiterung/moodle-ai-reviewer-firefox/` legen, die

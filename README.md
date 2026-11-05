@@ -67,13 +67,13 @@ werden".
 
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
-| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
-| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.4.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
-| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
-| **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
-| **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
-| **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
-| **LMS Nutzer** · [Quelltext](lms-nutzer-wxt/) | 1.0.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/lms-nutzer.zip)** | **Personen in einen Kurs einschreiben** (LMS Hamburg): sucht jede Person einer Liste (JSON/CSV) im LMS und füllt den Einschreibe-Dialog aus. Für Admins zusätzlich: fehlende Personen direkt im LMS anlegen. Gespeichert wird nur per eigenem Klick |
+| **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
+| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.4.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
+| **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
+| **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
+| **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
+| **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.5 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
+| **LMS Nutzer** · [Quelltext](lms-nutzer-wxt/) | 1.0.2 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/lms-nutzer.zip)** | **Personen in einen Kurs einschreiben** (LMS Hamburg): sucht jede Person einer Liste (JSON/CSV) im LMS und füllt den Einschreibe-Dialog aus. Für Admins zusätzlich: fehlende Personen direkt im LMS anlegen. Gespeichert wird nur per eigenem Klick |
 
 **📘 Handbücher (PDF)** mit Bildern, Schritt für Schritt: [Freitext Grader](moodle-ai-freitext-grader-wxt/Handbuch-Moodle-AI-Freitext-Grader.pdf) · [Reviewer](moodle-ai-reviewer-wxt/Handbuch-Moodle-AI-Reviewer.pdf) · [Aufgaben-Grader](moodle-ai-aufgaben-grader-wxt/Handbuch-Moodle-AI-Aufgaben-Grader.pdf) · [Namen verbergen](moodle-namen-verbergen-wxt/Handbuch-Moodle-Namen-verbergen.pdf) · [Notenstufen Autofill](notenstufen-extension-wxt/Handbuch-Moodle-Notenstufen-Autofill.pdf). Sie liegen auch im jeweiligen Download-ZIP.
 
@@ -367,8 +367,14 @@ dem Bildschirm passiert ist (oder eben nicht).
 
 ## Lizenz und Urheber
 
-**CC BY-SA 4.0** — Weitergabe und Bearbeitung erlaubt, mit Namensnennung, und unter
-denselben Bedingungen. Siehe [LICENSE](LICENSE).
+- **Quelltext** (alles in den Ordnern `*-wxt`, auch die eingebauten Prompts):
+  **MIT-Lizenz** – frei nutzbar, veränderbar und weitergebbar, auch in eigenen Projekten;
+  Bedingung ist, dass Urheber- und Lizenzvermerk erhalten bleiben. Siehe [LICENSE](LICENSE).
+- **Handbücher, Dokumentation und Symbole:** **CC BY-SA 4.0** – Weitergabe und Bearbeitung
+  mit Namensnennung und unter gleichen Bedingungen. Siehe [LICENSE-INHALTE.md](LICENSE-INHALTE.md).
+
+Bis 05.11.2026 stand auch der Quelltext unter CC BY-SA 4.0; ältere Fassungen behalten diese
+Lizenz.
 
 Entwickelt von **A. Spielhoff** für den eigenen Unterricht — den früheren **Moodle AI Grader**
 und den daraus hervorgegangenen **Moodle AI Freitext Grader** zusammen mit **T. Henken**.

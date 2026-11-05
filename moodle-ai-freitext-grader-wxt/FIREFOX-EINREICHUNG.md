@@ -31,7 +31,7 @@ npx web-ext lint --source-dir="Erweiterung/moodle-ai-freitext-grader-firefox/ent
    (siehe Prüfer-Hinweis unten), Fehler dürfen keine kommen.
 4. Frage „Verwenden Sie Code-Generatoren, Minifizierer …?" → **Ja** → `…-quellcode.zip`
    hochladen.
-5. Texte aus Abschnitt 4 eintragen, Lizenz **CC BY-SA 4.0** wählen, absenden.
+5. Texte aus Abschnitt 4 eintragen, Lizenz **MIT License** wählen, absenden.
 6. Nach der Signierung (meist Minuten) die `.xpi` herunterladen und als
    `Moodle AI Freitext Grader-<version>.xpi` in `Erweiterung/moodle-ai-freitext-grader-firefox/`
    legen. `npm run paket` hebt sie beim nächsten Bau automatisch auf.

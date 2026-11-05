@@ -13,7 +13,7 @@
  *   - Projekteigene Konventionen (AFB-Kartendesign, Antwortvorlage) sind eine
  *     VERBESSERUNG, nie eine VORAUSSETZUNG. Drei Stufen, siehe zerlegeAbgabe().
  *
- * © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
+ * © 2026 T. Henken & A. Spielhoff — MIT-Lizenz
  *
  * WXT-Umzug 17.09.2026: chrome.* -> browser.* (Polyfill), IIFE -> export
  * function starteGrader(), Icon-Pfad icons/icon128.png -> icon/128.png

@@ -393,7 +393,7 @@ export function starteClozeAutofill() {
   function standardPrompt() {
     return [
       'Hallo! Du hilfst mir, neue Antwortvarianten in meine Moodle-Lückentexte (Cloze) einzupflegen.',
-      'Die Erweiterung "Moodle Cloze Autofill" steht unter CC BY-SA 4.0.',
+      'Die Erweiterung "Moodle Cloze Autofill" steht unter der MIT-Lizenz.',
       '',
       '## Ausgangslage',
       '',

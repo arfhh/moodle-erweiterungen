@@ -1,7 +1,7 @@
 /* Moodle AI Freitext Grader — fester Kopf fuer beide Bewertungsprompts.
  * Rolle, zentrale Bewertungsregel, Organisationsregel, Grundregeln.
  * Steht einmal hier, nicht in jedem Horizont (sonst veralten Kopien in Moodle).
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 export function bewertungsKopf(r = {}) {
   const fach = r.fach ? r.fach + 'lehrkraft' : 'Fachlehrkraft';

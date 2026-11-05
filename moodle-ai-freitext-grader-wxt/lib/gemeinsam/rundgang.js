@@ -4,7 +4,7 @@
  * Tests. Sie legt die Liste je Test (cmid) ab; die Einzelseite (Klausur-Weg) liest sie
  * und springt nach dem Eintragen zur naechsten Klausur-Frage, am Ende zur Uebersicht.
  *
- * © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0
+ * © 2026 T. Henken & A. Spielhoff — MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 

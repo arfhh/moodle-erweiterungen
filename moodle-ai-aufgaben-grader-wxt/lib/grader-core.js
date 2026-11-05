@@ -34,7 +34,7 @@ import { browser } from 'wxt/browser';
  * zeigt, welche Fallbacks tatsächlich greifen — Protokoll im Panel und in
  * der Konsole (Filter "[ABG]") hilft dabei.
  *
- * © 2026 A. Spielhoff — CC BY-SA 4.0
+ * © 2026 A. Spielhoff — MIT-Lizenz
  */
 export function starteGrader() {
   'use strict';

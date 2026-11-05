@@ -4,7 +4,7 @@
  *  2. IIFE/Top-Level-Code -> export function starteNotenstufen()
  * Sonst ist die Datei zeilengleich mit der bewaehrten Fassung.
  *
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 

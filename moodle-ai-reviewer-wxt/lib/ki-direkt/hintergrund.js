@@ -3,7 +3,7 @@
  * Nur hier wird die KI angefragt, nie aus dem Content Script: Der Hintergrund hat
  * die Host-Berechtigung und unterliegt damit nicht der CORS-Sperre der Webseite —
  * ein lokaler Server muss CORS nicht freischalten.
- * © 2026 A. Spielhoff, CC BY-SA 4.0
+ * © 2026 A. Spielhoff, MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 import { basisNorm, ursprungMuster } from './einstellungen.js';

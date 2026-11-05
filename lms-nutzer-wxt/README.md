@@ -8,7 +8,7 @@ Browser-Erweiterung (Chrome, Firefox, Edge) für das LMS Hamburg (lms.lernen.ham
 
 Das Speichern bleibt immer bei dir: Die Erweiterung klickt nie selbst auf „einschreiben“ oder „Nutzer/in erstellen“.
 
-**Version:** 1.0.1 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
+**Version:** 1.0.2 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
 
 ## Warum es sie gibt
 
@@ -126,6 +126,7 @@ Bauen: `npm install`, danach `npm run build-all` (Ergebnis in `Erweiterung/lms-n
 
 ## Versionen
 
+- **1.0.2** Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.
 - **1.0.1** Firefox: HTML wird ohne innerHTML eingesetzt (keine Warnungen mehr beim Signieren).
 - **1.0.0** Erste öffentliche Fassung: Chrome, Firefox und Edge aus einer Codebasis (WXT), Download-ZIP im Repo. Keine voreingestellte Such-Kurs-ID mehr – sie muss einmal eingetragen werden.
 - **0.5.10** Fix Abgleich „schon im Kurs“: Teilnehmer kommen jetzt über die Moodle-Schnittstelle (vorher störte ein gespeicherter Filter der Teilnehmerseite); gleiche Erkennungsregeln (Dienstkonto, abweichender Vorname) auch für Eingeschriebene; bereits zugeordnete Konten werden wiedererkannt.
@@ -150,4 +151,4 @@ Bauen: `npm install`, danach `npm run build-all` (Ergebnis in `Erweiterung/lms-n
 
 ## Lizenz und Urheber
 
-© 2026 A. Spielhoff — lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de). Entwickelt mit Unterstützung von Claude.
+© 2026 A. Spielhoff — Code unter der [MIT-Lizenz](../LICENSE), Doku unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode.de). Entwickelt mit Unterstützung von Claude.

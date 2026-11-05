@@ -2,7 +2,7 @@
  * storage.sync (geraeteuebergreifend, wenn der Browser-Account synchronisiert),
  * sonst storage.local. Einstellung als ein Objekt unter einem Schluessel.
  *
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 import { browser } from 'wxt/browser';
 

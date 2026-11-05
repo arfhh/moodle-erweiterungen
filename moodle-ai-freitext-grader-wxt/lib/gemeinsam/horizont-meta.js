@@ -6,7 +6,7 @@
  * eingestellt. Alte Zeilen [Rechtschreibung: …] / [Punkteschritte: …] werden nur noch
  * erkannt und ausgeblendet, aber nicht mehr verwendet (keine zweite Quelle).
  * Alle Verwaltungszeilen gehen nie in einen Prompt.
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 
 const ZEILEN = {

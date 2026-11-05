@@ -1,40 +1,28 @@
-Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+MIT License
 
-Copyright (c) A. Spielhoff und T. Henken
+Copyright (c) 2026 A. Spielhoff
+Moodle AI Freitext Grader und Moodle AI Grader: Copyright (c) 2026 T. Henken und A. Spielhoff
+Moodle Namen verbergen: Idee von Andreas Schenkel, based on code and ideas from
+Matthias Giger und Florian Dagner (kein Code aus dem Original übernommen)
 
-Dieses Werk — der Quelltext, die Dokumentation und die Symbole dieses
-Repositorys — ist lizenziert unter einer Creative-Commons-Lizenz
-"Namensnennung – Weitergabe unter gleichen Bedingungen 4.0 International".
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Sie duerfen:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-  Teilen    — das Material in jedwedem Format oder Medium vervielfaeltigen
-              und weiterverbreiten.
-  Bearbeiten — das Material remixen, veraendern und darauf aufbauen,
-              und zwar fuer beliebige Zwecke, sogar kommerziell.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-Unter folgenden Bedingungen:
-
-  Namensnennung — Sie muessen angemessene Urheber- und Rechteangaben machen,
-                  einen Link zur Lizenz beifuegen und angeben, ob Aenderungen
-                  vorgenommen wurden.
-  Weitergabe unter gleichen Bedingungen — Wenn Sie das Material remixen,
-                  veraendern oder anderweitig direkt darauf aufbauen, duerfen
-                  Sie Ihre Beitraege nur unter derselben Lizenz wie das
-                  Original verbreiten.
-  Keine weiteren Einschraenkungen — Sie duerfen keine zusaetzlichen Klauseln
-                  oder technischen Verfahren einsetzen, die anderen rechtlich
-                  irgendetwas untersagen, was die Lizenz erlaubt.
-
-Kurzfassung der Lizenz (Deed):
-  https://creativecommons.org/licenses/by-sa/4.0/deed.de
-
-Vollstaendiger Lizenztext (rechtsverbindlich):
-  https://creativecommons.org/licenses/by-sa/4.0/legalcode.de
-
-Dieser Text ist eine Zusammenfassung und ersetzt den vollstaendigen
-Lizenztext nicht.
-
-Ohne Gewaehr: Das Material wird "wie besehen" bereitgestellt, ohne
-Gewaehrleistung irgendeiner Art. Die Urheber haften nicht fuer Schaeden,
-die aus der Nutzung entstehen.
+---
+Gilt für den Quelltext. Handbücher, Dokumentation und Symbole stehen unter
+CC BY-SA 4.0, siehe LICENSE-INHALTE.md.

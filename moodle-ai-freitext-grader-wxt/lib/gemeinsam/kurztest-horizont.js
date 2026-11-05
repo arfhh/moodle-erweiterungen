@@ -2,7 +2,7 @@
  * Ein Grundprompt fuer Frageneditor (eine Aufgabe) und Uebersicht (mehrere).
  * Platzhalter [MOODLE_AI_COACH_AUFGABEN] wird von den Aufrufern ersetzt.
  * opts: { einzeln: bool, jahrgang: string, stufe: 'Kurz'|'Mittel'|'gemischt' }
- * A. Spielhoff · CC BY-SA 4.0
+ * A. Spielhoff · MIT-Lizenz
  */
 import { stufenBlock, stufenBlockGemischt, horizontRegeln, HORIZONT_ZWECK } from './horizont-bausteine.js';
 
