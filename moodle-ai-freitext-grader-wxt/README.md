@@ -201,6 +201,18 @@ Punkteverteilung ohne innerHTML (Mozilla-Prüfung).
 
 **1.2.0** — Punkteverteilung der Bewertung als Diagramm vor dem Eintragen.
 
+## Datenschutz
+
+- Keine Klarnamen im Prompt: Antworten werden nur über die interne Moodle-Nummer des
+  Versuchs zugeordnet.
+- Kein Server, keine Weitergabe. Daten verlassen den Browser nur, wenn du „Prompt kopieren"
+  klickst und sie selbst in einen KI-Chat einfügst – bitte nur eine dienstlich
+  freigegebene KI nutzen.
+- Im Browser (`storage.local`) liegen die Einstellungen und je Test der letzte
+  Auslese-Durchlauf (Schülerantworten ohne Namen).
+
+Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../README.md#datenschutz).
+
 ## Lizenz
 
 © 2026 T. Henken & A. Spielhoff — CC BY-SA 4.0

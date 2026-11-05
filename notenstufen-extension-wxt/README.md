@@ -142,6 +142,13 @@ G6 ≥0 %
   gesetzt ist.
 
 
+## Datenschutz
+
+Die Erweiterung füllt nur die Notenstufen-Seite aus und liest keine Schülerdaten. Kein
+Server, keine Weitergabe. Gespeichert werden die Notenskalen je Kurs im Browser.
+
+Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../README.md#datenschutz).
+
 ## Dateien in diesem Ordner
 
 | Datei/Ordner              | Zweck                                              |

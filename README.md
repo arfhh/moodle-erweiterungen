@@ -293,6 +293,70 @@ zum Installieren oder als ZIP zum Selbsteinrichten.
 
 ---
 
+## Datenschutz
+
+Kurz: **Es gibt keinen Server des Entwicklers.** Keine Erweiterung schickt etwas an
+mich oder an Dritte, es gibt kein Tracking und keine Statistik, und es wird nichts aus dem
+Netz nachgeladen (keine Schriften, keine Skripte). Die Erweiterungen sprechen nur mit
+**deinem eigenen Moodle**, mit deiner bestehenden Anmeldung.
+
+### Wann Daten den Browser verlassen
+
+Nur an zwei Stellen, und beide Male durch deinen Klick:
+
+1. **„Prompt kopieren"** (Freitext Grader, Reviewer, Aufgaben-Grader): Du kopierst Aufgaben,
+   Erwartungshorizont und Schülerantworten in die Zwischenablage und fügst sie selbst in
+   einen KI-Chat ein. **Welcher Anbieter die Daten bekommt, entscheidest du.**
+2. **„KI direkt"** (nur Reviewer, ab 2.0.0, standardmäßig aus): Die Antworten gehen an genau
+   die Adresse, die du eingetragen hast. Bei einer lokalen KI (Bionic, LM Studio, Ollama)
+   bleibt alles auf deinem Rechner; bei einer Cloud-API gehen sie an diesen Anbieter.
+
+### Was die Erweiterungen dafür tun
+
+- **Keine Klarnamen im Prompt.** Freitext Grader und Reviewer ordnen Antworten nur über
+  die interne Moodle-Nummer des Versuchs zu. Der Aufgaben-Grader ersetzt Namen in
+  Dateinamen und Tabellen durch Kürzel-IDs (z. B. `KM-42`); die Rückzuordnung macht die
+  Erweiterung in Moodle.
+- **Pseudonym ist nicht anonym.** Schülertexte können trotzdem auf eine Person
+  schließen lassen – durch Inhalt, Schreibstil oder einen Namen, der **im Text oder auf dem
+  abgegebenen Blatt** steht. Kürzel-IDs enthalten die Initialen. Rechtlich bleiben solche
+  Daten deshalb in der Regel personenbezogen.
+
+### Was du als Lehrkraft beachten solltest
+
+- **Nur eine KI nutzen, die für deine Schule dienstlich freigegeben ist** – im Zweifel
+  Schulleitung oder Datenschutzbeauftragte fragen. Bei privaten Konten prüfen, ob Eingaben
+  zum Training verwendet werden, und das abschalten.
+- Keine Fotos, Förderinformationen oder Noten zusätzlich in den Chat geben.
+- Gescannte Abgaben vor dem Hochladen in den Chat auf Namen auf dem Blatt prüfen.
+- Datensparsam bleiben: die Option „Bewertungsübersicht mitladen" (Aufgaben-Grader) nur
+  einschalten, wenn die KI die Kursübersicht wirklich braucht.
+
+### Was im Browser gespeichert wird
+
+Nur lokal in deinem Browser, nicht in Moodle und nicht beim Entwickler. Was im Speicher der
+Erweiterung liegt, löscht der Browser beim Entfernen der Erweiterung mit. Kleine
+Zwischenstände von Cloze Autofill, Notenstufen Autofill und LMS Nutzer liegen dagegen im
+Speicher der Moodle-Seite und bleiben, bis du die Websitedaten von Moodle löschst.
+
+| Erweiterung | Gespeichert |
+|---|---|
+| Freitext Grader | Einstellungen; je Test der letzte Auslese-Durchlauf (Schülerantworten ohne Namen), damit er ein Neuladen übersteht |
+| Reviewer | Einstellungen; Fehlersammlung (Schülerantworten ohne Namen); bei „KI direkt" Adresse und ggf. API-Schlüssel |
+| Aufgaben-Grader | Einstellungen, Maßstab; je Aufgabe der Abgabestand (Moodle-Nutzernummer, Dateinamen wie hochgeladen, Prüfsummen), um neue und geänderte Abgaben zu erkennen |
+| Cloze Autofill | Einstellungen; Protokoll des letzten Eintragens |
+| Notenstufen Autofill | Notenskalen je Kurs |
+| Namen verbergen | nichts außer dem Ein/Aus-Schalter |
+| LMS Nutzer | Namen und E-Mails der aktuellen Suche nur im Sitzungsspeicher dieses Tabs |
+
+Die Erweiterungen fragen keine Schülerdaten ab, die Moodle nicht ohnehin anzeigt, und
+speichern in Moodle nur, wenn du selbst auf „Speichern" klickst.
+
+> Dieser Abschnitt beschreibt, was die Erweiterungen technisch tun. Er ist keine
+> Rechtsberatung und ersetzt keine Prüfung durch eure Datenschutzbeauftragten.
+
+---
+
 ## Mitmachen
 
 Fehler, Verbesserungen und Erfahrungen aus anderen Moodle-Installationen sind

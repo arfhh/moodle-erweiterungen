@@ -144,6 +144,21 @@ Downloads am selben Tag „ (1)" an.
 
 ---
 
+## Datenschutz
+
+- Im ZIP und in den Tabellen stehen nur Kürzel-IDs, keine Klarnamen; die Rückzuordnung
+  macht die Erweiterung in Moodle. Die Kürzel enthalten die Initialen – das ist eine
+  Pseudonymisierung, keine Anonymisierung.
+- **Namen auf dem Blatt** (Kopfzeile, Unterschrift, Scan) entfernt die Erweiterung nicht.
+  Vor dem Hochladen in einen KI-Chat prüfen.
+- Kein Server, keine Weitergabe. Was an die KI geht, entscheidest du – bitte nur eine
+  dienstlich freigegebene KI nutzen. „Bewertungsübersicht mitladen" nur einschalten, wenn
+  nötig.
+- Im Browser (`storage.local`) liegen Einstellungen, Maßstab und je Aufgabe der
+  Abgabestand (Moodle-Nutzernummer, Dateinamen, Prüfsummen).
+
+Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../README.md#datenschutz).
+
 ## Installation (Schritt für Schritt für Einsteiger)
 
 Diese Erweiterung ist kein Programm zum Doppelklicken, sondern eine Browser-Erweiterung.

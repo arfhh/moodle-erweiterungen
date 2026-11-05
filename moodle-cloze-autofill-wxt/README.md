@@ -258,6 +258,14 @@ Begriff mit `{` schickt: die Erweiterung maskiert ihn zu `\{`, und das ist gült
 Cloze-Syntax. Netz 4 bleibt insofern ungetestet; der belastbare Beweis ist die
 Versionsnummer und die Gegenprobe nach dem Speichern.
 
+## Datenschutz
+
+Die Erweiterung liest und schreibt nur eigene Fragen in deiner Fragensammlung, keine
+Schülerdaten. Kein Server, keine Weitergabe. Gespeichert werden die Einstellungen und das
+Protokoll des letzten Eintragens im Browser.
+
+Ausführlich, mit Hinweisen für Lehrkräfte: [Datenschutz im Haupt-README](../README.md#datenschutz).
+
 ## Dateien
 
 ```
