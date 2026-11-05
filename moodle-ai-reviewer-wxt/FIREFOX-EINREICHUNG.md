@@ -70,8 +70,12 @@ für einen KI-Chat und liest die Antwort wieder ein. Feste Regeln (Groß-/Kleins
 bekannte Varianten) entscheiden vorab; unklare Fälle legt eine Vorschau zur Entscheidung vor.
 Erst nach einem Klick werden Punkte und Feedback eingetragen. Eine Fehlersammlung merkt sich die
 Entscheidungen als CSV, eine Punkteverteilung zeigt die Ergebnisse des Tests. Optional kann eine
-KI direkt angesprochen werden – eine lokale auf dem eigenen Rechner oder ein Cloud-Dienst mit
-eigenem API-Schlüssel; standardmäßig ist das aus.
+KI direkt angesprochen werden – eine lokale auf dem eigenen Rechner oder im Schulnetz;
+standardmäßig ist das aus.
+
+**Versionshinweise 2.4.0:**
+KI direkt nur noch mit Vorlagen für lokale KI (Bionic, LM Studio, Ollama); Cloud-Vorlagen
+entfernt. Hinweis zur Rolle der KI in den Einstellungen.
 
 **Versionshinweise 2.3.2:**
 Vorschau für unklare Fälle statt direktem Eintragen; feste Regeln vor der KI; Wert für reine
@@ -87,7 +91,7 @@ Einstellungsseite; vereinfachte Oberfläche.
   was die Lehrkraft sonst von Hand tut.
 - **Optionale Funktion „KI direkt" (Standard aus):** Das Hintergrund-Skript sendet auf Klick der
   Lehrkraft Schülerantworten (ohne Namen) an einen OpenAI-kompatiblen Endpunkt, den die Lehrkraft
-  auf der Optionsseite selbst einträgt. `host_permissions` nur für `http://localhost/*` und
+  auf der Optionsseite selbst einträgt. Vorgesehen und vorbelegt sind nur lokale KI-Server. `host_permissions` nur für `http://localhost/*` und
   `http://127.0.0.1/*` (lokale KI-Server); jede andere Adresse wird über
   `optional_host_permissions` erst auf der Optionsseite per `permissions.request` erfragt. Ein
   API-Schlüssel bleibt in `storage.local`. Es gibt keinen Server des Entwicklers, keine

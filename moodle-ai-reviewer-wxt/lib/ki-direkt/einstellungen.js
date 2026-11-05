@@ -1,7 +1,8 @@
 /* Baustein "KI direkt" — Einstellungen (wiederverwendbar, ohne Bezug zum Reviewer)
  *
  * Eine KI ohne Kopieren ansprechen: lokal (Bionic, LM Studio, Ollama …) oder
- * optional ueber eine Cloud-API mit eigenem Schluessel. Alles OpenAI-kompatibel
+ * ein Server im eigenen Netz. Cloud-Vorlagen gibt es seit 2.4.0 bewusst nicht mehr
+ * (Datenschutz). Alles OpenAI-kompatibel
  * (POST <basis>/chat/completions, GET <basis>/models). Standard: AUS.
  * Nichts ist fest verdrahtet: Adresse und Modell sind frei einstellbar.
  * © 2026 A. Spielhoff, CC BY-SA 4.0
@@ -17,8 +18,6 @@ export const VORLAGEN = {
   bionic:    { name: 'Bionic (lokal)',            basis: 'http://127.0.0.1:1235/v1',  zusatz: DENKEN_AUS },
   lmstudio:  { name: 'LM Studio (lokal)',         basis: 'http://127.0.0.1:1234/v1',  zusatz: DENKEN_AUS },
   ollama:    { name: 'Ollama (lokal)',            basis: 'http://127.0.0.1:11434/v1', zusatz: DENKEN_AUS },
-  openai:    { name: 'OpenAI (Cloud, API-Schlüssel)',    basis: 'https://api.openai.com/v1',    zusatz: '{}' },
-  anthropic: { name: 'Anthropic Claude (Cloud, API-Schlüssel)', basis: 'https://api.anthropic.com/v1', zusatz: '{}' },
   eigene:    { name: 'Eigene Adresse',            basis: '',                          zusatz: '{}' }
 };
 
@@ -30,7 +29,10 @@ export const KI_STANDARD = {
 export async function kiLaden() {
   try {
     const r = await browser.storage.local.get([KI_KEY]);
-    return { ...KI_STANDARD, ...((r && r[KI_KEY]) || {}) };
+    const cfg = { ...KI_STANDARD, ...((r && r[KI_KEY]) || {}) };
+    // Alte Einstellung mit einer gestrichenen Vorlage (openai, anthropic): Adresse bleibt, Vorlage = eigene.
+    if (!VORLAGEN[cfg.vorlage]) cfg.vorlage = 'eigene';
+    return cfg;
   } catch (e) { return { ...KI_STANDARD }; }
 }
 

@@ -68,7 +68,7 @@ werden".
 | Erweiterung | Version | Download | Wofür |
 |---|---|---|---|
 | **Moodle AI Freitext Grader** · [Quelltext](moodle-ai-freitext-grader-wxt/) | 1.4.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-freitext-grader.zip)** | **Alle Freitextaufgaben** – Kurztests mit Zufallsfragen und Klausuren mit Teilaufgaben: Erwartungshorizont beim Anlegen der Frage, Layout für Aufgabe und Antwortfeld, Bewertungs-Prompts, Punkte rechnen, Feedback eintragen. **Ersetzt Coach und Grader.** |
-| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.3.3 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
+| **Moodle AI Reviewer** · [Quelltext](moodle-ai-reviewer-wxt/) | 2.4.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-reviewer.zip)** | **Nachbewerten**: findet frei eingetippte Antworten (Cloze-Lücken, Kurzantwort, Numerisch), die Moodle nicht erkannt hat, und trägt Punkte und Feedback nach |
 | **Moodle AI Aufgaben-Grader** · [Quelltext](moodle-ai-aufgaben-grader-wxt/) | 1.11.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-ai-aufgaben-grader.zip)** | **Datei-Abgaben** im Aufgabenmodul: lädt die Abgaben anonymisiert als ZIP, erkennt was seit dem letzten Mal neu oder geändert ist, und trägt Feedback und Punkte über Moodles Schnellbewertung zurück |
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
@@ -309,7 +309,7 @@ Nur an zwei Stellen, und beide Male durch deinen Klick:
    einen KI-Chat ein. **Welcher Anbieter die Daten bekommt, entscheidest du.**
 2. **„KI direkt"** (nur Reviewer, ab 2.0.0, standardmäßig aus): Die Antworten gehen an genau
    die Adresse, die du eingetragen hast. Bei einer lokalen KI (Bionic, LM Studio, Ollama)
-   bleibt alles auf deinem Rechner; bei einer Cloud-API gehen sie an diesen Anbieter.
+   bleibt alles auf deinem Rechner bzw. im Schulnetz. Cloud-Vorlagen gibt es bewusst nicht.
 
 ### Was die Erweiterungen dafür tun
 

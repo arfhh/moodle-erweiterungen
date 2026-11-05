@@ -4,7 +4,7 @@
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
-Version 2.3.3 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
+Version 2.4.0 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -24,8 +24,8 @@ legt sie fertig zum Einfügen in einen KI-Chat vor. Die Vorschläge der KI zeigt
 danach in einer **Vorschau**: Fälle, bei denen sie sich nicht sicher ist, entscheidest du
 mit einem Klick. Erst wenn du „In Moodle eintragen" klickst, werden die Punkte gespeichert.
 
-Wer möchte, kann statt des Kopierens auch **eine KI direkt anbinden** – eine lokale auf
-dem eigenen Rechner oder einen Cloud-Dienst mit eigenem API-Schlüssel. Das ist eine
+Wer möchte, kann statt des Kopierens auch **eine KI direkt anbinden** – eine lokale KI auf
+dem eigenen Rechner oder im Schulnetz; die Daten bleiben dort. Das ist eine
 Zusatzoption; ohne sie funktioniert alles wie beschrieben.
 
 ### Wo taucht sie in Moodle auf?
@@ -469,7 +469,6 @@ Statt Prompt kopieren und Antwort einfügen kann die Erweiterung eine KI selbst 
 | Art | Beispiel | Was du brauchst |
 |---|---|---|
 | **Lokal** – die Daten verlassen deinen Rechner nicht | LM Studio, Ollama, Bionic | das Programm mit einem geladenen Modell; kostenlos |
-| **Cloud** | OpenAI, Anthropic Claude | einen **API-Schlüssel** (ein ChatGPT-/Claude-Abo reicht nicht), Abrechnung nach Verbrauch, und die Klärung, ob das an deiner Schule erlaubt ist |
 
 So geht's:
 
@@ -505,9 +504,11 @@ Die Erweiterung ist so gebaut, dass die KI **vorbereitet und nicht entscheidet**
 Einschätzung, keine Rechtsberatung: KI-Systeme, die Lernergebnisse bewerten, können nach
 Anhang III der Verordnung (EU) 2024/1689 als Hochrisiko-System gelten. Art. 6 Abs. 3 nimmt
 Systeme aus, die nur eine vorbereitende Aufgabe erfüllen oder eine menschliche Bewertung
-unterstützen, ohne sie zu ersetzen – darauf ist „KI direkt“ ausgelegt. Wer eine Cloud-API
-nutzt, setzt die KI in eigener Verantwortung ein (Betreiber) und klärt vorher Datenschutz
-und Freigabe an der Schule.
+unterstützen, ohne sie zu ersetzen – darauf ist „KI direkt“ ausgelegt. Seit 2.4.0 gibt es
+bewusst keine Cloud-Vorlagen mehr: KI direkt ist für eine lokale KI gedacht, die Daten
+verlassen Rechner bzw. Schulnetz nicht. Wer über „Eigene Adresse“ dennoch einen externen
+Dienst einträgt, tut das in eigener Verantwortung und klärt vorher Datenschutz und Freigabe
+an der Schule.
 
 ---
 
@@ -540,11 +541,15 @@ und Freigabe an der Schule.
 
 ---
 
-*Moodle AI Reviewer – Version 2.3.3 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.4.0 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.4.0 (05.11.2026)**
+
+- KI direkt nur noch mit lokaler KI: Vorlagen für OpenAI und Anthropic entfernt (Datenschutz). Gespeicherte Einstellungen mit diesen Vorlagen erscheinen als „Eigene Adresse“; die Warnung bei nicht lokalen Adressen bleibt.
 
 **2.3.3 (05.11.2026)**
 

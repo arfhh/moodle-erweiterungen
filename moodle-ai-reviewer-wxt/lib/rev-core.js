@@ -1,4 +1,4 @@
-/* Moodle AI Reviewer v2.3.3
+/* Moodle AI Reviewer v2.4.0
  *
  * 2.1.0: Punkteverteilung des ganzen Tests als Diagramm (lib/punkteverteilung.js), gelesen
  *   aus der Ergebnisuebersicht des Tests (nur lesend).
@@ -1300,8 +1300,8 @@ ${DATEN_PLATZHALTER}`;
       <div class="ce-abschnitt">
         <p class="ce-abschnittkopf">KI direkt (optional)</p>
         <p class="ce-hinweis ce-kistand">…</p>
-        <p class="ce-hinweis">Die Erweiterung fragt die KI selbst – kein Kopieren. Lokal auf deinem
-        Rechner (z. B. LM Studio, Ollama) oder mit eigenem API-Schlüssel bei einem Cloud-Dienst.</p>
+        <p class="ce-hinweis">Die Erweiterung fragt die KI selbst – kein Kopieren. Nur mit einer lokalen
+        KI auf deinem Rechner oder im Schulnetz (z. B. Bionic, LM Studio, Ollama) – die Daten bleiben dort.</p>
         <button class="ce-kiopt ce-zweit">KI-Einstellungen öffnen</button>
         <p class="ce-kioptinfo ce-sinfo ce-hidden"></p>
       </div>
