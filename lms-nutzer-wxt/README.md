@@ -106,7 +106,7 @@ Die ChatGPT-Vorlage dazu liegt in `chatgpt-prompt.md`.
 - Die Suche liefert höchstens 100 Treffer je Anfrage. Bei häufigen Nachnamen sucht die Erweiterung auch mit vollem Namen und E-Mail.
 - Die Erweiterung ändert im LMS nichts, außer dass sie Formulare ausfüllt. Gespeichert wird nur durch deinen Klick.
 - **Datenschutz:** Namen und E-Mails bleiben im Browser (Sitzungsspeicher dieses Tabs) und gehen nur an das LMS selbst. Es gibt keinen externen Server und keine Weitergabe. Der Sitzungsspeicher endet mit dem Tab.
-- **Schulenverzeichnis:** In der Erweiterung steckt eine Liste mit Schulnummern und Namen (aus dem Schulenverzeichnis der FHH, Stand 04.05.2026, mit privaten Schulen aus dem Schülerzahlen-PDF 2013/14). Das Verzeichnis ist laut seinem Vermerk „Nur für den Dienstgebrauch“. Bitte die Erweiterung nur innerhalb der Behörde weitergeben, nicht öffentlich.
+- **Schulliste:** In der Erweiterung steckt nur eine Zuordnung Schulnummer → Schulname (`schulen.json`), bei Privatschulen mit der Markierung `privat`. Sie dient dazu, Schulnummer und Schulname im Formular passend zu ergänzen.
 
 ## Aufbau (für die Weiterentwicklung)
 
