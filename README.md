@@ -1,7 +1,7 @@
 # Moodle-Erweiterungen für Chrome, Firefox und Edge
 
 Kleine Browser-Erweiterungen, die wiederkehrende Handarbeit in Moodle abnehmen —
-Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen, Nutzer im LMS anlegen. Alle sind
+Bewerten, Nachbewerten, Fragensammlung pflegen, Notenstufen eintragen, Namen verbergen, Personen in Kurse einschreiben. Alle sind
 mit **WXT** aus **einer** Codebasis für Chrome, Firefox und Edge gebaut.
 
 > **Moodle AI Freitext Grader** hat die früheren Erweiterungen **Moodle AI Coach**
@@ -73,7 +73,7 @@ werden".
 | **Moodle Cloze Autofill** · [Quelltext](moodle-cloze-autofill-wxt/) | 2.1.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-cloze-autofill.zip)** | **Fragensammlung pflegen**: trägt neue Antwortvarianten in Cloze-Lücken ein, statt Frage für Frage von Hand |
 | **Moodle Notenstufen Autofill** · [Quelltext](notenstufen-extension-wxt/) | 2.8.0 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/notenstufen-autofill.zip)** | **Notenstufen-Tabelle** eines Kurses auf einen Klick ausfüllen — pro Kurs oder für alle Kurse gemeinsam |
 | **Moodle Namen verbergen** · [Quelltext](moodle-namen-verbergen-wxt/) | 1.0.4 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/moodle-namen-verbergen.zip)** | **Namen verwischen**: verbirgt Namen, E-Mail-Adressen und Profilbilder per Klick, z. B. für Vorführungen mit Bildschirmfreigabe. Idee: Andreas Schenkel, nach Code und Ideen von Matthias Giger und Florian Dagner |
-| **LMS Nutzer** · [Quelltext](lms-nutzer-wxt/) | 1.0.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/lms-nutzer.zip)** | **Nutzer anlegen und Kurse befüllen** im LMS Hamburg: prüft eine Personenliste (JSON) auf vorhandene, gesperrte und neue Konten, füllt das Formular „Nutzer/in anlegen“ nacheinander vor (nur Administratoren) und hilft beim Einschreiben in einen Kurs. Gespeichert wird nur per eigenem Klick |
+| **LMS Nutzer** · [Quelltext](lms-nutzer-wxt/) | 1.0.1 | **[⬇ ZIP](https://github.com/arfhh/moodle-erweiterungen/raw/main/dist/lms-nutzer.zip)** | **Personen in einen Kurs einschreiben** (LMS Hamburg): sucht jede Person einer Liste (JSON/CSV) im LMS und füllt den Einschreibe-Dialog aus. Für Admins zusätzlich: fehlende Personen direkt im LMS anlegen. Gespeichert wird nur per eigenem Klick |
 
 **📘 Handbücher (PDF)** mit Bildern, Schritt für Schritt: [Freitext Grader](moodle-ai-freitext-grader-wxt/Handbuch-Moodle-AI-Freitext-Grader.pdf) · [Reviewer](moodle-ai-reviewer-wxt/Handbuch-Moodle-AI-Reviewer.pdf) · [Aufgaben-Grader](moodle-ai-aufgaben-grader-wxt/Handbuch-Moodle-AI-Aufgaben-Grader.pdf) · [Namen verbergen](moodle-namen-verbergen-wxt/Handbuch-Moodle-Namen-verbergen.pdf) · [Notenstufen Autofill](notenstufen-extension-wxt/Handbuch-Moodle-Notenstufen-Autofill.pdf). Sie liegen auch im jeweiligen Download-ZIP.
 
@@ -106,10 +106,10 @@ werden".
   zeigen. Idee: Andreas Schenkel (moodle-textblock-blurmode_controller, nach
   Code und Ideen von Matthias Giger und Florian Dagner); der Code ist eine
   eigene Umsetzung.
-- **LMS Nutzer** — nur im LMS Hamburg: auf `admin/search.php` (Administratoren)
-  prueft sie eine Personenliste auf vorhandene Konten und fuellt das
-  Anlegeformular vor; auf der Teilnehmerseite eines Kurses hilft sie beim
-  Einschreiben. Speichern bleibt bei dir.
+- **LMS Nutzer** — nur im LMS Hamburg: auf der Teilnehmerseite eines Kurses
+  schreibt sie eine ganze Personenliste ein (sucht jede Person, fuellt den
+  Einschreibe-Dialog aus). Admins legen fehlende Personen damit gleich im LMS an.
+  Speichern bleibt bei dir.
 
 Bei allen gilt dasselbe Muster: Erweiterung liest und schlaegt vor, du
 pruefst und speicherst selbst. Genaueres — auch was die Erweiterung NICHT

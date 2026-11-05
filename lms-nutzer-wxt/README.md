@@ -1,12 +1,20 @@
 # LMS Nutzer
 
-Browser-Erweiterung (Chrome, Firefox, Edge) für das LMS Hamburg (lms.lernen.hamburg). Sie nimmt eine Liste von Personen als JSON, prüft, ob es die Personen schon gibt, und füllt für alle neuen Personen nacheinander das Formular „Nutzer/in anlegen“ aus. Das Speichern bleibt bei dir: Die Erweiterung klickt nie selbst auf „Nutzer/in erstellen“.
+Browser-Erweiterung (Chrome, Firefox, Edge) für das LMS Hamburg (lms.lernen.hamburg).
+
+**Hauptaufgabe: Personen in einen Kurs einschreiben.** Du gibst eine Liste mit Namen und E-Mail-Adressen ein. Die Erweiterung sucht jede Person im LMS und füllt den Moodle-Dialog „Nutzer/innen einschreiben“ fertig aus. Das geht für alle, die im Kurs Personen einschreiben dürfen.
+
+**Zusätzlich für LMS-Admins: fehlende Personen anlegen.** Wer noch kein Konto im LMS hat, bleibt beim Einschreiben als „nicht im System“ übrig. Ein Admin legt diese Personen mit der Erweiterung an – direkt aus dem Kurs heraus („Fehlende anlegen“) oder mit einer eigenen Liste. Danach geht es zurück in den Kurs zum Einschreiben.
+
+Das Speichern bleibt immer bei dir: Die Erweiterung klickt nie selbst auf „einschreiben“ oder „Nutzer/in erstellen“.
 
 **Version:** 1.0.1 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
 
 ## Warum es sie gibt
 
-Die LMS-Nutzerliste unter `admin/user.php` zeigt nur Nutzer der eigenen Kennzahl (z. B. 1111). Nutzer in Schulen sind dort unsichtbar. Dadurch legt man schnell Doppelkonten an. Die Erweiterung sucht deshalb wie der Dialog „Nutzer/innen einschreiben“ in einem Kurs. Diese Suche findet alle Nutzer.
+Eine Liste von Personen von Hand in einen Kurs einzuschreiben heißt: jede Person einzeln suchen, das richtige Konto erkennen, einschreiben – und am Ende herausfinden, wer noch gar kein Konto hat. Die Erweiterung erledigt Suche und Abgleich für die ganze Liste auf einmal.
+
+Für Admins kommt hinzu: Die LMS-Nutzerliste unter `admin/user.php` zeigt nur Nutzer der eigenen Kennzahl (z. B. 1111). Nutzer in Schulen sind dort unsichtbar, dadurch entstehen schnell Doppelkonten. Die Erweiterung sucht deshalb wie der Dialog „Nutzer/innen einschreiben“ eines Kurses. Diese Suche findet alle Nutzer.
 
 ## Installation
 
@@ -22,11 +30,28 @@ Das Download-ZIP enthält je einen Ordner pro Browser.
 
 Nach jeder neuen Fassung: Ordner ersetzen bzw. neue `.xpi` installieren, die Erweiterung neu laden und danach die LMS-Seite neu laden. Im Panel-Kopf steht die geladene Version („v1.0.1“).
 
-Die Erweiterung wird nur aktiv, wenn du im LMS als Administrator angemeldet bist (sie erkennt das am Link zur Website-Administration).
+Das Einschreiben steht allen zur Verfügung, die im Kurs Personen einschreiben dürfen. Das Anlegen von Nutzern erscheint nur, wenn du im LMS als Administrator angemeldet bist (die Erweiterung erkennt das am Link zur Website-Administration).
 
 ## Bedienung
 
-1. `https://lms.lernen.hamburg/admin/search.php` öffnen. Oben rechts erscheint das blaue Icon (Männchen mit Plus im Kreis). Es gibt das Icon nur auf dieser Seite.
+### 1. Personen in einen Kurs einschreiben (Hauptaufgabe)
+
+1. Im Kurs die **Teilnehmerseite** öffnen (`…/user/index.php?id=…`). Oben rechts erscheint das blaue Icon der Erweiterung. Icon anklicken, der Reiter **Kurs befüllen** öffnet sich.
+2. **Liste vorbereiten:** Für jede Person braucht es E-Mail, Vorname und Nachname. Steht die Liste in einer Mail oder einem Dokument: **KI-Prompt kopieren**, zusammen mit der Liste in ChatGPT oder Claude einfügen und das JSON aus der Antwort nehmen.
+3. **Liste einfügen:** JSON oder CSV (Trennzeichen `;`, `,` oder Tab, mit oder ohne Kopfzeile, z. B. `email;vorname;nachname`) einfügen oder eine Datei wählen, die **Rolle** auswählen und **Einlesen** klicken.
+4. **Prüfen:** Die Erweiterung sucht jede Person im LMS. Jede bekommt einen Status:
+   - **gefunden**: Konto vorhanden, kann eingeschrieben werden.
+   - **schon im Kurs**: nichts zu tun.
+   - **unklar**: mehrere passende Konten – bitte das richtige wählen („dieses Konto“) oder als fehlend markieren.
+   - **nicht im System**: Es gibt noch kein Konto.
+5. **Einschreiben:** Der Moodle-Dialog „Nutzer/innen einschreiben“ öffnet sich fertig ausgefüllt. Kurz prüfen und unten auf „…einschreiben“ klicken.
+6. **Fehlende Personen:** Wer „nicht im System“ ist, gibst du als **CSV** oder **JSON** an einen LMS-Admin. Bist du selbst Admin, klickst du **Fehlende anlegen** – weiter mit Teil 2, danach geht es automatisch zurück in den Kurs, und du schreibst die neuen Konten ein.
+
+### 2. Fehlende Nutzer im LMS anlegen (nur Admins)
+
+Entweder direkt aus dem Kurs über **Fehlende anlegen** (die fehlenden Personen werden übernommen) oder mit einer eigenen Liste:
+
+1. `https://lms.lernen.hamburg/admin/search.php` öffnen. Oben rechts erscheint das blaue Icon (Männchen mit Plus im Kreis).
 2. Icon anklicken, das Panel öffnet sich.
 3. **Such-Kurs-ID** eintragen: die ID eines Kurses, in dem du Nutzer einschreiben darfst. Sie steht in der Adresse des Kurses (`…/course/view.php?id=`). Beim ersten Start ist das Feld leer. Die Einstellung bleibt im Browser gespeichert.
 4. JSON einfügen und **Einlesen** (der Knopf ist blau, solange er der nächste Schritt ist).
@@ -45,7 +70,7 @@ Wird ein Anmeldename beim Speichern als vergeben gemeldet, schlägt die Erweiter
 
 ## JSON-Format
 
-Ein Array, je Person ein Objekt:
+Für das **Einschreiben** genügen `email`, `vorname` und `nachname` (als JSON oder CSV). Für das **Anlegen** braucht es mehr Angaben – ein Array, je Person ein Objekt:
 
 ```json
 [
@@ -82,7 +107,6 @@ Die ChatGPT-Vorlage dazu liegt in `chatgpt-prompt.md`.
 - Die Erweiterung ändert im LMS nichts, außer dass sie Formulare ausfüllt. Gespeichert wird nur durch deinen Klick.
 - **Datenschutz:** Namen und E-Mails bleiben im Browser (Sitzungsspeicher dieses Tabs) und gehen nur an das LMS selbst. Es gibt keinen externen Server und keine Weitergabe. Der Sitzungsspeicher endet mit dem Tab.
 - **Schulenverzeichnis:** In der Erweiterung steckt eine Liste mit Schulnummern und Namen (aus dem Schulenverzeichnis der FHH, Stand 04.05.2026, mit privaten Schulen aus dem Schülerzahlen-PDF 2013/14). Das Verzeichnis ist laut seinem Vermerk „Nur für den Dienstgebrauch“. Bitte die Erweiterung nur innerhalb der Behörde weitergeben, nicht öffentlich.
-- Firefox und Edge sind nicht gebaut.
 
 ## Aufbau (für die Weiterentwicklung)
 
