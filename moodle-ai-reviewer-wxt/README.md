@@ -4,7 +4,7 @@
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
-Version 2.3.2 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
+Version 2.3.3 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: CC BY-SA 4.0
 
 > Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -489,6 +489,26 @@ lassen sich Wartezeit, Paketgröße und Zusatzparameter ändern (bei Qwen & Co. 
 nichts „freischalten" (kein CORS nötig) – die Anfrage kommt aus dem Hintergrund der
 Erweiterung, nicht aus der Moodle-Seite.
 
+### Rolle der KI (EU-KI-Verordnung)
+
+Die Erweiterung ist so gebaut, dass die KI **vorbereitet und nicht entscheidet**:
+
+- **Die KI macht nur Vorschläge.** Sie stuft Antworten ein, die Moodle nicht erkannt hat. Sie
+  bekommt keine Namen und vergibt keine Note.
+- **Der Code entscheidet, was „unklar“ ist.** Welche Fälle du in der Vorschau prüfen musst,
+  legen feste Regeln fest, nicht das Modell.
+- **Die Lehrkraft entscheidet.** Jeder Vorschlag lässt sich in der Vorschau ändern;
+  gespeichert wird in Moodle nur durch deinen Klick.
+- **Standard: aus.** Ohne Einrichtung arbeitet die Erweiterung ohne eingebaute KI (Prompt
+  kopieren).
+
+Einschätzung, keine Rechtsberatung: KI-Systeme, die Lernergebnisse bewerten, können nach
+Anhang III der Verordnung (EU) 2024/1689 als Hochrisiko-System gelten. Art. 6 Abs. 3 nimmt
+Systeme aus, die nur eine vorbereitende Aufgabe erfüllen oder eine menschliche Bewertung
+unterstützen, ohne sie zu ersetzen – darauf ist „KI direkt“ ausgelegt. Wer eine Cloud-API
+nutzt, setzt die KI in eigener Verantwortung ein (Betreiber) und klärt vorher Datenschutz
+und Freigabe an der Schule.
+
 ---
 
 ## Datenschutz
@@ -520,11 +540,15 @@ Erweiterung, nicht aus der Moodle-Seite.
 
 ---
 
-*Moodle AI Reviewer – Version 2.3.2 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.3.3 · Entwickelt von A. Spielhoff · CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.3.3 (05.11.2026)**
+
+- KI direkt: Abschnitt „Rolle der KI (EU-KI-Verordnung)“ im README; Hinweis zur Rolle der KI im Cloud-Kasten der KI-Einstellungen.
 
 **2.3.2 (29.10.2026)**
 
