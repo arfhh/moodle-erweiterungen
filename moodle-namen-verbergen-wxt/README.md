@@ -1,6 +1,6 @@
 # Moodle Namen verbergen
 
-*Version 1.1.0 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
+*Version 1.1.1 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 **📘 Handbuch:** [Handbuch-Moodle-Namen-verbergen.pdf](Handbuch-Moodle-Namen-verbergen.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -87,6 +87,7 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.1.1** (05.11.2026) — Firefox: background.js fehlte im Einreichungs-ZIP; Oberfläche ohne innerHTML (Mozilla-Prüfung).
 - **1.1.0** (05.11.2026) — Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README.
 - **1.0.5** (05.11.2026) — Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.
 - **1.0.4** (25.09.2026) — Die Fehlerbehebung aus 1.0.3 war durch einen Übertragungsfehler nicht im Code angekommen; jetzt tatsächlich enthalten.

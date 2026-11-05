@@ -161,10 +161,17 @@ const ZAHNRAD = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="tr
 
 let ui = null;
 
+// Feste eigene Vorlagen ohne innerHTML einsetzen (Mozilla-Pruefung): parsen und die
+// Knoten uebernehmen.
+function setzeHtml(el, html) {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  el.replaceChildren(...Array.from(doc.body.childNodes).map((k) => document.importNode(k, true)));
+}
+
 function baueUi() {
   const w = document.createElement('div');
   w.id = 'mnv-wurzel';
-  w.innerHTML = `
+  setzeHtml(w, `
     <div id="mnv-panel" hidden>
       <label class="mnv-zeile">Stärke: <output id="mnv-staerke-wert"></output> px
         <input type="range" id="mnv-staerke" min="2" max="20" step="1"></label>
@@ -179,7 +186,7 @@ function baueUi() {
     <div id="mnv-leiste">
       <button type="button" id="mnv-toggle"></button>
       <button type="button" id="mnv-zahn" title="Einstellungen" aria-label="Einstellungen für Namen verbergen">${ZAHNRAD}</button>
-    </div>`;
+    </div>`);
   document.body.appendChild(w);
   const $ = (id) => w.querySelector('#' + id);
   ui = {
@@ -205,7 +212,7 @@ function baueUi() {
 
 function aktualisiereUi() {
   if (!ui) return;
-  ui.toggle.innerHTML = einst.aktiv ? AUGE_AUS : AUGE;
+  setzeHtml(ui.toggle, einst.aktiv ? AUGE_AUS : AUGE);
   ui.toggle.title = einst.aktiv ? 'Namen sind verborgen — klicken zum Anzeigen' : 'Namen verbergen';
   ui.toggle.setAttribute('aria-pressed', String(!!einst.aktiv));
   ui.toggle.setAttribute('aria-label', ui.toggle.title);

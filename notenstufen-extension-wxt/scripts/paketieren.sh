@@ -47,8 +47,11 @@ npm run build-all
 # Gesicherte .xpi + Quellcode-ZIP von oben wieder einsetzen, falls vorhanden.
 UNTER="$FF/entpackte-dateien (nicht noetig)"
 mkdir -p "$UNTER"
-for item in manifest.json content-scripts icon; do
-  [ -e "$FF/$item" ] && mv "$FF/$item" "$UNTER/"
+# Alles ausser .xpi und dem Unterordner selbst – eine feste Liste liess neue Dateien
+# (z. B. background.js) oben liegen; das Firefox-ZIP fuer Mozilla war dann unvollstaendig.
+for item in "$FF"/* ; do
+  case "$item" in *.xpi|*.XPI|"$UNTER") continue ;; esac
+  [ -e "$item" ] && mv "$item" "$UNTER/"
 done
 find "$SICHERUNG" -maxdepth 1 -iname "*.xpi" -exec cp {} "$FF/" \;
 find "$SICHERUNG" -maxdepth 1 -iname "*-quellcode.zip" -exec cp {} "$UNTER/" \;

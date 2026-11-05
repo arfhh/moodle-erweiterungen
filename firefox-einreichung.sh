@@ -24,6 +24,14 @@ for d in *-wxt; do
   if [ "$MV" != "$V" ]; then
     echo "✗ $d: Build ist $MV, package.json sagt $V – erst neu bauen" >&2; exit 1
   fi
+  # Mozilla-Pruefung vorab: web-ext lint auf dem Build (Fehler brechen ab, Warnungen
+  # werden gezeigt). Faengt u. a. fehlende Dateien wie background.js ab.
+  LINT="$( (cd "$d" && npx --no-install web-ext lint --source-dir "../$ROH" --ignore-files "*.zip" --output json) 2>/dev/null || true)"
+  FEHLER="$(printf '%s' "$LINT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);const z=x=>x.map(e=>"   "+e.message+(e.file?" ("+e.file+")":"")).join("\n");if(j.errors.length)console.log("FEHLER\n"+z(j.errors));if(j.warnings.length)console.log("Warnungen\n"+z(j.warnings));}catch(e){console.log("FEHLER\n   web-ext lint lief nicht")}})')"
+  if printf '%s' "$FEHLER" | grep -q '^FEHLER'; then
+    echo "✗ $d $V – Mozilla wuerde ablehnen:" >&2; printf '%s\n' "$FEHLER" >&2; exit 1
+  fi
+  [ -n "$FEHLER" ] && printf '  %s %s – %s\n' "$d" "$V" "$FEHLER"
   TMP="$(mktemp -d)"
   # 1. Firefox-ZIP: Inhalt des Build-Ordners ohne alte ZIPs
   mkdir -p "$TMP/ff"
