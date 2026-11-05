@@ -366,6 +366,10 @@ Fehler, Verbesserungen und Erfahrungen aus anderen Moodle-Installationen sind
 willkommen — am liebsten als Issue mit Moodle-Version, Browser, Theme und dem, was auf
 dem Bildschirm passiert ist (oder eben nicht).
 
+**Kontakt:** Fehler, Fragen und Hinweise – auch zu Datenschutz oder Urheberrecht – bitte über die
+[GitHub-Issues](https://github.com/arfhh/moodle-erweiterungen/issues). Ich schaue regelmäßig
+hinein und korrigiere Fehler so schnell wie möglich.
+
 ---
 
 ## Lizenz und Urheber
