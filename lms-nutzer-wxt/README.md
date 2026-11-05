@@ -8,7 +8,7 @@ Browser-Erweiterung (Chrome, Firefox, Edge) für das LMS Hamburg (lms.lernen.ham
 
 Das Speichern bleibt immer bei dir: Die Erweiterung klickt nie selbst auf „einschreiben“ oder „Nutzer/in erstellen“.
 
-**Version:** 1.0.2 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
+**Version:** 1.1.0 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
 
 ## Warum es sie gibt
 
@@ -126,6 +126,7 @@ Bauen: `npm install`, danach `npm run build-all` (Ergebnis in `Erweiterung/lms-n
 
 ## Versionen
 
+- **1.1.0** Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README.
 - **1.0.2** Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.
 - **1.0.1** Firefox: HTML wird ohne innerHTML eingesetzt (keine Warnungen mehr beim Signieren).
 - **1.0.0** Erste öffentliche Fassung: Chrome, Firefox und Edge aus einer Codebasis (WXT), Download-ZIP im Repo. Keine voreingestellte Such-Kurs-ID mehr – sie muss einmal eingetragen werden.

@@ -11,7 +11,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'LMS Nutzer',
-    version: '1.0.2',
+    version: '1.1.0',
     description:
       'Prüft Nutzer im LMS Hamburg auf Vorhandensein und füllt das Anlegeformular nacheinander vor. Speichern bleibt bei der Lehrkraft.',
     permissions: [],

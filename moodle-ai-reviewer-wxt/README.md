@@ -4,7 +4,7 @@
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Reviewer.pdf](Handbuch-Moodle-AI-Reviewer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
-Version 2.4.2 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
+Version 2.5.0 · Schwester-Erweiterung zum *Moodle AI Freitext Grader* · für Chrome, Firefox und
 Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Der **Freitext Grader** bewertet Freitext. Der **Reviewer** sieht nach, was der Automat bei
@@ -543,11 +543,15 @@ an der Schule.
 
 ---
 
-*Moodle AI Reviewer – Version 2.4.2 · Entwickelt von A. Spielhoff · Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
+*Moodle AI Reviewer – Version 2.5.0 · Entwickelt von A. Spielhoff · Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 ---
 
 ## Änderungen
+
+**2.5.0 (05.11.2026)**
+
+- Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README; KI direkt nur mit lokaler KI; gespeicherte Testdaten verfallen nach 90 Tagen, Löschknopf unter ⚙. Fasst 2.3.3–2.4.2 zusammen.
 
 **2.4.2 (05.11.2026)**
 

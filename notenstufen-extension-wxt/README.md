@@ -1,6 +1,6 @@
 # Moodle Notenstufen Autofill
 
-*Version 2.8.1 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
+*Version 2.9.0 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 **📘 Handbuch:** [Handbuch-Moodle-Notenstufen-Autofill.pdf](Handbuch-Moodle-Notenstufen-Autofill.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -178,6 +178,10 @@ Browser), `npm run paket` (baut, benennt um, packt zu
 `dist/notenstufen-autofill.zip`). Details in `1-browser-wxt`.
 
 ## Änderungen
+
+**2.9.0**
+
+- Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README.
 
 **2.8.1**
 

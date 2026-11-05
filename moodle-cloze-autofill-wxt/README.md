@@ -3,7 +3,7 @@
 **Trägt neue Antwortvarianten in die Cloze-Lücken der Fragensammlung ein**, statt sie
 Frage für Frage von Hand nachzupflegen.
 
-Version 2.1.2 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
+Version 2.2.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > ⚠️ **Nur für die eigene Fragensammlung.** Die Erweiterung schreibt direkt in die
 > Fragen der Sammlung, in der sie läuft. Wer eine **eigene** Sammlung pflegt, kann
@@ -282,6 +282,8 @@ Gebaut wird nach `Erweiterung/moodle-cloze-autofill-{chrom,firefox,edge}/`.
 
 ## Änderungen
 
+**2.2.0:** Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README.
+
 **2.1.2:** Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.
 
 **2.1.1:** Nach einem fehlerfreien Lauf schließt das Protokollfenster nach dem Neuladen nach 3 s von selbst (wie beim Reviewer). Bei Fehlern (✖) oder unklarer Gegenprobe (?) bleibt es offen; ein Klick ins Fenster hält es ebenfalls offen.
@@ -413,4 +415,4 @@ Befehle: `npm run dev` (Chrome-Testlauf), `npm run build-all` (alle drei Browser
 
 ---
 
-*Moodle Cloze Autofill 2.1.2 — Code: MIT · Handbuch und Doku: CC BY-SA 4.0 — A. Spielhoff*
+*Moodle Cloze Autofill 2.2.0 — Code: MIT · Handbuch und Doku: CC BY-SA 4.0 — A. Spielhoff*

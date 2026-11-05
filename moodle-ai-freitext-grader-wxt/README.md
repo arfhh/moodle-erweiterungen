@@ -1,6 +1,6 @@
 # Moodle AI Freitext Grader
 
-Version 1.4.2 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
+Version 1.5.0 · für Chrome, Firefox und Edge aus einer Codebasis · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 **📘 Handbuch:** [Handbuch-Moodle-AI-Freitext-Grader.pdf](Handbuch-Moodle-AI-Freitext-Grader.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -192,6 +192,8 @@ Danach die Moodle-Seite einmal **neu laden** (F5), falls sie schon offen war.
 Version automatisch.
 
 ## Versionshinweise
+
+**1.5.0 (05.11.2026)** — Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README; gespeicherte Antworten verfallen nach 90 Tagen, Löschknopf unter ⚙.
 
 **1.4.2 (05.11.2026)** — Gespeicherte Schülerdaten verfallen nach 90 Tagen; neuer Knopf zum sofortigen Löschen (⚙ → Für Fortgeschrittene → „Gespeicherte Antworten löschen“).
 

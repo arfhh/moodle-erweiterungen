@@ -22,3 +22,6 @@ _ANLEITUNG-GitHub.md
 # Editor
 .vscode/
 .idea/
+
+# Firefox-Einreichungsdateien (baut firefox-einreichung.sh)
+_firefox-einreichung/
