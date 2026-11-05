@@ -1,0 +1,22 @@
+{
+  "name": "lms-nutzer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt -b chrom",
+    "dev:firefox": "wxt -b firefox",
+    "build:chrome": "wxt build -b chrom",
+    "build:firefox": "wxt build -b firefox",
+    "build:edge": "wxt build -b edge",
+    "build-all": "npm run build:chrome && npm run build:firefox && npm run build:edge",
+    "lint": "web-ext lint --source-dir=\"Erweiterung/lms-nutzer-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\"",
+    "sign:firefox": "web-ext sign --source-dir=\"Erweiterung/lms-nutzer-firefox/entpackte-dateien (nicht noetig)\" --ignore-files=\"*.zip\" --artifacts-dir=web-ext-artifacts --channel=unlisted",
+    "postinstall": "wxt prepare",
+    "paket": "bash scripts/paketieren.sh"
+  },
+  "devDependencies": {
+    "wxt": "^0.21.4",
+    "web-ext": "^10.6.0"
+  }
+}

@@ -1,0 +1,6 @@
+Erweiterung/
+.wxt/
+node_modules/
+stats.html
+*.zip
+web-ext-artifacts/
