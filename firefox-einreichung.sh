@@ -6,6 +6,7 @@
 #                                     plus BAUANLEITUNG.txt fuer die Mozilla-Pruefer
 # Vorher muss gebaut sein (passiert beim Commit durch den Pre-Commit-Hook oder mit
 # npm run paket im jeweiligen Ordner).
+# Zusaetzlich landen beide Dateien in <ordner>/Erweiterung/<name>-firefox/ neben der .xpi.
 # Aufruf im Repo-Wurzelordner:  bash firefox-einreichung.sh
 set -e
 cd "$(git rev-parse --show-toplevel)"
@@ -49,6 +50,10 @@ EOT
   fi
   (cd "$TMP/src" && zip -q -r -X "$ZIEL/$d-$V-quellcode.zip" "$d")
   rm -rf "$TMP"
+  # 3. Auch direkt in den Firefox-Ordner der Erweiterung (neben die .xpi), alte
+  #    Einreichungs-ZIPs dort vorher weg — damit dort immer nur die aktuelle Fassung liegt.
+  find "$FF" -maxdepth 2 \( -name "*-quellcode.zip" -o -name "*-firefox.zip" \) -delete
+  cp "$ZIEL/$d-$V-firefox.zip" "$ZIEL/$d-$V-quellcode.zip" "$FF/"
   echo "✓ $d $V"
 done
 echo "Fertig: $ZIEL"
