@@ -10,6 +10,8 @@ Das Speichern bleibt immer bei dir: Die Erweiterung klickt nie selbst auf „ein
 
 **Version:** 1.1.0 · **Browser:** Chrome, Firefox, Edge (Manifest V3, gebaut mit WXT) · **Stand:** 05.11.2026
 
+**📘 Handbuch:** [Handbuch-LMS-Nutzer.pdf](Handbuch-LMS-Nutzer.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
+
 ## Warum es sie gibt
 
 Eine Liste von Personen von Hand in einen Kurs einzuschreiben heißt: jede Person einzeln suchen, das richtige Konto erkennen, einschreiben – und am Ende herausfinden, wer noch gar kein Konto hat. Die Erweiterung erledigt Suche und Abgleich für die ganze Liste auf einmal.

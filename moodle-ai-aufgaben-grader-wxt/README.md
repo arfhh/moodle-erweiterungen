@@ -4,7 +4,7 @@
 
 **Lädt Datei-Abgaben aus dem Aufgaben-Modul anonymisiert herunter, erzeugt den Auftrags-Prompt für die KI-Bewertung und trägt Note + Feedback automatisch zurück.**
 
-Version 1.12.0 · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
+Version 1.13.0 · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0
 
 > Anders als die übrigen Erweiterungen dieser Familie (Freitext Grader und Reviewer — beide für
 > Testfragen) bewertet der Aufgaben-Grader **Datei-Abgaben** im Aufgaben-Modul (`mod/assign`):
@@ -87,7 +87,7 @@ Jeder Reiter hat oben zwei aufklappbare Kästen: „Wozu dieser Reiter?" und
 3. Reiter **2 · Abgaben laden**: Art der Rückmeldung wählen (Zwischen- oder
    Abschlussfeedback) und herunterladen — ZIP, `bewertung.csv` und Auftrags-Prompt
    entstehen in einem Zug.
-4. ZIP entpacken, Ordner in den Import-Ordner legen, Auftrags-Prompt in Cowork einfügen;
+4. ZIP entpacken, Ordner in den Import-Ordner legen (entfällt, wenn unter ⚙ „Speicherort der Abgaben" → „Entpackt in meinen Import-Ordner" gewählt ist, nur Chrome/Edge), Auftrags-Prompt in Cowork einfügen;
    die KI füllt `bewertung.csv` (`Kuerzel-ID;Note;Feedback`).
 5. Reiter **3 · Eintragen**: ggf. Schnellbewertung einschalten (Knopf im Reiter), dann die
    ausgefüllte `bewertung.csv` wählen, den Regler „Wie stark zählen fachliche Fehler?"
@@ -145,6 +145,8 @@ Downloads am selben Tag „ (1)" an.
 ---
 
 ## Änderungen
+
+**1.13.0 (08.11.2026)** — Neuer Speicherort: Unter ⚙ lässt sich ein Import-Ordner wählen (Chrome/Edge). Die Abgaben werden dann direkt entpackt dort abgelegt (Ordner „Kurs - Aufgabe" mit Kürzel-Ordnern, `bewertung.csv`, `_lauf.json`), ohne ZIP-Download. Vorhandene gleichnamige Dateien werden überschrieben, nichts gelöscht. Firefox bleibt beim ZIP. Der Ordner-Zugriff liegt nur lokal im Browser; Datenschutz unverändert.
 
 **1.12.0 (05.11.2026)** — Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README; gespeicherter Abgabestand verfällt nach 90 Tagen, Löschknopf in den Einstellungen.
 

@@ -484,7 +484,10 @@ export function starteGrader() {
   const EINST_STANDARD = { ordner: '', skill: '', duplikate: true, loesungen: true, modus: 'schnell',
     kiHinweis: true, kiHinweisText: KI_HINWEIS_STANDARD, strenge: 'normal',
     // Bewertungsübersicht + -struktur + Notenstufen mit ins ZIP (Arne, 28.09.2026). Standard: nein.
-    notenExport: false };
+    notenExport: false,
+    // Speicherort (1.13.0, Arne 08.11.2026): 'zip' = ZIP in den Download-Ordner des Browsers,
+    // 'ordner' = entpackt direkt in einen gewaehlten Ordner (z. B. Import). Nur Chrome/Edge.
+    speicherort: 'zip' };
 
   async function einstellungenLaden() {
     const d = await storageGet([EINST_KEY]);
@@ -707,6 +710,75 @@ export function starteGrader() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  }
+
+  // ---------------------------------------------------------------------
+  // 5b · Speicherort: entpackt in einen gewählten Ordner (1.13.0)
+  // ---------------------------------------------------------------------
+  // Chrome/Edge erlauben über die File System Access API, einen Ordner zu wählen und
+  // dort Dateien zu schreiben. Der Ordner-Zugriff ("Handle") wird in IndexedDB gemerkt,
+  // damit man ihn nur einmal wählen muss; pro Browser-Sitzung fragt Chrome beim ersten
+  // Download kurz nach der Erlaubnis. Firefox kann das nicht -> dort bleibt es beim ZIP.
+  // Wichtig: die Erlaubnis muss VOR dem langen Laden aus Moodle eingeholt werden, weil
+  // sie einen frischen Klick braucht (siehe Klick-Handler des Download-Knopfes).
+  const ORDNER_DB = 'abgGraderOrdner';
+  function ordnerWahlMoeglich() {
+    return typeof window.showDirectoryPicker === 'function';
+  }
+  function ordnerDb() {
+    return new Promise((ok, fehl) => {
+      const r = indexedDB.open(ORDNER_DB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('h');
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => fehl(r.error);
+    });
+  }
+  async function ordnerMerken(handle) {
+    const db = await ordnerDb();
+    await new Promise((ok, fehl) => {
+      const t = db.transaction('h', 'readwrite');
+      t.objectStore('h').put(handle, 'import');
+      t.oncomplete = ok; t.onerror = () => fehl(t.error);
+    });
+    db.close();
+  }
+  async function ordnerLesen() {
+    const db = await ordnerDb();
+    const h = await new Promise((ok, fehl) => {
+      const r = db.transaction('h').objectStore('h').get('import');
+      r.onsuccess = () => ok(r.result || null); r.onerror = () => fehl(r.error);
+    });
+    db.close();
+    return h;
+  }
+  // Liefert den Ordner mit Schreibrecht oder null. Nur direkt im Klick aufrufen.
+  async function ordnerBereit() {
+    if (!ordnerWahlMoeglich()) return null;
+    const h = await ordnerLesen();
+    if (!h) return null;
+    const opt = { mode: 'readwrite' };
+    let r = await h.queryPermission(opt);
+    if (r !== 'granted') r = await h.requestPermission(opt);
+    return r === 'granted' ? h : null;
+  }
+  // Schreibt die Liste {name:"Ordner/Kürzel/datei", data} entpackt unter den Zielordner.
+  async function dateienInOrdner(wurzel, dateien) {
+    let n = 0;
+    for (const d of dateien) {
+      const teile = d.name.split('/').filter(Boolean);
+      if (teile.some((t) => t === '.' || t === '..')) throw new Error('ungültiger Pfad: ' + d.name);
+      const dateiname = d.ordner ? null : teile.pop();
+      let dir = wurzel;
+      for (const t of teile) dir = await dir.getDirectoryHandle(t, { create: true });
+      if (dateiname) {
+        const fh = await dir.getFileHandle(dateiname, { create: true });
+        const w = await fh.createWritable();
+        await w.write(d.data);
+        await w.close();
+        n++;
+      }
+    }
+    return n;
   }
 
   // ---------------------------------------------------------------------
@@ -1156,6 +1228,16 @@ export function starteGrader() {
         <option value="backup">Vollständig — alle Abgaben laden (erster Lauf, neuer Rechner)</option>
       </select>
       <div class="abg-hinweis"><strong>Schnell:</strong> nur, was seit dem letzten Download neu ist oder geändert wurde — die älteren Abgaben liegen schon im Output-Ordner. <strong>Vollständig:</strong> beim ersten Durchgang eines Themas, auf einem neuen Rechner oder wenn der Output-Ordner fehlt.</div>
+      <label for="abg-ziel">Speicherort der Abgaben</label>
+      <select id="abg-ziel">
+        <option value="zip">ZIP im Download-Ordner des Browsers</option>
+        <option value="ordner">Entpackt in meinen Import-Ordner (Chrome/Edge)</option>
+      </select>
+      <div id="abg-ziel-box">
+        <button class="abg-sekundaer" id="abg-ziel-waehlen">Import-Ordner auswählen …</button>
+        <div class="abg-hinweis" id="abg-ziel-info"></div>
+      </div>
+      <div class="abg-hinweis">Bei „Entpackt" legt die Erweiterung den fertigen Ordner (z. B. „25-28 Chemie 9a - 4. Atombau - Aufgabe") samt bewertung.csv direkt in den gewählten Ordner — ohne Download und ohne Entpacken, die KI kann sofort loslegen. Der Ordner wird einmal gewählt und gemerkt; Chrome fragt pro Browser-Sitzung kurz nach der Erlaubnis. Schon vorhandene gleichnamige Dateien werden überschrieben, nichts wird gelöscht. Firefox kann das nicht und lädt immer das ZIP.</div>
       <label for="abg-noten">Bewertungsübersicht des Kurses mit ins ZIP legen</label>
       <select id="abg-noten">
         <option value="nein">Nein</option>
@@ -1184,6 +1266,42 @@ export function starteGrader() {
     panelEinstellungen.querySelector('#abg-ordner').value = einst.ordner || '';
     panelEinstellungen.querySelector('#abg-modus').value = einst.modus === 'backup' ? 'backup' : 'schnell';
     panelEinstellungen.querySelector('#abg-noten').value = einst.notenExport ? 'ja' : 'nein';
+    {
+      const zielSel = panelEinstellungen.querySelector('#abg-ziel');
+      const zielBox = panelEinstellungen.querySelector('#abg-ziel-box');
+      const zielInfo = panelEinstellungen.querySelector('#abg-ziel-info');
+      const zielAnzeigen = async () => {
+        zielBox.hidden = zielSel.value !== 'ordner';
+        if (zielBox.hidden) return;
+        try {
+          const h = await ordnerLesen();
+          zielInfo.textContent = h ? `Gemerkter Ordner: „${h.name}"` : 'Noch kein Ordner gewählt — bitte „Import-Ordner auswählen" drücken.';
+        } catch (e) { zielInfo.textContent = 'Noch kein Ordner gewählt.'; }
+      };
+      if (!ordnerWahlMoeglich()) {
+        zielSel.querySelector('option[value="ordner"]').disabled = true;
+        zielSel.value = 'zip';
+        zielBox.hidden = true;
+      } else {
+        zielSel.value = einst.speicherort === 'ordner' ? 'ordner' : 'zip';
+        zielAnzeigen();
+      }
+      zielSel.addEventListener('change', zielAnzeigen);
+      panelEinstellungen.querySelector('#abg-ziel-waehlen').addEventListener('click', async () => {
+        try {
+          const h = await window.showDirectoryPicker({ id: 'abg-import', mode: 'readwrite' });
+          await ordnerMerken(h);
+          einst.speicherort = 'ordner';
+          zielSel.value = 'ordner';
+          await einstellungenSpeichern(einst);
+          await zielAnzeigen();
+          logZeile(body, `Import-Ordner gemerkt: „${h.name}". Die Abgaben landen künftig entpackt dort.`, 'ok');
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+          logZeile(body, 'Ordner konnte nicht gewählt werden: ' + (e && e.message ? e.message : e), 'fehler');
+        }
+      });
+    }
     panelEinstellungen.querySelector('#abg-ki').checked = einst.kiHinweis !== false;
     panelEinstellungen.querySelector('#abg-ki-text').value = einst.kiHinweisText || KI_HINWEIS_STANDARD;
     panelEinstellungen.querySelector('#abg-reset').addEventListener('click', async () => {
@@ -1206,6 +1324,7 @@ export function starteGrader() {
       einst.loesungen = panelEinstellungen.querySelector('#abg-loes').checked;
       einst.modus = panelEinstellungen.querySelector('#abg-modus').value;
       einst.notenExport = panelEinstellungen.querySelector('#abg-noten').value === 'ja';
+      einst.speicherort = panelEinstellungen.querySelector('#abg-ziel').value === 'ordner' ? 'ordner' : 'zip';
       einst.kiHinweis = panelEinstellungen.querySelector('#abg-ki').checked;
       einst.kiHinweisText = panelEinstellungen.querySelector('#abg-ki-text').value.trim() || KI_HINWEIS_STANDARD;
       await einstellungenSpeichern(einst);
@@ -1267,9 +1386,15 @@ export function starteGrader() {
       }, 800);
     });
 
-    panelDownload.querySelector('#abg-download').addEventListener('click', () => {
+    panelDownload.querySelector('#abg-download').addEventListener('click', async () => {
       if (!kontextGueltig()) { logZeile(body, KONTEXT_TEXT, 'fehler'); return; }
-      herunterladen(body, courseKey, panelDownload.querySelector('#abg-art').value, einst)
+      // Ordner-Erlaubnis jetzt holen, solange der Klick frisch ist.
+      let zielOrdner = null;
+      if (einst.speicherort === 'ordner') {
+        try { zielOrdner = await ordnerBereit(); } catch (e) { zielOrdner = null; }
+        if (!zielOrdner) logZeile(body, 'Import-Ordner nicht verfügbar (nicht gewählt oder Erlaubnis abgelehnt) — es wird stattdessen ein ZIP geladen. Ordner unter ⚙ Einstellungen neu wählen.', 'fehler');
+      }
+      herunterladen(body, courseKey, panelDownload.querySelector('#abg-art').value, einst, zielOrdner)
         .catch((e) => logZeile(body, istKontextfehler(e) ? KONTEXT_TEXT : 'Fehler beim Herunterladen: ' + e.message, 'fehler'));
     });
 
@@ -1736,7 +1861,7 @@ export function starteGrader() {
   }
 
   // ---- Schritt 1: Herunterladen -----------------------------------------
-  async function herunterladen(body, courseKey, feedbackArt, einst) {
+  async function herunterladen(body, courseKey, feedbackArt, einst, zielOrdner) {
     logZeile(body, 'Lese Bewertungstabelle (alle Seiten) …');
     const vollDoc = await vollstaendigesDokumentHolen(body);
     const teilnehmer = tabelleAuslesen(vollDoc);
@@ -1964,13 +2089,25 @@ export function starteGrader() {
       data: new TextEncoder().encode(JSON.stringify(lauf, null, 2)),
     });
 
-    const zipName = `${ordnerName}_${heute}.zip`;
-    const zipBlob = zipBauen(zipDateien);
-    download(zipBlob, zipName);
-    logZeile(body, `ZIP heruntergeladen: ${zipName} — entpackt zum Ordner "${ordnerName}" (${anzahlAbgabeDateien} Abgabedatei(en) + bewertung.csv + _lauf.json)`, 'ok');
+    let entpacktAbgelegt = false;
+    if (zielOrdner) {
+      try {
+        const n = await dateienInOrdner(zielOrdner, zipDateien);
+        entpacktAbgelegt = true;
+        logZeile(body, `Entpackt gespeichert: „${zielOrdner.name}/${ordnerName}" (${n} Datei(en), darunter ${anzahlAbgabeDateien} Abgabedatei(en), bewertung.csv und _lauf.json)`, 'ok');
+      } catch (e) {
+        logZeile(body, `Schreiben in den Import-Ordner nicht möglich (${e.message}) — stattdessen ZIP.`, 'fehler');
+      }
+    }
+    if (!entpacktAbgelegt) {
+      const zipName = `${ordnerName}_${heute}.zip`;
+      const zipBlob = zipBauen(zipDateien);
+      download(zipBlob, zipName);
+      logZeile(body, `ZIP heruntergeladen: ${zipName} — entpackt zum Ordner "${ordnerName}" (${anzahlAbgabeDateien} Abgabedatei(en) + bewertung.csv + _lauf.json)`, 'ok');
+    }
 
     const prompt = promptErzeugen(lauf, einst);
-    zeigePrompt(body, prompt);
+    zeigePrompt(body, prompt, entpacktAbgelegt);
   }
 
   // Kürzt einen Ordnernamen auf eine handhabbare Länge, ohne mitten im Wort zu enden.
@@ -2054,7 +2191,7 @@ export function starteGrader() {
 
   // Die Prompt-Karte gehört in den Reiter "Download" — sie ist das Ergebnis des
   // Downloads. Im Reiter "Einfügen" hat sie nichts zu suchen (Arne, 10.09.2026).
-  function zeigePrompt(body, text) {
+  function zeigePrompt(body, text, entpackt) {
     const ziel = body.querySelector('.abg-inhalt[data-panel="download"]') || body;
     let feld = ziel.querySelector('#abg-prompt');
     if (!feld) {
@@ -2063,7 +2200,7 @@ export function starteGrader() {
       box.innerHTML = `
         <h4>Auftrags-Prompt für die KI</h4>
         <div class="abg-hinweis">Die Arbeitsanweisung an die KI: wo die Abgaben liegen, wonach sie bewerten soll und wie sie bewertung.csv ausfüllt. Lesen musst du ihn nicht — nur kopieren.</div>
-        <div class="abg-hinweis abg-schritt"><strong>Erst</strong> das heruntergeladene ZIP entpacken und den Ordner in den <strong>Import-Ordner</strong> legen. <strong>Dann</strong> den Prompt kopieren und in die KI einfügen. Die ausgefüllte bewertung.csv danach im Reiter „3 · Eintragen" hochladen.</div>
+        <div class="abg-hinweis abg-schritt"><span id="abg-schritt-zip"><strong>Erst</strong> das heruntergeladene ZIP entpacken und den Ordner in den <strong>Import-Ordner</strong> legen. <strong>Dann</strong> den Prompt kopieren und in die KI einfügen. Die ausgefüllte bewertung.csv danach im Reiter „3 · Eintragen" hochladen.</span><span id="abg-schritt-ordner" hidden>Die Abgaben liegen <strong>bereits entpackt im Import-Ordner</strong>. Den Prompt kopieren und in die KI einfügen. Die ausgefüllte bewertung.csv danach im Reiter „3 · Eintragen" hochladen.</span></div>
         <textarea id="abg-prompt" readonly></textarea>
         <button id="abg-prompt-kopieren">📋 Auftrags-Prompt kopieren</button>
       `;
@@ -2083,6 +2220,11 @@ export function starteGrader() {
       });
     }
     feld.value = text;
+    // Kein innerHTML mit Auswahl (AMO-Pruefung, siehe Kommentar oben): beide Texte stehen
+    // fest in der Karte, hier wird nur umgeschaltet.
+    const sZip = ziel.querySelector('#abg-schritt-zip');
+    const sOrdner = ziel.querySelector('#abg-schritt-ordner');
+    if (sZip && sOrdner) { sZip.hidden = !!entpackt; sOrdner.hidden = !entpackt; }
   }
 
   // ---- Schritt 2: Bewertungen in die Schnellbewertung eintragen ---------
