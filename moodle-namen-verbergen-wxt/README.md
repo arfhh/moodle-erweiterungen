@@ -1,6 +1,6 @@
 # Moodle Namen verbergen
 
-*Version 1.1.1 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
+*Version 1.2.0 · Entwickelt von A. Spielhoff · Lizenz: Code: MIT · Handbuch und Doku: CC BY-SA 4.0*
 
 **📘 Handbuch:** [Handbuch-Moodle-Namen-verbergen.pdf](Handbuch-Moodle-Namen-verbergen.pdf) – Schritt-für-Schritt-Anleitung mit Bildern (liegt auch im Download-ZIP).
 
@@ -38,15 +38,18 @@ Sie läuft in jedem Moodle, auch in einem Unterverzeichnis.
 
 Verwischt werden: Links auf Nutzerprofile (Teilnehmerliste, Bewertungsübersicht, Testauswertung,
 Foren, Aufgaben-Bewerten), `mailto:`-Links, Namensfelder (`.fullname`, `.username` …), die
-Namensspalte der Teilnehmerliste und Profilbilder.
+Namensspalte der Teilnehmerliste und Profilbilder. Dazu Namen und Adressen, die nur als Text
+dastehen: E-Mail-Adressen mitten im Text (samt Name davor in der Form „Name (adresse)") und die
+Überschriften der manuellen Bewertung im Test („Versuch Nummer 1 von …").
 
 ## Grenzen
 
 - Die Selektoren sind Moodle-Standard. Ein abweichendes Theme oder Plugin kann Namen anders
   auszeichnen — die fehlende Stelle im Zahnrad-Menü unter „Weitere CSS-Selektoren" nachtragen.
 - E-Mail-Adressen und Benutzernamen werden in **Tabellen mit passendem Spaltenkopf** („E-Mail",
-  „Benutzername", „ID-Nummer") und in Elementen erkannt, die nur die Adresse enthalten. Steht eine
-  Adresse mitten in einem Fließtext, bleibt sie sichtbar.
+  „Benutzername", „ID-Nummer"), in Elementen, die nur die Adresse enthalten, und als Adresse
+  mitten im Text. Ein Name ohne Adresse und ohne Profil-Link wird nur in der Bewertungsüberschrift
+  „Versuch Nummer … von …" erkannt.
 - Namen in **Kurstiteln, Dateinamen oder Freitexten** verwischt sie nicht.
 - Sie verwischt nur, was **in deinem Browser** angezeigt wird. Moodle selbst bleibt unverändert;
   Screenshots, die du machst, sind verwischt.
@@ -87,6 +90,7 @@ npm run paket         # baut alles und legt dist/moodle-namen-verbergen.zip im R
 
 ## Änderungsgeschichte
 
+- **1.2.0** (12.11.2026) — Manuelle Bewertung im Test: „Versuch Nummer 1 von Name (adresse)" wird verwischt; E-Mail-Adressen auch mitten im Text.
 - **1.1.1** (05.11.2026) — Firefox: background.js fehlte im Einreichungs-ZIP; Oberfläche ohne innerHTML (Mozilla-Prüfung).
 - **1.1.0** (05.11.2026) — Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README.
 - **1.0.5** (05.11.2026) — Lizenz: Code jetzt unter MIT, Doku weiter CC BY-SA 4.0.

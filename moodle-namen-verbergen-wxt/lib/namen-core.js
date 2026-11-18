@@ -14,6 +14,7 @@
  */
 import { browser } from 'wxt/browser';
 import { ladeEinstellung, speichereEinstellung, SCHLUESSEL, STANDARD } from './speicher.js';
+import { findeStellen, verdaechtig } from './text-stellen.js';
 
 // Namen und Kontaktdaten. Verweise auf Nutzerprofile decken Teilnehmerliste, Bewertungsuebersicht,
 // Testauswertung, Foren und Aufgaben-Bewerten in einem Zug ab — unabhaengig vom Theme.
@@ -116,6 +117,37 @@ function markiereTabellenUnsicher() {
     if (el.childElementCount || el.hasAttribute(MARKE)) continue;
     const s = (el.textContent || '').trim();
     if (s.length < 200 && NUR_ADRESSE.test(s)) el.setAttribute(MARKE, '');
+  }
+  markiereTexte();
+}
+
+// Namen und Adressen ohne eigenes Element (z. B. "Versuch Nummer 1 von Name (adresse)" in der
+// manuellen Bewertung eines Tests): die Fundstelle im Textknoten in ein <span data-mnv-blur> setzen.
+// Der Seitentext selbst bleibt gleich, nur die Stelle bekommt eine Huelle.
+const TEXT_TABU = '#mnv-wurzel, .navbar, .usermenu, script, style, noscript, textarea, [contenteditable], [' + MARKE + ']';
+
+function markiereTexte() {
+  const gang = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode: (k) => (verdaechtig(k.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+  });
+  const treffer = [];
+  for (let k = gang.nextNode(); k; k = gang.nextNode()) {
+    const eltern = k.parentElement;
+    if (!eltern || eltern.closest(TEXT_TABU)) continue;
+    const stellen = findeStellen(k.nodeValue, !!eltern.closest('h1, h2, h3, h4, h5, h6'));
+    if (stellen.length) treffer.push([k, stellen]);
+  }
+  for (const [k, stellen] of treffer) {
+    // Von hinten nach vorn teilen, damit die vorderen Positionen gueltig bleiben.
+    for (let i = stellen.length - 1; i >= 0; i--) {
+      const [von, bis] = stellen[i];
+      const mitte = k.splitText(von);
+      mitte.splitText(bis - von);
+      const huelle = document.createElement('span');
+      huelle.setAttribute(MARKE, '');
+      mitte.replaceWith(huelle);
+      huelle.appendChild(mitte);
+    }
   }
 }
 
