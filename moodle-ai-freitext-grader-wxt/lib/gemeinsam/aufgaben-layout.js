@@ -36,6 +36,15 @@ export function afbStufe(afb) {
 export function farbenFuer(afb) { return KARTEN_FARBEN[afbStufe(afb)] || KARTEN_FARBEN.neutral; }
 export function istGestaltet(html) { return /#B9C7DA/i.test(String(html || '')); }
 export function nrKey(x) { return String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase(); }
+// Hauptnummer einer Teilaufgabe: „2a" -> „2", „3" -> „3", „b" -> '' (Kurztest-Teile ohne Zahl).
+export function hauptnummer(nr) { const m = nrKey(nr).match(/^\d+/); return m ? m[0] : ''; }
+// Trennlinie in der Antwortvorlage, wenn die Hauptnummer wechselt (1b -> 2a). Kein Text darin,
+// damit das Zerlegen der Schülerantwort an den Kopfzeilen nicht gestört wird.
+export const TRENNLINIE_HTML = '<hr style="border: none; border-top: 2px dashed #9e9e9e; margin: 22px 0 14px;">';
+export function trennlinieVor(vorher, nr) {
+  const a = hauptnummer(vorher), b = hauptnummer(nr);
+  return !!a && !!b && a !== b;
+}
 
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function komma(z) { return String(z).replace('.', ','); }

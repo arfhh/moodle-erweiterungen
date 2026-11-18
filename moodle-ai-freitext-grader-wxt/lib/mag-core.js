@@ -25,10 +25,11 @@ import { kurztestHorizontVorlage } from './gemeinsam/kurztest-horizont.js';
 import { bewertungsKopf } from './gemeinsam/bewertungsregeln.js';
 import { stufenBlock, materialBlock as materialBaustein, horizontRegeln, HORIZONT_ZWECK } from './gemeinsam/horizont-bausteine.js';
 import { schreibeEditorfeldLive, leseEditorfeldLive } from './gemeinsam/editor-live.js';
-import { gestalteAufgabe, istGestaltet, afbAusText, antwortKasten, zerlegeAufgabentext, nrKey } from './gemeinsam/aufgaben-layout.js';
+import { gestalteAufgabe, istGestaltet, afbAusText, antwortKasten, zerlegeAufgabentext, nrKey, trennlinieVor, TRENNLINIE_HTML } from './gemeinsam/aufgaben-layout.js';
 import { fassungAusAbzeichen, neuesteFassungHorizont } from './gemeinsam/fassung.js';
 import { metaAusText, metaZeilenHtml, istMetaZeile, stufeVon, anredeFuer, NIVEAU_WORT } from './gemeinsam/horizont-meta.js';
 import { rsAnteil, fehlerGewicht, woerter, rsErklaerung, rsPromptSatz } from './gemeinsam/rechtschreibung.js';
+import { aufStufe } from './gemeinsam/stufen.js';
 import { KI_HINWEIS_STANDARD, ohneQuellen, KLAUSUR_KOMPAKT } from './gemeinsam/feedback-optionen.js';
 import { starteCoach } from './coach-core.js';
 import { rundgangLaden, rundgangPosition, einzelseiteUrl, uebersichtUrl } from './gemeinsam/rundgang.js';
@@ -668,7 +669,8 @@ export function starteGrader() {
       } else {
         max = gesamtMax / anzahl;
       }
-      const prozent = Math.max(0, Math.min(100, Number(a.prozent) || 0));
+      // Auf die Stufen der Aufgabe einrasten (bis 5 Punkte Viertel, darueber Fuenftel).
+      const prozent = aufStufe(a.prozent, max);
       return { nr: nr, max: max, prozent: prozent, roh: (max * prozent) / 100 };
     });
 
@@ -756,9 +758,11 @@ export function starteGrader() {
     return { farbig: E.afbFarben !== false, zeigeAfb: !!E.vorlageAfb, zeigePunkte: !!E.vorlagePunkte };
   }
   function baueAntwortvorlage(aufgaben) {
-    return (aufgaben || []).map(a => antwortKasten(Object.assign({
-      label: String(a.nr), titel: a.schlagwort || 'Deine Antwort', afb: a.afb, punkte: a.punkte
-    }, kastenOpts()))).join('\n');
+    // Zwischen zwei Hauptaufgaben (1b -> 2a) eine gestrichelte Linie, damit man sie unterscheidet.
+    return (aufgaben || []).map((a, i, alle) => (i && trennlinieVor(alle[i - 1].nr, a.nr) ? TRENNLINIE_HTML + '\n' : '')
+      + antwortKasten(Object.assign({
+        label: String(a.nr), titel: a.schlagwort || 'Deine Antwort', afb: a.afb, punkte: a.punkte
+      }, kastenOpts()))).join('\n');
   }
 
   // Kurztest: Punkte je Teil stehen im Horizont unter „Teile:" („a) … – 1 Punkt").
@@ -1087,7 +1091,8 @@ gezählte Fehler und Begründungstexte OHNE Zahlenangaben. Schreibe in keiner Be
 „x von y Punkten" — die Zahlen setzt die Erweiterung ein.
 
 JE AUFGABE
-Vergib einen Erfüllungsgrad in Prozent, nur diese Stufen: 100, 75, 50, 25, 0.
+Vergib einen Erfüllungsgrad in Prozent, nur in den Stufen, die der Horizont der Aufgabe nennt:
+Aufgaben bis 5 Punkte 100, 75, 50, 25, 0 · Aufgaben mit mehr als 5 Punkten 100, 80, 60, 40, 20, 0.
 Verankere jede Einstufung an einer Formulierung des Erwartungshorizonts.
 Prüfe dabei den Operator: Wer „erläutere" liest und nur beschreibt, erfüllt die Aufgabe
 nicht vollständig, auch wenn der Inhalt stimmt.
@@ -2229,17 +2234,14 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     if (MODUS === 'kurztest') {
       if (!horizontKurztest) return status('hstatus', 'Es liegt noch kein geprüfter Horizont vor.', true);
       const f = { 'graderinfo[text]': kurztestHorizontHtml(horizontKurztest) };
-      if (istNeueFrage()) { liveEintragen(f, 'hstatus'); layoutAnzeigen(); return setTimeout(horizontStatusAnzeigenNachSchreiben, 50); }
+      if (KONTEXT === 'bearbeiten') return horizontInsFormular(f, trocken);
       await schreibenAusfuehren(f, trocken, protokoll('hlog'), 'hstatus');
       if (!trocken && KONTEXT === 'bearbeiten') offenesFormularAngleichen(f);
       layoutAnzeigen();
       return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
     }
-    if (istNeueFrage() && horizontAufgaben) {
-      const f = { 'graderinfo[text]': baueHorizont(horizontAufgaben) };
-      liveEintragen(f, 'hstatus');
-      layoutAnzeigen();
-      return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
+    if (KONTEXT === 'bearbeiten' && horizontAufgaben) {
+      return horizontInsFormular({ 'graderinfo[text]': baueHorizont(horizontAufgaben) }, trocken);
     }
     const sRolle = 'hstatus';
     if (!horizontAufgaben) {
@@ -2255,6 +2257,17 @@ Erst nach OK kommt die nächste Arbeit. Nach der letzten Arbeit${gesamtTeile > 1
     if (!trocken && KONTEXT === 'bearbeiten') offenesFormularAngleichen(felder);
     layoutAnzeigen();
     setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
+  }
+
+  // Bearbeiten-Seite (seit 1.6.0): Horizont NUR ins offene Formular setzen, gespeichert wird
+  // mit „Änderungen speichern". Frueher wurde im Hintergrund aus dem Server-Stand gespeichert –
+  // dabei gingen ungespeicherte Aenderungen im Formular (Fragetext, Punkte) verloren.
+  function horizontInsFormular(felder, trocken) {
+    if (trocken) return status('hstatus', 'Trockenlauf: Der Horizont wird ins offene Formular gesetzt '
+      + 'und mit „Änderungen speichern" zusammen mit der Frage gespeichert.');
+    liveEintragen(felder, 'hstatus');
+    layoutAnzeigen();
+    return setTimeout(horizontStatusAnzeigenNachSchreiben, 50);
   }
 
   // Nach dem Speichern im Hintergrund zeigt das offene Formular noch den alten Stand.

@@ -39,7 +39,7 @@ export function ohneQuellenTief(x) {
 export const KLAUSUR_KOMPAKT = `BEWERTUNGSLOGIK (KOMPAKT)
 Falls du Zugriff auf die Skills „2-didaktik-bewertung" und „3-moodle-erweiterungen"
 von A. Spielhoff hast: Wende deren Klausur-Bewertungslogik an — Erfüllungsgrad je Aufgabe
-nur in den Stufen 100, 75, 50, 25, 0, jede Stufe an einer Formulierung des Horizonts
+bis 5 Punkte in den Stufen 100, 75, 50, 25, 0, darüber 100, 80, 60, 40, 20, 0, jede Stufe an einer Formulierung des Horizonts
 verankert, Operator geprüft; Sprachfehler einzeln zählen (Wort, Korrektur, Kategorie:
 satzbau · kasus · zeitform · grossschreibung · fachbegriff · rechtschreibung ·
 zeichensetzung · umgangssprache; schwer = doppelt); jede Aufgabe bekommt eine Begründung,

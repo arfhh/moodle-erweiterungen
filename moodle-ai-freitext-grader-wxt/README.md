@@ -193,6 +193,10 @@ Version automatisch.
 
 ## Versionshinweise
 
+**1.7.0 (18.11.2026)** — Feinere Bewertung bei großen Aufgaben: Teilaufgaben mit mehr als 5 Punkten werden in Fünfteln bewertet (100 / 80 / 60 / 40 / 20 / 0 %), kleinere weiter in Vierteln. Horizont- und Bewertungs-Prompt nennen beide Skalen; die Erweiterung rastet abweichende Werte der KI auf die passende Stufe ein. Ältere Horizonte mit Vierteln bleiben gültig.
+
+**1.6.0 (18.11.2026)** — Horizont eintragen auf der Bearbeiten-Seite schreibt nur noch ins offene Formular; gespeichert wird mit „Änderungen speichern". Bisher speicherte die Erweiterung im Hintergrund aus dem letzten Server-Stand, und ungespeicherte Änderungen (etwa eine neue Teilaufgabe im Fragetext) gingen verloren. Die Antwortvorlage trennt Hauptaufgaben (1b → 2a) jetzt mit einer gestrichelten Linie.
+
 **1.5.0 (05.11.2026)** — Datenschutz- und Lizenzfassung: Quelltext jetzt unter MIT (Doku CC BY-SA 4.0), Datenschutz-Abschnitt im README; gespeicherte Antworten verfallen nach 90 Tagen, Löschknopf unter ⚙.
 
 **1.4.2 (05.11.2026)** — Gespeicherte Schülerdaten verfallen nach 90 Tagen; neuer Knopf zum sofortigen Löschen (⚙ → Für Fortgeschrittene → „Gespeicherte Antworten löschen“).

@@ -121,8 +121,9 @@ ist. Wenn ja, behältst du die Abschnitte, füllst sie aber so:
  *     Bewertung pro Aufgabe konkret. --- */
 export function horizontRegeln(jahrgang) {
   const wer = jahrgang ? 'Lernende der Jahrgangsstufe ' + jahrgang : 'Lernende dieser Jahrgangsstufe';
-  return `• Nur die Stufen 100 / 75 / 50 / 25 / 0 Prozent. Lass Stufen weg, die die Aufgabe nicht
-  hergibt (bei einer Aufzählung von drei Dingen etwa 100 / 75 / 50 / 0).
+  return `• STUFEN NACH PUNKTEN: Aufgaben bis 5 Punkte nur 100 / 75 / 50 / 25 / 0 Prozent, Aufgaben
+  mit mehr als 5 Punkten 100 / 80 / 60 / 40 / 20 / 0 Prozent. Lass Stufen weg, die die Aufgabe
+  nicht hergibt (bei einer Aufzählung von drei Dingen etwa 100 / 75 / 50 / 0).
 • JEDE STUFE HÄNGT AN ZÄHLBAREN BEDINGUNGEN („beide Teilaspekte", „Name ohne Funktion"),
   nie an Wörtern wie „überwiegend", „im Wesentlichen" oder „deutliche Lücken". Solche
   Wörter führen dazu, dass dieselbe Antwort verschieden eingestuft wird. Prüfe zum
